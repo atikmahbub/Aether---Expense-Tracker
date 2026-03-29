@@ -7,6 +7,8 @@ import * as Haptics from "expo-haptics";
 import React, { ComponentProps, useCallback, useEffect, useRef } from "react";
 import {
   Animated,
+  InteractionManager,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -29,7 +31,9 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const handlePress = useCallback(
     (routeName: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      navigation.navigate(routeName);
+      InteractionManager.runAfterInteractions(() => {
+        navigation.navigate(routeName);
+      });
     },
     [navigation],
   );
@@ -45,22 +49,31 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 10 }]}>
-      <BlurView intensity={30} tint="dark" style={styles.container}>
-        {/* LEFT SIDE: Expense and Loan */}
-        <View style={styles.side}>
-          {renderTabByName("expense")}
-          {renderTabByName("loan")}
+      {Platform.OS === "ios" ? (
+        <BlurView intensity={30} tint="dark" style={styles.container}>
+          <View style={styles.side}>
+            {renderTabByName("expense")}
+            {renderTabByName("loan")}
+          </View>
+          <View style={styles.centerSpace} />
+          <View style={styles.side}>
+            {renderTabByName("investment")}
+            {renderTabByName("settings")}
+          </View>
+        </BlurView>
+      ) : (
+        <View style={[styles.container, styles.androidContainer]}>
+          <View style={styles.side}>
+            {renderTabByName("expense")}
+            {renderTabByName("loan")}
+          </View>
+          <View style={styles.centerSpace} />
+          <View style={styles.side}>
+            {renderTabByName("investment")}
+            {renderTabByName("settings")}
+          </View>
         </View>
-
-        {/* CENTER BUTTON HOLDER (for spacing) */}
-        <View style={styles.centerSpace} />
-
-        {/* RIGHT SIDE: Invest and Settings */}
-        <View style={styles.side}>
-          {renderTabByName("investment")}
-          {renderTabByName("settings")}
-        </View>
-      </BlurView>
+      )}
 
       {/* CENTER BUTTON - Hidden on settings screen */}
       {state.routes[state.index].name !== "settings" && (
@@ -235,5 +248,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 3,
     borderColor: colors.background, // Match background to create gap effect
+    elevation: 12,
+  },
+
+  androidContainer: {
+    backgroundColor: "rgba(15, 20, 24, 0.95)", // More opaque for Android visibility
+    borderWidth: 1,
+    borderColor: "rgba(161, 250, 255, 0.15)",
   },
 });

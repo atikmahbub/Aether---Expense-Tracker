@@ -1,47 +1,36 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dayjs, { Dayjs } from "dayjs";
 import {
   ExpenseAnalyticsModel,
   ExpenseCategoryModel,
 } from "@trackingPortal/api/models";
-import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { UnixTimeStampString } from "@trackingPortal/api/primitives";
-
-interface RefreshOptions {
-  force?: boolean;
-}
-
-interface UseExpenseInsightsParams {
-  userId?: string;
-  month?: Dayjs;
-}
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import dayjs, { Dayjs } from "dayjs";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 export const useExpenseInsights = ({
   userId,
   month,
-}: UseExpenseInsightsParams) => {
+}: {
+  userId?: string;
+  month?: Dayjs;
+}) => {
   const { apiGateway, categories, categoryLoading, refreshCategories } =
     useStoreContext();
 
-  const [analytics, setAnalytics] = useState<ExpenseAnalyticsModel | null>(
-    null,
-  );
-  const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false);
+  const [analytics, setAnalytics] = useState<ExpenseAnalyticsModel | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-  const analyticsCache = useRef<Record<string, ExpenseAnalyticsModel>>({});
+
+  const cache = useRef<Record<string, ExpenseAnalyticsModel>>({});
 
   const refreshAnalytics = useCallback(
-    async ({ force }: RefreshOptions = {}) => {
-      if (!userId || !month) {
-        setAnalytics(null);
-        return;
-      }
+    async ({ force }: { force?: boolean } = {}) => {
+      if (!userId || !month) return;
 
-      const monthKey = dayjs(month).format("YYYY-MM");
-      const cacheKey = `${userId}-${monthKey}`;
+      const key = `${userId}-${dayjs(month).format("YYYY-MM")}`;
 
-      if (analyticsCache.current[cacheKey] && !force) {
-        setAnalytics(analyticsCache.current[cacheKey]);
+      if (cache.current[key] && !force) {
+        setAnalytics(cache.current[key]);
         return;
       }
 
@@ -54,44 +43,34 @@ export const useExpenseInsights = ({
             .startOf("month")
             .unix() as unknown as UnixTimeStampString,
         });
-        analyticsCache.current[cacheKey] = payload;
+
+        cache.current[key] = payload;
         setAnalytics(payload);
       } catch (error) {
-        console.log("Failed to fetch analytics", error);
-        setAnalyticsError("Unable to load analytics");
-        if (force) {
-          delete analyticsCache.current[cacheKey];
-        }
+        console.log("Analytics error", error);
+        setAnalyticsError("Failed to load analytics");
       } finally {
         setAnalyticsLoading(false);
       }
     },
-    [apiGateway, month, userId],
+    [apiGateway, userId, month],
   );
 
-  useEffect(() => {
-    refreshAnalytics();
-  }, [refreshAnalytics]);
-
   const categoryLookup = useMemo(() => {
-    return categories.reduce<Record<string, ExpenseCategoryModel>>(
-      (acc, category) => {
-        acc[category.id] = category;
-        return acc;
-      },
-      {},
-    );
+    return categories.reduce<Record<string, ExpenseCategoryModel>>((acc, c) => {
+      acc[c.id] = c;
+      return acc;
+    }, {});
   }, [categories]);
 
   return {
     categories,
     categoryLoading,
-    categoryError: null,
     refreshCategories,
     analytics,
     analyticsLoading,
     analyticsError,
     refreshAnalytics,
     categoryLookup,
-  } as const;
+  };
 };

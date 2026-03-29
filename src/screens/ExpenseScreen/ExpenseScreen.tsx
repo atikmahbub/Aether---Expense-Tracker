@@ -16,49 +16,49 @@ import { useExpenseInsights } from "@trackingPortal/screens/ExpenseScreen/hooks/
 import { useRecentCategories } from "@trackingPortal/screens/ExpenseScreen/hooks/useRecentCategories";
 import { colors } from "@trackingPortal/themes/colors";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
-import { withHaptic } from "@trackingPortal/utils/haptic";
 import dayjs from "dayjs";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  FlatList,
-  InteractionManager,
-  RefreshControl,
-  StyleSheet,
-  View,
-} from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ExpenseScreen() {
-  const { currentUser: user, apiGateway, currency } = useStoreContext();
+  const {
+    currentUser: user,
+    apiGateway,
+    currency,
+    isCategoryHydrated,
+  } = useStoreContext();
+
   const activeUserId = user.userId;
-  const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
-  const [openCreationForm, setOpenCreationModal] = useState<boolean>(false);
+
+  const [openCreationForm, setOpenCreationModal] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseModel[]>([]);
-  const [filterMonth, setFilterMonth] = useState(dayjs(new Date()));
+  const [filterMonth, setFilterMonth] = useState(dayjs());
   const [monthLimit, setMonthLimit] = useState<MonthlyLimitModel>(
     {} as MonthlyLimitModel,
   );
-  const [combinedLoading, setCombinedLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [limitLoading, setLimitLoading] = useState<boolean>(false);
-  const [creationCooldown, setCreationCooldown] = useState(false);
-  const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevCreationOpen = useRef(openCreationForm);
+
+  const [combinedLoading, setCombinedLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [limitLoading, setLimitLoading] = useState(false);
+
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
 
   const {
     categories,
     categoryLoading,
-    categoryError,
     refreshCategories,
     analytics,
     analyticsLoading,
     analyticsError,
     refreshAnalytics,
     categoryLookup,
-  } = useExpenseInsights({ userId: activeUserId as any, month: filterMonth });
+  } = useExpenseInsights({
+    userId: activeUserId as any,
+    month: filterMonth,
+  });
 
   const {
     recentCategoryIds,
@@ -69,40 +69,36 @@ export default function ExpenseScreen() {
 
   useDailyExpenseReminder();
 
-  const handleOpenCreationModal = useCallback(() => {
-    if (openCreationForm || creationCooldown) {
-      return;
-    }
-    withHaptic(() => {
-      InteractionManager.runAfterInteractions(() => setOpenCreationModal(true));
-    });
-  }, [openCreationForm, creationCooldown]);
-
+  // 🔥 OPEN MODAL EVENT
   useEffect(() => {
     const listener = () => {
       if (isFocused) {
-        handleOpenCreationModal();
+        setOpenCreationModal(true);
       }
     };
+
     eventEmitter.on(EVENTS.OPEN_CREATION_MODAL, listener);
+
     return () => {
       eventEmitter.off(EVENTS.OPEN_CREATION_MODAL, listener);
     };
-  }, [isFocused, handleOpenCreationModal]);
+  }, [isFocused]);
 
+  // 🔥 LOAD DATA (ON MOUNT)
   useEffect(() => {
-    if (user.userId && !user.default) {
+    if (activeUserId && !user.default) {
       loadData();
     }
-  }, [user, filterMonth]);
+  }, [activeUserId, user.default, filterMonth]);
 
+  // 🔥 INIT RECENT CATEGORIES
   useEffect(() => {
-    if (!recentHydrated || recentCategoryIds.length || !expenses.length) {
-      return;
-    }
+    if (!recentHydrated || recentCategoryIds.length || !expenses.length) return;
+
     const historyIds = expenses
       .map((e) => e.categoryId)
       .filter((id): id is string => !!id);
+
     initializeFromHistory(historyIds);
   }, [expenses, initializeFromHistory, recentCategoryIds, recentHydrated]);
 
@@ -114,23 +110,20 @@ export default function ExpenseScreen() {
     [refreshAnalytics, activeUserId],
   );
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
-
   const getExpenses = async () => {
-    if (!user.userId) {
-      return;
-    }
+    if (!user.userId) return;
+
     setLoading(true);
+
     try {
       const response = await apiGateway.expenseService.getExpenseByUser({
         userId: user.userId,
         date: dayjs(filterMonth).unix() as unknown as UnixTimeStampString,
       });
+
       setExpenses(response);
     } catch (error) {
-      console.log("error", error);
+      console.log("expense error", error);
     } finally {
       setLoading(false);
       setCombinedLoading(false);
@@ -138,62 +131,51 @@ export default function ExpenseScreen() {
   };
 
   const getMonthlyLimit = async () => {
-    if (!user.userId) {
-      return;
-    }
+    if (!user.userId) return;
+
     setLimitLoading(true);
+
     try {
-      const response = await apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
-        userId: user.userId,
-        month: (dayjs(filterMonth).month() + 1) as Month,
-        year: dayjs(filterMonth).year() as Year,
-      });
+      const response =
+        await apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
+          userId: user.userId,
+          month: (dayjs(filterMonth).month() + 1) as Month,
+          year: dayjs(filterMonth).year() as Year,
+        });
+
       setMonthLimit(response);
     } catch (error) {
-      console.log("error", error);
+      console.log("limit error", error);
     } finally {
       setLimitLoading(false);
     }
   };
 
   const loadData = async () => {
-    await Promise.all([getExpenses(), getMonthlyLimit()]);
+    await Promise.all([getExpenses(), getMonthlyLimit(), refreshAnalytics()]);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     setCombinedLoading(true);
+
     await Promise.all([
       loadData(),
       fetchAnalytics({ force: true }),
       refreshCategories({ force: true }),
     ]);
+
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    if (prevCreationOpen.current && !openCreationForm) {
-      setCreationCooldown(true);
-      if (cooldownTimeoutRef.current) {
-        clearTimeout(cooldownTimeoutRef.current);
-      }
-      cooldownTimeoutRef.current = setTimeout(() => {
-        setCreationCooldown(false);
-        cooldownTimeoutRef.current = null;
-      }, 350);
-    }
-    prevCreationOpen.current = openCreationForm;
-  }, [openCreationForm]);
+  const totalExpense = expenses.reduce((acc, crr) => acc + crr.amount, 0);
 
-  const totalExpense = expenses.reduce((acc, crr): number => {
-    acc += crr.amount;
-    return acc;
-  }, 0);
-
-  if (combinedLoading || loading || limitLoading) {
-    if (expenses.length === 0) {
-      return <AnimatedLoader />;
-    }
+  // 🔥 MAIN LOADER FIX
+  if (
+    (combinedLoading || loading || limitLoading || !isCategoryHydrated) &&
+    expenses.length === 0
+  ) {
+    return <AnimatedLoader />;
   }
 
   return (
@@ -201,6 +183,18 @@ export default function ExpenseScreen() {
       <FlatList
         data={expenses}
         keyExtractor={(item, index) => `${item.id || index}`}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         ListHeaderComponent={
           <View>
             <ExpenseSummary
@@ -209,46 +203,34 @@ export default function ExpenseScreen() {
               monthLimit={monthLimit}
               getMonthlyLimit={getMonthlyLimit}
             />
+
             <AnalyticsCard
               analytics={analytics}
               monthlyLimit={monthLimit?.limit}
               categories={categoryLookup}
               loading={analyticsLoading}
               error={analyticsError}
-              onRetry={() => fetchAnalytics({ force: true })}
+              onRetry={() => refreshAnalytics({ force: true })}
               currency={currency}
             />
           </View>
         }
         ListFooterComponent={
           <ExpenseList
-            notifyRowOpen={(value) => setHideFabIcon(value)}
             filteredMonth={filterMonth}
             setFilteredMonth={setFilterMonth}
             expenses={expenses}
             getUserExpenses={getExpenses}
             categories={categories}
             categoriesLoading={categoryLoading}
-            categoryError={categoryError}
             refreshCategories={refreshCategories}
             refreshAnalytics={fetchAnalytics}
             recentCategoryIds={recentCategoryIds}
             onCategoryUsed={addRecentCategory}
-          />
-        }
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
+            notifyRowOpen={() => {}}
           />
         }
         renderItem={null}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
-        showsVerticalScrollIndicator={false}
       />
 
       <ExpenseCreation
@@ -258,7 +240,6 @@ export default function ExpenseScreen() {
         getExceedExpenseNotification={() => {}}
         categories={categories}
         categoriesLoading={categoryLoading}
-        categoryError={categoryError}
         refreshCategories={refreshCategories}
         refreshAnalytics={fetchAnalytics}
         recentCategoryIds={recentCategoryIds}

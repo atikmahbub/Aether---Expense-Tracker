@@ -33,6 +33,7 @@ type StoreContextType = {
   setCurrencyPreference: (currency: CurrencyPreference) => Promise<void>;
   categories: ExpenseCategoryModel[];
   categoryLoading: boolean;
+  isCategoryHydrated: boolean;
   refreshCategories: (options?: { force?: boolean }) => Promise<void>;
 };
 
@@ -55,12 +56,16 @@ const defaultUser: NewUserModel = {
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const { token, user: auth0User } = useAuth();
+
   const [currentUser, setCurrentUser] = useState<NewUserModel>(defaultUser);
   const [currency, setCurrency] =
     useState<CurrencyPreference>(DEFAULT_CURRENCY);
+
   const [categories, setCategories] =
     useState<ExpenseCategoryModel[]>(FALLBACK_CATEGORIES);
-  const [categoryLoading, setCategoryLoading] = useState<boolean>(false);
+
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [isCategoryHydrated, setIsCategoryHydrated] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -71,20 +76,29 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     hydrateCurrencyPreference();
-    refreshCategories();
-  }, []);
+    if (token) {
+      refreshCategories({ force: true });
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!currentUser.default && !isCategoryHydrated) {
+      refreshCategories({ force: true });
+    }
+  }, [currentUser.default, isCategoryHydrated]);
 
   const refreshCategories = async (options?: { force?: boolean }) => {
-    if (categories.length > FALLBACK_CATEGORIES.length && !options?.force) {
-      return;
-    }
+    if (isCategoryHydrated && !options?.force) return;
+
     setCategoryLoading(true);
+
     try {
       const response = await apiGateway.expenseService.getCategories();
+
       const normalized = response
-        .map((category) => ({
-          ...category,
-          icon: normalizeCategoryIcon(category.icon),
+        .map((c) => ({
+          ...c,
+          icon: normalizeCategoryIcon(c.icon),
         }))
         .sort((a, b) => {
           const indexA = PRIORITY_ORDER.indexOf(a.name);
@@ -94,10 +108,13 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
           if (indexB !== -1) return 1;
           return 0;
         });
+
       setCategories(normalized);
+      setIsCategoryHydrated(true);
     } catch (error) {
-      console.log("Failed to fetch categories", error);
-      if (categories.length === 0) setCategories(FALLBACK_CATEGORIES);
+      console.log("category error", error);
+      setCategories(FALLBACK_CATEGORIES);
+      // Removed setIsCategoryHydrated(true) to allow retry when user authenticates
     } finally {
       setCategoryLoading(false);
     }
@@ -105,61 +122,41 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   const hydrateCurrencyPreference = async () => {
     try {
-      const savedCode = await AsyncStorage.getItem(CURRENCY_PREFERENCE_KEY);
-      if (savedCode) {
-        const matched = findCurrencyByCode(savedCode);
+      const saved = await AsyncStorage.getItem(CURRENCY_PREFERENCE_KEY);
+      if (saved) {
+        const matched = findCurrencyByCode(saved);
         if (matched) {
           setCurrency(matched);
           return;
         }
       }
       await hydrateCurrencyFromLocation();
-    } catch (error) {
-      console.log("Failed to hydrate currency preference", error);
-    }
+    } catch {}
   };
 
   const hydrateCurrencyFromLocation = async () => {
     try {
-      const response = await fetch(`https://ipinfo.io?token=${IPINFO_TOKEN}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const res = await fetch(`https://ipinfo.io?token=${IPINFO_TOKEN}`);
+      const data = await res.json();
       const countryData = await getCountryData(data.country);
       const matched = findCurrencyByCode(countryData?.currencyCode);
-      if (matched) {
-        setCurrency(matched);
-        return;
-      }
-      setCurrency(DEFAULT_CURRENCY);
-    } catch (error) {
-      console.error("Error fetching country code:", error);
+      setCurrency(matched || DEFAULT_CURRENCY);
+    } catch {
       setCurrency(DEFAULT_CURRENCY);
     }
   };
 
-  const setCurrencyPreference = async (nextCurrency: CurrencyPreference) => {
-    setCurrency(nextCurrency);
-    try {
-      await AsyncStorage.setItem(
-        CURRENCY_PREFERENCE_KEY,
-        nextCurrency.code.toUpperCase(),
-      );
-    } catch (error) {
-      console.log("Failed to persist currency preference", error);
-    }
+  const setCurrencyPreference = async (next: CurrencyPreference) => {
+    setCurrency(next);
+    await AsyncStorage.setItem(
+      CURRENCY_PREFERENCE_KEY,
+      next.code.toUpperCase(),
+    );
   };
 
   const addUserToDb = async () => {
     try {
-      if (
-        !auth0User?.name ||
-        !auth0User?.email ||
-        !auth0User.picture ||
-        !auth0User.sub
-      )
-        return;
+      if (!auth0User?.sub) return;
 
       const params: IAddUserParams = {
         userId: UserId(auth0User.sub as string),
@@ -167,41 +164,27 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         profilePicture: URLString(auth0User.picture as string),
         email: auth0User.email as string,
       };
+
       const user = await apiGateway.userService.addUser(params);
-      setCurrentUser({
-        ...user,
-        default: false,
-      });
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Something went wrong!",
-      });
+      setCurrentUser({ ...user, default: false });
+    } catch {
+      Toast.show({ type: "error", text1: "Something went wrong!" });
     }
   };
 
-  const contextValues = React.useMemo(
-    (): StoreContextType => ({
-      currentUser,
-      apiGateway,
-      currency,
-      setCurrencyPreference,
-      categories,
-      categoryLoading,
-      refreshCategories,
-    }),
-    [
-      currentUser,
-      currency,
-      categories,
-      categoryLoading,
-      refreshCategories,
-      setCurrencyPreference,
-    ],
-  );
-
   return (
-    <StoreContext.Provider value={contextValues}>
+    <StoreContext.Provider
+      value={{
+        currentUser,
+        apiGateway,
+        currency,
+        setCurrencyPreference,
+        categories,
+        categoryLoading,
+        isCategoryHydrated,
+        refreshCategories,
+      }}
+    >
       {children}
     </StoreContext.Provider>
   );
@@ -209,8 +192,6 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useStoreContext = () => {
   const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error("useStoreContext must be used within a StoreProvider");
-  }
+  if (!context) throw new Error("Must use inside provider");
   return context;
 };

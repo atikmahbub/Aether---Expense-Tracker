@@ -167,25 +167,34 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
         </View>
       ) : null}
 
-      {loading ? (
+      {loading && !analytics ? (
         <View style={styles.loadingRow}>
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : null}
 
-      {!loading && !analytics ? renderEmpty('No data yet') : null}
+      {!loading && !analytics && !error ? renderEmpty('No data yet') : null}
 
-      {!loading && analytics ? (
+      {analytics ? (
         <View>
-          {segments.length ? (
-            <View style={styles.progressBlock}>
-              <SegmentedProgressBar segments={segments} height={14} />
-              <Text style={styles.progressHint}>
-                Share of spend by category
-              </Text>
+          {loading && (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color={colors.primary} size="small" />
             </View>
-          ) : (
-            renderEmpty('No breakdown yet')
+          )}
+          {!loading && (
+            <View>
+              {segments.length ? (
+                <View style={styles.progressBlock}>
+                  <SegmentedProgressBar segments={segments} height={14} />
+                  <Text style={styles.progressHint}>
+                    Share of spend by category
+                  </Text>
+                </View>
+              ) : (
+                renderEmpty('No breakdown yet')
+              )}
+            </View>
           )}
 
           {renderTopCategory()}

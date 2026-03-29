@@ -46,8 +46,8 @@ export const normalizeCategoryIcon = (icon?: string) => {
 };
 
 export const FALLBACK_CATEGORIES: ExpenseCategoryModel[] =
-  RAW_FALLBACK_CATEGORIES.map(category => ({
-    id: category.name.toLowerCase().replace(/\s+/g, '-'),
+  RAW_FALLBACK_CATEGORIES.map((category) => ({
+    id: category.name as any,
     name: category.name,
     icon: normalizeCategoryIcon(category.icon),
     color: category.color,
