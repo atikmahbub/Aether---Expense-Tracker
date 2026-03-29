@@ -1,28 +1,49 @@
-import {FlatList, StyleSheet, View} from 'react-native';
-import React, {useEffect, useState} from 'react';
-import {RefreshControl} from 'react-native-gesture-handler';
-import InvestSummary from '@trackingPortal/screens/InvestScreen/InvestSummary';
-import InvestList from '@trackingPortal/screens/InvestScreen/InvestList';
-import {AnimatedFAB} from 'react-native-paper';
-import {InvestModel, LoanModel} from '@trackingPortal/api/models';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import Toast from 'react-native-toast-message';
-import InvestCreation from '@trackingPortal/screens/InvestScreen/InvestCreation';
-import {EInvestStatus} from '@trackingPortal/api/enums';
-import {AnimatedLoader} from '@trackingPortal/components';
-import {withHaptic} from '@trackingPortal/utils/haptic';
-import {colors} from '@trackingPortal/themes/colors';
+import { EInvestStatus } from "@trackingPortal/api/enums";
+import { InvestModel } from "@trackingPortal/api/models";
+import { AnimatedLoader } from "@trackingPortal/components";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import InvestCreation from "@trackingPortal/screens/InvestScreen/InvestCreation";
+import InvestList from "@trackingPortal/screens/InvestScreen/InvestList";
+import InvestSummary from "@trackingPortal/screens/InvestScreen/InvestSummary";
+import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
+import { withHaptic } from "@trackingPortal/utils/haptic";
+import React, { useCallback, useEffect, useState } from "react";
+import { FlatList, InteractionManager, StyleSheet, View } from "react-native";
+import { RefreshControl } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function InvestScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
   const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [invests, setInvests] = useState<InvestModel[]>([]);
-  const {currentUser: user, apiGateway} = useStoreContext();
+  const { currentUser: user, apiGateway } = useStoreContext();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [status, setStatus] = React.useState<EInvestStatus>(
     EInvestStatus.Active,
   );
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
+
+  const handleOpenCreationModal = useCallback(() => {
+    withHaptic(() => {
+      InteractionManager.runAfterInteractions(() => setOpenCreationModal(true));
+    });
+  }, []);
+
+  useEffect(() => {
+    const listener = () => {
+      if (isFocused) {
+        handleOpenCreationModal();
+      }
+    };
+    eventEmitter.on(EVENTS.OPEN_CREATION_MODAL, listener);
+    return () => {
+      eventEmitter.off(EVENTS.OPEN_CREATION_MODAL, listener);
+    };
+  }, [isFocused, handleOpenCreationModal]);
 
   useEffect(() => {
     if (!user.default) {
@@ -39,10 +60,10 @@ export default function InvestScreen() {
       });
       setInvests(response);
     } catch (error) {
-      console.log('error', error);
+      console.log("error", error);
       Toast.show({
-        type: 'error',
-        text1: 'Something went wrong!',
+        type: "error",
+        text1: "Something went wrong!",
       });
     } finally {
       setLoading(false);
@@ -55,7 +76,7 @@ export default function InvestScreen() {
     setRefreshing(false);
   };
 
-  if (loading) {
+  if (loading && invests.length === 0) {
     return <AnimatedLoader />;
   }
 
@@ -71,7 +92,7 @@ export default function InvestScreen() {
           <InvestList
             invests={invests}
             getUserInvestHistory={getUserInvestHistory}
-            notifyRowOpen={value => setHideFabIcon(value)}
+            notifyRowOpen={(value) => setHideFabIcon(value)}
             status={status}
             setStatus={setStatus}
           />
@@ -87,21 +108,6 @@ export default function InvestScreen() {
         setOpenCreationModal={setOpenCreationModal}
         getUserInvestHistory={getUserInvestHistory}
       />
-      <AnimatedFAB
-        extended={false}
-        visible={!hideFabIcon}
-        icon={'plus'}
-        animateFrom={'right'}
-        iconMode={'static'}
-        label="Add New"
-        color={colors.background}
-        style={styles.fabStyle}
-        onPress={() =>
-          withHaptic(() => {
-            setOpenCreationModal(true);
-          })
-        }
-      />
     </View>
   );
 }
@@ -109,18 +115,7 @@ export default function InvestScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
-  },
-  fabStyle: {
-    bottom: 3,
-    right: 24,
-    position: 'absolute',
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    shadowOffset: {width: 0, height: 12},
-    elevation: 10,
+    backgroundColor: "transparent",
   },
   listContent: {
     paddingBottom: 180,

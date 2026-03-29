@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {colors} from '@trackingPortal/themes/colors';
 import {Image} from 'react-native';
+import {formatNumber} from '@trackingPortal/utils/utils';
 
 const tintHex = (hex?: string, alpha = 0.15) => {
   if (!hex) {
@@ -112,7 +113,10 @@ const DataTable: React.FC<DataTableProps> = ({
       item.DisplayAmount ?? item['Amount'] ?? item[headers[2]] ?? '--';
     const amountText =
       typeof amountValue === 'number'
-        ? `${item.Type === 'Taken' ? '-$' : '$'}${amountValue}`
+        ? formatNumber(item.Type === 'Taken' ? amountValue * -1 : amountValue, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
         : String(amountValue);
     const categoryName = item.CategoryName;
     const categoryColor = item.CategoryColor;

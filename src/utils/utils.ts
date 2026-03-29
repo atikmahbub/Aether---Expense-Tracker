@@ -4,6 +4,51 @@ import {
   DEFAULT_CURRENCY,
 } from '@trackingPortal/constants/currency';
 
+const ENGLISH_LOCALE = 'en-US';
+
+type NumberFormatOptions = {
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  minimumIntegerDigits?: number;
+  useGrouping?: boolean;
+  prefix?: string;
+  suffix?: string;
+  absolute?: boolean;
+  signDisplay?: Intl.NumberFormatOptions['signDisplay'];
+};
+
+const formatWithEnglishDigits = (
+  value: number,
+  {
+    prefix = '',
+    suffix = '',
+    absolute = false,
+    useGrouping = true,
+    ...intlOverrides
+  }: NumberFormatOptions = {},
+) => {
+  const targetValue = absolute ? Math.abs(value) : value;
+  const intlOptions: Intl.NumberFormatOptions = {
+    useGrouping,
+    minimumFractionDigits: intlOverrides.minimumFractionDigits,
+    maximumFractionDigits: intlOverrides.maximumFractionDigits,
+    minimumIntegerDigits: intlOverrides.minimumIntegerDigits,
+    signDisplay: intlOverrides.signDisplay,
+  };
+
+  const safeFormat = () =>
+    new Intl.NumberFormat(ENGLISH_LOCALE, intlOptions).format(targetValue);
+
+  let formattedValue: string;
+  try {
+    formattedValue = safeFormat();
+  } catch (error) {
+    formattedValue = targetValue.toLocaleString(ENGLISH_LOCALE, intlOptions);
+  }
+
+  return `${prefix}${formattedValue}${suffix}`;
+};
+
 export const getGreeting = (): string => {
   const currentHour = dayjs().hour();
 
@@ -19,10 +64,11 @@ export const getGreeting = (): string => {
 export const convertToKilo = (value: number): string | number => {
   const result = value / 1000;
   if (result >= 1) {
-    return `${result}K`;
-  } else {
-    return value;
+    return `${formatWithEnglishDigits(result, {
+      maximumFractionDigits: result < 10 ? 1 : 0,
+    })}K`;
   }
+  return formatWithEnglishDigits(value, {maximumFractionDigits: 0});
 };
 
 export const convertKiloToNumber = (number: string | number): number => {
@@ -39,24 +85,37 @@ export const convertKiloToNumber = (number: string | number): number => {
 const resolveCurrency = (currency?: CurrencyPreference) =>
   currency || DEFAULT_CURRENCY;
 
+type CurrencyFormatOptions = {
+  showCode?: boolean;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  useGrouping?: boolean;
+  hideSymbol?: boolean;
+};
+
+export const formatNumber = (
+  value: number,
+  options?: NumberFormatOptions,
+) => formatWithEnglishDigits(value, options);
+
 export const formatCurrency = (
   value: number,
   currency?: CurrencyPreference,
-  options?: {showCode?: boolean},
+  options?: CurrencyFormatOptions,
 ) => {
   const activeCurrency = resolveCurrency(currency);
-  let absFormatted: string;
-  try {
-    const formatter = new Intl.NumberFormat(activeCurrency.locale, {
-      minimumFractionDigits: activeCurrency.decimals,
-      maximumFractionDigits: activeCurrency.decimals,
-    });
-    absFormatted = formatter.format(Math.abs(value));
-  } catch (error) {
-    absFormatted = Math.abs(value).toFixed(activeCurrency.decimals);
-  }
+  const minimumFractionDigits =
+    options?.minimumFractionDigits ?? activeCurrency.decimals;
+  const maximumFractionDigits =
+    options?.maximumFractionDigits ?? activeCurrency.decimals;
+  const absFormatted = formatWithEnglishDigits(Math.abs(value), {
+    minimumFractionDigits,
+    maximumFractionDigits,
+    useGrouping: options?.useGrouping,
+  });
   const sign = value < 0 ? '-' : '';
-  const base = `${activeCurrency.symbol}${absFormatted}`;
+  const symbol = options?.hideSymbol ? '' : activeCurrency.symbol;
+  const base = `${symbol}${absFormatted}`;
   if (options?.showCode) {
     return `${sign}${base} ${activeCurrency.code}`;
   }

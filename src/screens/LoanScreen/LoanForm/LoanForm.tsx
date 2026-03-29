@@ -1,5 +1,5 @@
-import {View, Pressable, StyleSheet, Text, TouchableOpacity} from 'react-native';
-import React, {useMemo, useState} from 'react';
+import {View, Pressable, StyleSheet, Text, TouchableOpacity, InteractionManager} from 'react-native';
+import React, {useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddLoanFields} from '@trackingPortal/screens/LoanScreen';
 import {TextInput} from 'react-native-paper';
@@ -33,6 +33,10 @@ export default function LoanForm() {
     const parsed = new Date(deadlineValue);
     return isNaN(parsed.getTime()) ? new Date() : parsed;
   }, [deadlineValue]);
+
+  const openDeadlinePicker = useCallback(() => {
+    InteractionManager.runAfterInteractions(() => setPickerVisible(true));
+  }, []);
 
   return (
     <View style={styles.formRoot}>
@@ -93,7 +97,7 @@ export default function LoanForm() {
           />
         <Pressable
           style={StyleSheet.absoluteFillObject}
-          onPress={() => setPickerVisible(true)}
+          onPress={openDeadlinePicker}
         />
         </View>
       </View>

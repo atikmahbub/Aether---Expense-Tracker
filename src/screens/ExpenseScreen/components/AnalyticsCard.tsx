@@ -15,7 +15,7 @@ import {
 } from '@trackingPortal/api/models';
 import SegmentedProgressBar from '@trackingPortal/screens/ExpenseScreen/components/SegmentedProgressBar';
 import {colors} from '@trackingPortal/themes/colors';
-import {formatCurrency} from '@trackingPortal/utils/utils';
+import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {CurrencyPreference} from '@trackingPortal/constants/currency';
 
 interface AnalyticsCardProps {
@@ -203,7 +203,11 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
                         {item.categoryName}
                       </Text>
                       <Text style={styles.categorySecondary}>
-                        {item.percentage.toFixed(1)}%
+                        {formatNumber(item.percentage, {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                          suffix: '%',
+                        })}
                       </Text>
                     </View>
                     <Text style={styles.categoryAmount}>

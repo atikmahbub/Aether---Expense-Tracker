@@ -2,7 +2,7 @@ import {View, StyleSheet} from 'react-native';
 import React from 'react';
 import {Text} from 'react-native-paper';
 import {GlassCard} from '@trackingPortal/components';
-import {formatCurrency} from '@trackingPortal/utils/utils';
+import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {InvestModel} from '@trackingPortal/api/models';
 import {EInvestStatus} from '@trackingPortal/api/enums';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
@@ -42,6 +42,33 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
   const averageReturn =
     !isActive && totalItems > 0 ? totalProfit / totalItems : 0;
 
+  const profitPercentLabel = formatNumber(
+    !isActive ? totalProfit : 0,
+    {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+      suffix: '%',
+    },
+  );
+
+  const averageReturnLabel = formatNumber(
+    !isActive ? averageReturn : 0,
+    {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+      suffix: '%',
+    },
+  );
+
+  const assetClassCountLabel = formatNumber(
+    Math.max(1, Math.min(investList.length, 9)),
+    {
+      minimumIntegerDigits: 2,
+      maximumFractionDigits: 0,
+      useGrouping: false,
+    },
+  );
+
   return (
     <View style={styles.mainContainer}>
       <Text style={styles.headingLabel}>INVESTMENT SNAPSHOT</Text>
@@ -65,7 +92,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
         <View style={styles.profitBadge}>
           <MaterialCommunityIcons name="arrow-up" size={14} color="#b6f700" />
           <Text style={styles.profitBadgeText}>
-            {!isActive ? totalProfit.toFixed(1) : '0.0'}%
+            {profitPercentLabel}
           </Text>
         </View>
         <View
@@ -105,9 +132,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
             />
           </View>
           <Text style={styles.metricLabelCard}>Annualized Return</Text>
-          <Text style={styles.metricLabelValue}>
-            {!isActive ? averageReturn.toFixed(1) : '0.0'}%
-          </Text>
+          <Text style={styles.metricLabelValue}>{averageReturnLabel}</Text>
         </GlassCard>
 
         <GlassCard style={styles.metricSquareCard} padding={16}>
@@ -119,9 +144,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
             />
           </View>
           <Text style={styles.metricLabelCard}>Asset Classes</Text>
-          <Text style={styles.metricLabelValue}>
-            0{Math.max(1, Math.min(investList.length, 9))}
-          </Text>
+          <Text style={styles.metricLabelValue}>{assetClassCountLabel}</Text>
         </GlassCard>
       </View>
     </View>

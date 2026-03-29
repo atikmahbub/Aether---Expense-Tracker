@@ -5,8 +5,9 @@ import {
   ScrollView,
   Modal,
   TouchableWithoutFeedback,
+  InteractionManager,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {Text} from 'react-native-paper';
 import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import {AnimatedLoader} from '@trackingPortal/components';
@@ -19,6 +20,11 @@ export default function SettingsScreen() {
   const {logout, loading} = useAuth();
   const {currency, setCurrencyPreference} = useStoreContext();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const openCurrencyModal = useCallback(() => {
+    InteractionManager.runAfterInteractions(() =>
+      setCurrencyModalVisible(true),
+    );
+  }, []);
 
   if (loading) {
     return <AnimatedLoader />;
@@ -31,7 +37,7 @@ export default function SettingsScreen() {
         <TouchableOpacity
           style={styles.selectorRow}
           activeOpacity={0.85}
-          onPress={() => setCurrencyModalVisible(true)}>
+          onPress={openCurrencyModal}>
           <View style={styles.selectorRowContent}>
             <View style={styles.iconCircle}>
               <MaterialCommunityIcons

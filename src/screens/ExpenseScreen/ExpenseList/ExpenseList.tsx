@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  InteractionManager,
 } from 'react-native';
 import React, {
   FC,
@@ -35,11 +36,12 @@ import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {IUpdateExpenseParams} from '@trackingPortal/api/params';
 import Toast from 'react-native-toast-message';
 import {AnimatedLoader, LoadingButton} from '@trackingPortal/components';
-import {formatCurrency} from '@trackingPortal/utils/utils';
+import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {
   triggerSuccessHaptic,
   triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {normalizeCategoryIcon} from '@trackingPortal/screens/ExpenseScreen/ExpenseScreen.constants';
 
 interface IExpenseList {
@@ -109,6 +111,10 @@ const ExpenseList: FC<IExpenseList> = ({
     },
     [setFilteredMonth],
   );
+
+  const openYearPicker = useCallback(() => {
+    InteractionManager.runAfterInteractions(() => setOpenPicker(true));
+  }, []);
 
   const onExpenseEdit = async (
     values: any,
@@ -191,7 +197,10 @@ const ExpenseList: FC<IExpenseList> = ({
               Number(selectedItem.date) * 1000,
             ),
             [EAddExpenseFields.DESCRIPTION]: selectedItem.description || '',
-            [EAddExpenseFields.AMOUNT]: selectedItem.amount.toString(),
+            [EAddExpenseFields.AMOUNT]: formatNumber(selectedItem.amount, {
+              useGrouping: false,
+              maximumFractionDigits: 2,
+            }),
             [EAddExpenseFields.CATEGORY_ID]: selectedItem.categoryId || '',
           }}
           onSubmit={(values, formikHelpers) =>
@@ -199,7 +208,11 @@ const ExpenseList: FC<IExpenseList> = ({
           }
           validationSchema={CreateExpenseSchema}>
           {({handleSubmit}) => (
-            <Fragment>
+            <KeyboardAwareScrollView
+              enableOnAndroid
+              extraScrollHeight={20}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.collapsibleContent}>
               <ExpenseForm
                 categories={categories}
                 categoriesLoading={categoriesLoading}
@@ -219,7 +232,7 @@ const ExpenseList: FC<IExpenseList> = ({
                   onPress={() => handleSubmit()}
                 />
               </View>
-            </Fragment>
+            </KeyboardAwareScrollView>
           )}
         </Formik>
       );
@@ -251,7 +264,7 @@ const ExpenseList: FC<IExpenseList> = ({
             uppercase={false}
             style={styles.monthButton}
             labelStyle={styles.monthButtonLabel}
-            onPress={() => setOpenPicker(true)}>
+            onPress={openYearPicker}>
             {dayjs(filteredMonth).format('YYYY')}
           </Button>
         </View>
@@ -343,7 +356,10 @@ const ExpenseList: FC<IExpenseList> = ({
                           filteredMonth.year() === yr &&
                             styles.yearOptionTextActive,
                         ]}>
-                        {yr}
+                        {formatNumber(yr, {
+                          useGrouping: false,
+                          maximumFractionDigits: 0,
+                        })}
                       </Text>
                     </TouchableOpacity>
                   ),
@@ -427,6 +443,10 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     marginTop: 12,
+  },
+  collapsibleContent: {
+    gap: 16,
+    paddingBottom: 20,
   },
   actionRow: {
     flexDirection: 'row',

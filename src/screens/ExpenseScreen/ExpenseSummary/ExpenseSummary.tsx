@@ -1,5 +1,5 @@
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
-import React, {useState, useMemo, useEffect} from 'react';
+import {View, StyleSheet, TouchableOpacity, InteractionManager} from 'react-native';
+import React, {useState, useMemo, useEffect, useCallback} from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Text} from 'react-native-paper';
 import {FormikTextInput, CircularProgress} from '@trackingPortal/components';
@@ -7,7 +7,7 @@ import FormModal from '@trackingPortal/components/FormModal';
 import dayjs, {Dayjs} from 'dayjs';
 import {MonthlyLimitModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {formatCurrency} from '@trackingPortal/utils/utils';
+import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {Formik, FormikHelpers} from 'formik';
 import {EMonthlyLimitFields} from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.constants';
 import Toast from 'react-native-toast-message';
@@ -130,11 +130,16 @@ const ExpenseSummary: React.FC<ISummary> = ({
     const delta = totalExpense - previousMonthTotal;
     const isLower = delta <= 0;
     const percent = (Math.abs(delta) / previousMonthTotal) * 100;
+    const percentLabel = formatNumber(percent, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+      suffix: '%',
+    });
 
     return {
       icon: isLower ? 'arrow-bottom-right' : 'arrow-top-right',
       color: isLower ? colors.accent : colors.error,
-      label: `${percent.toFixed(1)}% ${isLower ? 'lower' : 'higher'} vs ${previousMonthLabel}`,
+      label: `${percentLabel} ${isLower ? 'lower' : 'higher'} vs ${previousMonthLabel}`,
       isLower,
       deltaAmount: Math.abs(delta),
     };
@@ -183,7 +188,10 @@ const ExpenseSummary: React.FC<ISummary> = ({
   const progressColor =
     !hasLimit || progressRatio <= 1 ? colors.accent : colors.error;
   const progressLabel = hasLimit
-    ? `${Math.min(progressRatio * 100, 999).toFixed(0)}%`
+    ? formatNumber(Math.min(progressRatio * 100, 999), {
+        maximumFractionDigits: 0,
+        suffix: '%',
+      })
     : '--';
   const remainingBudget = hasLimit ? limitValue - totalExpense : 0;
   const isBudgetOnTrack = remainingBudget >= 0;
@@ -235,6 +243,14 @@ const ExpenseSummary: React.FC<ISummary> = ({
   const closeLimitModal = () => {
     setIsLimitModalVisible(false);
   };
+
+  const openLimitModal = useCallback(() => {
+    withHaptic(() => {
+      InteractionManager.runAfterInteractions(() =>
+        setIsLimitModalVisible(true),
+      );
+    });
+  }, []);
 
   const handleSaveMonthlyLimit = async (
     values: any,
@@ -358,13 +374,16 @@ const ExpenseSummary: React.FC<ISummary> = ({
               adjustsFontSizeToFit
               minimumFontScale={0.75}>
               {limitValue
-                ? formatCurrency(Number(limitValue.toFixed(0)), currency)
+                ? formatCurrency(limitValue, currency, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })
                 : 'Set Limit'}
             </Text>
           </View>
           <TouchableOpacity
             style={styles.editLink}
-            onPress={() => withHaptic(() => setIsLimitModalVisible(true))}>
+            onPress={openLimitModal}>
             <Text style={styles.editLinkText}>
               {limitValue ? 'Tap to edit limit' : 'Tap to set limit'}
             </Text>
@@ -381,8 +400,9 @@ const ExpenseSummary: React.FC<ISummary> = ({
           <Text style={styles.metricLabelCard}>Daily Avg</Text>
           <Text style={styles.metricLabelValue}>
             {formatCurrency(
-              Number((totalExpense / Math.max(dayjs().date(), 1)).toFixed(0)),
+              totalExpense / Math.max(dayjs().date(), 1),
               currency,
+              {minimumFractionDigits: 0, maximumFractionDigits: 0},
             )}
           </Text>
         </View>
@@ -392,7 +412,10 @@ const ExpenseSummary: React.FC<ISummary> = ({
         enableReinitialize={true}
         initialValues={{
           [EMonthlyLimitFields.LIMIT]: limitValue
-            ? String(Number(limitValue.toFixed(2)))
+            ? formatNumber(limitValue, {
+                maximumFractionDigits: 2,
+                useGrouping: false,
+              })
             : '',
         }}
         onSubmit={handleSaveMonthlyLimit}>

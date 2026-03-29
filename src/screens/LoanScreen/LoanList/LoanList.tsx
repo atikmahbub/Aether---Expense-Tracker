@@ -27,6 +27,8 @@ import {
   triggerSuccessHaptic,
   triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
+import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 interface ILoanList {
   notifyRowOpen: (value: boolean) => void;
@@ -38,7 +40,7 @@ const headers = ['Name', 'Type', 'Deadline', 'Amount'];
 
 const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
-  const {currentUser: user, apiGateway} = useStoreContext();
+  const {currentUser: user, apiGateway, currency} = useStoreContext();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
@@ -113,7 +115,10 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
               Number(selectedItem.deadLine) * 1000,
             ),
             [EAddLoanFields.NOTE]: selectedItem.note || '',
-            [EAddLoanFields.AMOUNT]: selectedItem.amount.toString(),
+            [EAddLoanFields.AMOUNT]: formatNumber(selectedItem.amount, {
+              useGrouping: false,
+              maximumFractionDigits: 2,
+            }),
             [EAddLoanFields.NAME]: selectedItem.name,
           }}
           onSubmit={(values, formikHelpers) =>
@@ -121,7 +126,11 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
           }
           validationSchema={AddLoanSchema}>
           {({handleSubmit}) => (
-            <Fragment>
+            <KeyboardAwareScrollView
+              enableOnAndroid
+              extraScrollHeight={20}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.collapsibleContent}>
               <LoanForm />
               <View style={styles.actionRow}>
                 <TouchableOpacity
@@ -135,7 +144,7 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
                   onPress={() => handleSubmit()}
                 />
               </View>
-            </Fragment>
+            </KeyboardAwareScrollView>
           )}
         </Formik>
       );
@@ -162,6 +171,10 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
               Name: loan.name,
               Deadline: `Due: ${dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).format('MMM DD, YYYY')}`,
               Amount: loan.amount,
+              DisplayAmount: formatCurrency(
+                loan.loanType === LoanType.TAKEN ? -loan.amount : loan.amount,
+                currency,
+              ),
               Avatar: `https://api.dicebear.com/7.x/avataaars/png?seed=${loan.name.replace(/\s+/g, '')}&backgroundColor=transparent`,
             }))}
             onDelete={handleDeleteLoan}
@@ -207,6 +220,10 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     marginTop: 12,
+  },
+  collapsibleContent: {
+    gap: 16,
+    paddingBottom: 20,
   },
   actionRow: {
     flexDirection: 'row',

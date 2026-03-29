@@ -6,12 +6,12 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
   Modal,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import LoadingButton from '@trackingPortal/components/LoadingButton';
 import {colors} from '@trackingPortal/themes/colors';
 
@@ -64,11 +64,13 @@ const FormModal: React.FC<IFormModal> = ({
                   <Text style={styles.title}>{title}</Text>
                   {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
                 </View>
-                <ScrollView
-                  contentContainerStyle={styles.scrollView}
-                  keyboardShouldPersistTaps="handled">
+                <KeyboardAwareScrollView
+                  enableOnAndroid
+                  extraScrollHeight={20}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={styles.scrollView}>
                   {children}
-                </ScrollView>
+                </KeyboardAwareScrollView>
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
                     style={styles.cancelButton}

@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiGateway } from "@trackingPortal/api/implementations";
 import { IApiGateWay } from "@trackingPortal/api/interfaces";
-import { UserModel } from "@trackingPortal/api/models";
+import { ExpenseCategoryModel, UserModel } from "@trackingPortal/api/models";
 import { IAddUserParams } from "@trackingPortal/api/params";
 import {
   makeUnixTimestampString,
@@ -15,17 +15,25 @@ import {
   DEFAULT_CURRENCY,
   findCurrencyByCode,
 } from "@trackingPortal/constants/currency";
+import {
+  FALLBACK_CATEGORIES,
+  normalizeCategoryIcon,
+} from "@trackingPortal/screens/ExpenseScreen/ExpenseScreen.constants";
 import { getCountryData } from "country-currency-utils";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 
 const IPINFO_TOKEN = process.env.EXPO_PUBLIC_IPINFO_TOKEN;
+const PRIORITY_ORDER = ["Groceries", "Food", "Kids", "Health"];
 
 type StoreContextType = {
   apiGateway: IApiGateWay;
   currentUser: NewUserModel;
   currency: CurrencyPreference;
   setCurrencyPreference: (currency: CurrencyPreference) => Promise<void>;
+  categories: ExpenseCategoryModel[];
+  categoryLoading: boolean;
+  refreshCategories: (options?: { force?: boolean }) => Promise<void>;
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -50,6 +58,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<NewUserModel>(defaultUser);
   const [currency, setCurrency] =
     useState<CurrencyPreference>(DEFAULT_CURRENCY);
+  const [categories, setCategories] =
+    useState<ExpenseCategoryModel[]>(FALLBACK_CATEGORIES);
+  const [categoryLoading, setCategoryLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (token) {
@@ -60,7 +71,37 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     hydrateCurrencyPreference();
+    refreshCategories();
   }, []);
+
+  const refreshCategories = async (options?: { force?: boolean }) => {
+    if (categories.length > FALLBACK_CATEGORIES.length && !options?.force) {
+      return;
+    }
+    setCategoryLoading(true);
+    try {
+      const response = await apiGateway.expenseService.getCategories();
+      const normalized = response
+        .map((category) => ({
+          ...category,
+          icon: normalizeCategoryIcon(category.icon),
+        }))
+        .sort((a, b) => {
+          const indexA = PRIORITY_ORDER.indexOf(a.name);
+          const indexB = PRIORITY_ORDER.indexOf(b.name);
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+          return 0;
+        });
+      setCategories(normalized);
+    } catch (error) {
+      console.log("Failed to fetch categories", error);
+      if (categories.length === 0) setCategories(FALLBACK_CATEGORIES);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
 
   const hydrateCurrencyPreference = async () => {
     try {
@@ -121,10 +162,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         return;
 
       const params: IAddUserParams = {
-        userId: UserId(auth0User.sub),
-        name: auth0User.name,
-        profilePicture: URLString(auth0User.picture),
-        email: auth0User.email,
+        userId: UserId(auth0User.sub as string),
+        name: auth0User.name as string,
+        profilePicture: URLString(auth0User.picture as string),
+        email: auth0User.email as string,
       };
       const user = await apiGateway.userService.addUser(params);
       setCurrentUser({
@@ -139,12 +180,25 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const contextValues: StoreContextType = {
-    currentUser,
-    apiGateway,
-    currency,
-    setCurrencyPreference,
-  };
+  const contextValues = React.useMemo(
+    (): StoreContextType => ({
+      currentUser,
+      apiGateway,
+      currency,
+      setCurrencyPreference,
+      categories,
+      categoryLoading,
+      refreshCategories,
+    }),
+    [
+      currentUser,
+      currency,
+      categories,
+      categoryLoading,
+      refreshCategories,
+      setCurrencyPreference,
+    ],
+  );
 
   return (
     <StoreContext.Provider value={contextValues}>

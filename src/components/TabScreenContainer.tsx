@@ -1,18 +1,18 @@
-import React from 'react';
-import {View, StyleSheet} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useTheme} from 'react-native-paper';
+import React from "react";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import { useTheme } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {darkTheme} from '@trackingPortal/themes/darkTheme';
-import {CustomAppBar} from '@trackingPortal/components';
+import { CustomAppBar } from "@trackingPortal/components";
+import { darkTheme } from "@trackingPortal/themes/darkTheme";
 
-const TAB_CONTENT_BOTTOM_PADDING = 96;
+const TAB_CONTENT_BOTTOM_PADDING = 24; // slightly increased
 
 type Props = {
   children: React.ReactNode;
 };
 
-const TabScreenContainer: React.FC<Props> = ({children}) => {
+const TabScreenContainer: React.FC<Props> = ({ children }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -24,12 +24,27 @@ const TabScreenContainer: React.FC<Props> = ({children}) => {
           backgroundColor: darkTheme.colors.background,
           paddingTop: insets.top,
         },
-      ]}>
+      ]}
+    >
       <CustomAppBar />
-      <View
-        style={[styles.content, {backgroundColor: theme.colors.background}]}>
-        {children}
-      </View>
+
+      {/* 🔥 KEY FIX: Keyboard + Bottom Safe Area */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={80} // adjust if needed
+      >
+        <View
+          style={[
+            styles.content,
+            {
+              backgroundColor: theme.colors.background,
+            },
+          ]}
+        >
+          {children}
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -40,9 +55,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: TAB_CONTENT_BOTTOM_PADDING,
   },
 });
 
 export default React.memo(TabScreenContainer);
-export {TAB_CONTENT_BOTTOM_PADDING};
+export { TAB_CONTENT_BOTTOM_PADDING };

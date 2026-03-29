@@ -1,5 +1,5 @@
-import {View, Pressable, StyleSheet, Text} from 'react-native';
-import React, {Fragment, useMemo, useState} from 'react';
+import {View, Pressable, StyleSheet, Text, InteractionManager} from 'react-native';
+import React, {Fragment, useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddInvestFormFields} from '@trackingPortal/screens/InvestScreen';
 import {TextInput} from 'react-native-paper';
@@ -36,6 +36,14 @@ const InvestForm: React.FC<IInvestForm> = ({update}) => {
     [endDateValue],
   );
 
+  const openStartPicker = useCallback(() => {
+    InteractionManager.runAfterInteractions(() => setStartPickerVisible(true));
+  }, []);
+
+  const openEndPicker = useCallback(() => {
+    InteractionManager.runAfterInteractions(() => setEndPickerVisible(true));
+  }, []);
+
   return (
     <View style={styles.formRoot}>
       <View style={styles.fieldSection}>
@@ -67,7 +75,7 @@ const InvestForm: React.FC<IInvestForm> = ({update}) => {
           />
         <Pressable
           style={StyleSheet.absoluteFillObject}
-          onPress={() => setStartPickerVisible(true)}
+          onPress={openStartPicker}
         />
         </View>
       </View>
@@ -111,7 +119,7 @@ const InvestForm: React.FC<IInvestForm> = ({update}) => {
               />
               <Pressable
                 style={StyleSheet.absoluteFillObject}
-                onPress={() => setEndPickerVisible(true)}
+                onPress={openEndPicker}
               />
             </View>
           </View>

@@ -6,6 +6,7 @@ import {
   TouchableWithoutFeedback,
   FlatList,
   Modal,
+  InteractionManager,
 } from 'react-native';
 import {useField} from 'formik';
 import {TextInput, TouchableRipple} from 'react-native-paper';
@@ -41,7 +42,7 @@ const FormikSelectField: React.FC<FormikSelectFieldProps> = ({
         left: x,
         width,
       });
-      setVisible(true);
+      InteractionManager.runAfterInteractions(() => setVisible(true));
     });
   };
   const closeMenu = () => setVisible(false);

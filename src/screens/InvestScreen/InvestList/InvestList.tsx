@@ -1,7 +1,6 @@
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import React, {
   FC,
-  Fragment,
   SetStateAction,
   useCallback,
   useMemo,
@@ -35,11 +34,12 @@ import {
 import {Formik} from 'formik';
 import InvestForm from '@trackingPortal/screens/InvestScreen/InvestForm';
 import {EInvestStatus} from '@trackingPortal/api/enums';
-import {formatCurrency} from '@trackingPortal/utils/utils';
+import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {
   triggerSuccessHaptic,
   triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 interface IInvestList {
   notifyRowOpen: (value: boolean) => void;
@@ -152,9 +152,19 @@ const InvestList: FC<IInvestList> = ({
               ? new Date(Number(selectedItem.endDate) * 1000)
               : new Date(),
             [EAddInvestFormFields.NOTE]: selectedItem.note || '',
-            [EAddInvestFormFields.AMOUNT]: selectedItem.amount.toString(),
+            [EAddInvestFormFields.AMOUNT]: formatNumber(selectedItem.amount, {
+              useGrouping: false,
+              maximumFractionDigits: 2,
+            }),
             [EAddInvestFormFields.NAME]: selectedItem.name,
-            [EAddInvestFormFields.EARNED]: selectedItem.earned?.toString(),
+            [EAddInvestFormFields.EARNED]:
+              selectedItem.earned !== undefined &&
+              selectedItem.earned !== null
+                ? formatNumber(selectedItem.earned, {
+                    useGrouping: false,
+                    maximumFractionDigits: 2,
+                  })
+                : '',
             [EAddInvestFormFields.STATUS]:
               item.status === EInvestStatus.Active ? false : true,
           }}
@@ -164,7 +174,11 @@ const InvestList: FC<IInvestList> = ({
           validationSchema={AddInvestSchema}>
           {({handleSubmit}) => {
             return (
-              <Fragment>
+              <KeyboardAwareScrollView
+                enableOnAndroid
+                extraScrollHeight={20}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.collapsibleContent}>
                 <InvestForm update />
                 <View style={styles.actionRow}>
                   <TouchableOpacity
@@ -178,7 +192,7 @@ const InvestList: FC<IInvestList> = ({
                     onPress={() => handleSubmit()}
                   />
                 </View>
-              </Fragment>
+              </KeyboardAwareScrollView>
             );
           }}
         </Formik>
@@ -188,10 +202,14 @@ const InvestList: FC<IInvestList> = ({
   );
 
   const getProfit = (capital: number, totalEarned: number | null) => {
-    if (!totalEarned) return 'N/A';
+    if (!totalEarned || capital === 0) return 'N/A';
     const profit = totalEarned - capital;
     const profitPercentage = (profit / capital) * 100;
-    return `${profitPercentage.toFixed(2)}%`;
+    return formatNumber(profitPercentage, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      suffix: '%',
+    });
   };
 
   const tableData = useMemo(
@@ -308,6 +326,10 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     marginTop: 12,
+  },
+  collapsibleContent: {
+    gap: 16,
+    paddingBottom: 20,
   },
   menuContainer: {
     alignSelf: 'flex-end',

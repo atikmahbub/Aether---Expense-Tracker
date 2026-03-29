@@ -1,5 +1,5 @@
-import {View, Pressable, StyleSheet, Text} from 'react-native';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {View, Pressable, StyleSheet, Text, InteractionManager} from 'react-native';
+import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddExpenseFields} from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.constants';
 import {TextInput} from 'react-native-paper';
@@ -59,6 +59,10 @@ export default function ExpenseForm({
       setFieldValue(EAddExpenseFields.CATEGORY_ID, fallbackId);
     }
   }, [categoryValue, categories, defaultCategoryId, setFieldValue]);
+
+  const openDatePicker = useCallback(() => {
+    InteractionManager.runAfterInteractions(() => setPickerVisible(true));
+  }, []);
 
   return (
     <View style={{gap: 24}}>
@@ -122,7 +126,7 @@ export default function ExpenseForm({
           />
           <Pressable
             style={StyleSheet.absoluteFillObject}
-            onPress={() => setPickerVisible(true)}
+            onPress={openDatePicker}
           />
         </View>
       </View>
