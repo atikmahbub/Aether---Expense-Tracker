@@ -1,24 +1,196 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  useFonts,
+} from "@expo-google-fonts/poppins";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useCallback, useEffect, useState } from "react";
+import { Text, TextInput } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { PaperProvider } from "react-native-paper";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import {
+  Auth0ProviderWithHistory,
+  useAuth,
+} from "@trackingPortal/auth/Auth0ProviderWithHistory";
+import { AnimatedLoader } from "@trackingPortal/components";
+import toastConfig from "@trackingPortal/components/ToastConfig";
+import { StoreProvider } from "@trackingPortal/contexts/StoreProvider";
+import AppLayout from "@trackingPortal/layout";
+import OnboardingScreen from "@trackingPortal/screens/OnboardingScreen";
+import { colors } from "@trackingPortal/themes/colors";
+import { darkTheme } from "@trackingPortal/themes/darkTheme";
 
-export const unstable_settings = {
-  anchor: '(tabs)',
+console.log("🔥 LAYOUT LOADED");
+
+const DEFAULT_AUTHENTICATED_ROUTE = "/(tabs)/expense";
+const LOGIN_ROUTE = "/login";
+const ONBOARDING_DONE_KEY = "onboarding_done";
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+const applyDefaultFont = () => {
+  const components = [Text, TextInput];
+  components.forEach((component) => {
+    const target = component as any;
+    target.defaultProps = target.defaultProps || {};
+    const existingStyle = target.defaultProps.style;
+    const fontStyle = { fontFamily: "Poppins_400Regular" };
+    if (Array.isArray(existingStyle)) {
+      target.defaultProps.style = [...existingStyle, fontStyle];
+    } else if (existingStyle) {
+      target.defaultProps.style = [existingStyle, fontStyle];
+    } else {
+      target.defaultProps.style = fontStyle;
+    }
+  });
+};
+
+const NavigationBoundary: React.FC = () => {
+  const { token, loading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+  const rootSegment = segments[0];
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+
+  useEffect(() => {
+    const fetchOnboardingStatus = async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(ONBOARDING_DONE_KEY);
+        setHasCompletedOnboarding(storedValue === "true");
+      } catch (error) {
+        console.warn("Failed to read onboarding status", error);
+      } finally {
+        setOnboardingChecked(true);
+      }
+    };
+
+    fetchOnboardingStatus();
+  }, []);
+
+  const handleOnboardingFinish = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_DONE_KEY, "true");
+    } catch (error) {
+      console.warn("Failed to persist onboarding completion", error);
+    }
+    setHasCompletedOnboarding(true);
+    router.replace(token ? DEFAULT_AUTHENTICATED_ROUTE : LOGIN_ROUTE);
+  }, [router, token]);
+
+  useEffect(() => {
+    if (loading || !onboardingChecked || !hasCompletedOnboarding) {
+      return;
+    }
+
+    if (!token) {
+      if (rootSegment !== "login") {
+        router.replace(LOGIN_ROUTE);
+      }
+      return;
+    }
+
+    if (!rootSegment || rootSegment === "login") {
+      router.replace(DEFAULT_AUTHENTICATED_ROUTE);
+    }
+  }, [
+    loading,
+    token,
+    router,
+    rootSegment,
+    onboardingChecked,
+    hasCompletedOnboarding,
+  ]);
+
+  if (!onboardingChecked) {
+    return <AnimatedLoader />;
+  }
+
+  if (!hasCompletedOnboarding) {
+    return (
+      <AppLayout>
+        <OnboardingScreen onFinish={handleOnboardingFinish} />
+      </AppLayout>
+    );
+  }
+
+  if (loading) {
+    return <AnimatedLoader />;
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen
+        name="profile"
+        options={{
+          headerShown: true,
+          headerTitle: "Profile",
+          headerTintColor: colors.primary,
+          headerStyle: { backgroundColor: colors.background },
+          headerShadowVisible: false,
+        }}
+      />
+    </Stack>
+  );
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      applyDefaultFont();
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  // useEffect(() => {
+  //   const requestPermissions = async () => {
+  //     try {
+  //       // const settings = await notifee.requestPermission();
+  //       // if (settings.authorizationStatus === 1) {
+  //       //   console.log("Notification permission granted.");
+  //       // } else {
+  //       //   console.log("Notification permission denied.");
+  //       // }
+  //     } catch (error) {
+  //       console.warn("Failed to request notification permissions", error);
+  //     }
+  //   };
+
+  //   requestPermissions();
+  // }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <PaperProvider theme={darkTheme}>
+          <Auth0ProviderWithHistory>
+            <StoreProvider>
+              {/* ✅ IMPORTANT: Router must be here */}
+              <NavigationBoundary />
+            </StoreProvider>
+          </Auth0ProviderWithHistory>
+        </PaperProvider>
+      </SafeAreaProvider>
+
+      <Toast topOffset={70} position="top" config={toastConfig} />
+    </GestureHandlerRootView>
   );
 }
