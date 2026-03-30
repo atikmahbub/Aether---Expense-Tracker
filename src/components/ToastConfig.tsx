@@ -1,118 +1,140 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {Platform, StyleSheet, Text, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {ToastConfig} from 'react-native-toast-message';
-import {colors} from '@trackingPortal/themes/colors';
 
-type Variant = 'success' | 'error' | 'info';
+// ─── Variant tokens ───────────────────────────────────────────────────────────
+const TOKEN = {
+  success: {
+    icon: 'check-circle' as const,
+    accent: '#b6f700',
+    bg: 'rgba(182,247,0,0.10)',
+    border: 'rgba(182,247,0,0.22)',
+  },
+  error: {
+    icon: 'alert-circle' as const,
+    accent: '#FF6B6B',
+    bg: 'rgba(255,107,107,0.10)',
+    border: 'rgba(255,107,107,0.22)',
+  },
+  info: {
+    icon: 'information' as const,
+    accent: '#c47fff',
+    bg: 'rgba(196,127,255,0.10)',
+    border: 'rgba(196,127,255,0.22)',
+  },
+} as const;
 
-type ToastCardProps = {
+type Variant = keyof typeof TOKEN;
+
+// ─── Card ─────────────────────────────────────────────────────────────────────
+const ToastCard = ({
+  variant,
+  text1,
+  text2,
+}: {
   variant: Variant;
   text1?: string;
   text2?: string;
-};
-
-const variantTokens: Record<
-  Variant,
-  {icon: string; accent: string; bg: string}
-> = {
-  success: {
-    icon: 'check',
-    accent: colors.accent,
-    bg: 'rgba(182, 247, 0, 0.16)',
-  },
-  error: {
-    icon: 'alert-circle',
-    accent: colors.error,
-    bg: 'rgba(255, 64, 85, 0.16)',
-  },
-  info: {
-    icon: 'information',
-    accent: colors.tertiary,
-    bg: 'rgba(196, 127, 255, 0.16)',
-  },
-};
-
-const DarkToastCard: React.FC<ToastCardProps> = ({variant, text1, text2}) => {
-  const token = variantTokens[variant];
-
+}) => {
+  const t = TOKEN[variant];
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.card, {borderColor: token.bg}]}>
-        <View style={[styles.iconBadge, {backgroundColor: token.bg}]}>
-          <MaterialCommunityIcons
-            name={token.icon}
-            size={18}
-            color={token.accent}
-          />
+      <View style={[styles.card, {borderColor: t.border}]}>
+        {/* Left neon accent bar */}
+        <View style={[styles.accentBar, {backgroundColor: t.accent}]} />
+
+        {/* Icon */}
+        <View style={[styles.iconBadge, {backgroundColor: t.bg}]}>
+          <MaterialCommunityIcons name={t.icon} size={20} color={t.accent} />
         </View>
-        <View style={styles.textContainer}>
-          {text1 ? (
+
+        {/* Text */}
+        <View style={styles.textBox}>
+          {!!text1 && (
             <Text style={styles.title} numberOfLines={2}>
               {text1}
             </Text>
-          ) : null}
-          {text2 ? (
-            <Text style={styles.description} numberOfLines={3}>
+          )}
+          {!!text2 && (
+            <Text style={styles.subtitle} numberOfLines={3}>
               {text2}
             </Text>
-          ) : null}
+          )}
         </View>
       </View>
     </View>
   );
 };
 
-const makeRenderer =
+// ─── Factory ──────────────────────────────────────────────────────────────────
+const make =
   (variant: Variant) =>
   ({text1, text2}: {text1?: string; text2?: string}) =>
-    <DarkToastCard variant={variant} text1={text1} text2={text2} />;
+    <ToastCard variant={variant} text1={text1} text2={text2} />;
 
-export const toastConfig: ToastConfig = {
-  success: makeRenderer('success'),
-  error: makeRenderer('error'),
-  info: makeRenderer('info'),
+// ─── Config ───────────────────────────────────────────────────────────────────
+export const toastConfig = {
+  success: make('success'),
+  error: make('error'),
+  info: make('info'),
 };
 
+export default toastConfig;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   wrapper: {
+    width: '100%',
     paddingHorizontal: 16,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderRadius: 18,
+    backgroundColor: '#0f1418',
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 16,
+    overflow: 'hidden',
+    paddingRight: 16,
     paddingVertical: 14,
-    backgroundColor: colors.surface,
-    shadowColor: colors.overlay,
-    shadowOpacity: 0.3,
-    shadowRadius: 18,
-    shadowOffset: {width: 0, height: 12},
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.5,
+        shadowRadius: 18,
+        shadowOffset: {width: 0, height: 10},
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  accentBar: {
+    width: 4,
+    alignSelf: 'stretch',
+    borderRadius: 2,
+    marginLeft: 4,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textContainer: {
+  textBox: {
     flex: 1,
   },
   title: {
-    color: colors.text,
-    fontSize: 15,
+    color: '#f1f4fa',
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 2,
+    lineHeight: 20,
   },
-  description: {
-    color: colors.subText,
-    fontSize: 13,
-    lineHeight: 18,
+  subtitle: {
+    color: 'rgba(241,244,250,0.65)',
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 17,
   },
 });
-
-export default toastConfig;

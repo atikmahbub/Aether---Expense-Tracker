@@ -129,6 +129,7 @@ export default function InvestScreen() {
         <InvestCreation
           openCreationModal={openCreationModal}
           setOpenCreationModal={setOpenCreationModal}
+          setInvests={setInvests}
           getUserInvestHistory={getUserInvestHistory}
         />
       )}

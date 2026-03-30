@@ -137,6 +137,7 @@ export default function LoanScreen() {
       {(openCreationModal || isCreationPreloaded) && (
         <LoanCreation
           getUserLoans={getUserLoans}
+          setLoans={setLoans}
           openCreationModal={openCreationModal}
           setOpenCreationModal={setOpenCreationModal}
         />

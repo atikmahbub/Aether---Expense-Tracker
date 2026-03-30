@@ -16,14 +16,18 @@ import {IAddLoanParams} from '@trackingPortal/api/params';
 import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
 import {BaseBottomSheet} from '@trackingPortal/components';
 
+import { LoanModel } from '@trackingPortal/api/models';
+
 interface ILoanCreation {
   openCreationModal: boolean;
   setOpenCreationModal: React.Dispatch<SetStateAction<boolean>>;
+  setLoans: React.Dispatch<SetStateAction<LoanModel[]>>;
   getUserLoans: () => void;
 }
 const LoanCreation: React.FC<ILoanCreation> = ({
   openCreationModal,
   setOpenCreationModal,
+  setLoans,
   getUserLoans,
 }) => {
   const {apiGateway} = useStoreContext();
@@ -34,7 +38,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
     setOpenCreationModal(false);
   }, [setOpenCreationModal]);
 
-  const handleAddLoan = async (values: INewLoan) => {
+  const handleAddLoan = useCallback(async (values: INewLoan) => {
     if (!user.userId) return;
     try {
       setLoading(true);
@@ -48,27 +52,34 @@ const LoanCreation: React.FC<ILoanCreation> = ({
         loanType: values.loan_type,
         note: values.note,
       };
-      await apiGateway.loanServices.addLoan(params);
       
+      const newLoan = await apiGateway.loanServices.addLoan(params);
+      
+      // ✅ OPTIMISTIC UI (Option A)
+      setLoans(prev => [newLoan, ...prev]);
+
       handleClose();
-      
+
+      // 1. Schedule full refresh & feedback
       requestAnimationFrame(async () => {
         await getUserLoans();
         triggerSuccessHaptic();
+
         Toast.show({
           type: 'success',
           text1: 'Loan added successfully',
         });
       });
     } catch (error) {
+      console.error('Loan Creation Error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Something went wrong!',
+        text1: 'Failed to add loan. Please try again.',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.userId, apiGateway.loanServices, handleClose, setLoans, getUserLoans]);
 
   return (
     <BaseBottomSheet

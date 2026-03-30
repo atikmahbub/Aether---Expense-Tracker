@@ -49,6 +49,7 @@ interface IExpenseList {
   setFilteredMonth: React.Dispatch<SetStateAction<Dayjs>>;
   filteredMonth: Dayjs;
   expenses: ExpenseModel[];
+  setExpenses: React.Dispatch<SetStateAction<ExpenseModel[]>>;
   getUserExpenses: () => void;
   categories: ExpenseCategoryModel[];
   categoriesLoading: boolean;
@@ -78,6 +79,7 @@ const ExpenseList: FC<IExpenseList> = ({
   setFilteredMonth,
   filteredMonth,
   expenses,
+  setExpenses,
   getUserExpenses,
   categories,
   categoriesLoading,
@@ -136,24 +138,33 @@ const ExpenseList: FC<IExpenseList> = ({
         description,
         categoryId: values.categoryId,
       };
-      await apiGateway.expenseService.updateExpense(params);
-      await getUserExpenses();
-      await refreshAnalytics({force: true});
-      triggerSuccessHaptic();
-      onCategoryUsed?.(params.categoryId);
-      Toast.show({
-        type: 'success',
-        text1: 'Expense updated successfully!',
+      const updatedExpense = await apiGateway.expenseService.updateExpense(params);
+
+      // ✅ OPTIMISTIC UPDATE
+      setExpenses(prev => prev.map(item => item.id === id ? updatedExpense : item));
+
+      resetForm();
+      setExpandedRowId(null);
+
+      requestAnimationFrame(async () => {
+        await getUserExpenses();
+        await refreshAnalytics({force: true});
+        triggerSuccessHaptic();
+        if (params.categoryId) {
+          onCategoryUsed?.(params.categoryId);
+        }
+        Toast.show({
+          type: 'success',
+          text1: 'Expense updated successfully!',
+        });
       });
     } catch (error) {
       console.log('error', error);
       Toast.show({
         type: 'error',
-        text1: 'Something went wrong!',
+        text1: 'Failed to update. Please try again.',
       });
     } finally {
-      resetForm();
-      setExpandedRowId(null);
       setLoading(false);
     }
   };
@@ -163,22 +174,29 @@ const ExpenseList: FC<IExpenseList> = ({
     try {
       setDeleteLoading(true);
       await apiGateway.expenseService.deleteExpense(rowId);
-      await getUserExpenses();
-      await refreshAnalytics({force: true});
-      triggerWarningHaptic();
-      Toast.show({
-        type: 'success',
-        text1: 'Deleted Successfully!',
+
+      // ✅ OPTIMISTIC DELETE
+      setExpenses(prev => prev.filter(item => item.id !== rowId));
+
+      setExpandedRowId(null);
+
+      requestAnimationFrame(async () => {
+        await getUserExpenses();
+        await refreshAnalytics({force: true});
+        triggerWarningHaptic();
+        Toast.show({
+          type: 'success',
+          text1: 'Deleted Successfully!',
+        });
       });
     } catch (error) {
       console.log('error', error);
       Toast.show({
         type: 'error',
-        text1: 'Something went wrong!',
+        text1: 'Failed to delete. Please try again.',
       });
     } finally {
       setDeleteLoading(false);
-      setExpandedRowId(null);
     }
   };
 

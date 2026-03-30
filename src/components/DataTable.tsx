@@ -252,18 +252,6 @@ const DataTable: React.FC<DataTableProps> = ({
         <View style={styles.swipeActionsBackdrop} />
         <View style={styles.swipeActionsContent}>
           <TouchableOpacity
-            style={[styles.swipeActionButton, styles.editAction]}
-            activeOpacity={0.9}
-            onPress={() => {
-              close();
-              handleEditToggle(id);
-            }}
-          >
-            <View style={[styles.actionIconBadge, styles.editBadge]}>
-              <Icon name="edit" size={18} color={colors.background} />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={[styles.swipeActionButton, styles.deleteAction]}
             activeOpacity={0.9}
             onPress={() => {
@@ -272,13 +260,13 @@ const DataTable: React.FC<DataTableProps> = ({
             }}
           >
             <View style={[styles.actionIconBadge, styles.deleteBadge]}>
-              <Icon name="delete" size={18} color={colors.text} />
+              <Icon name="delete" size={20} color={colors.text} />
             </View>
           </TouchableOpacity>
         </View>
       </View>
     ),
-    [handleEditToggle, handleDelete],
+    [handleDelete],
   );
 
   useEffect(() => {
@@ -322,7 +310,7 @@ export default DataTable;
 
 const styles = StyleSheet.create({
   mainContainer: {
-    flex: 1,
+    width: '100%',
     marginTop: 16,
   },
   header: {
@@ -332,15 +320,15 @@ const styles = StyleSheet.create({
     display: 'none',
   },
   table: {
-    paddingVertical: 20,
+    width: '100%',
+    paddingVertical: 10,
   },
   rowWrapper: {
+    width: '100%',
     marginBottom: 14,
-    borderWidth: 0,
-    borderColor: 'transparent',
     borderRadius: 20,
-    overflow: 'hidden',
     backgroundColor: colors.surfaceAlt,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
@@ -510,6 +498,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderTopWidth: 1,
     borderTopColor: colors.glassBorder,
+    width: '100%',
   },
   emptyContainer: {
     justifyContent: 'center',

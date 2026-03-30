@@ -242,6 +242,7 @@ export default function ExpenseScreen() {
       filteredMonth={filterMonth}
       setFilteredMonth={setFilterMonth}
       expenses={visibleData}
+      setExpenses={setExpenses}
       getUserExpenses={getExpenses}
       categories={categories}
       categoriesLoading={categoryLoading}
@@ -296,6 +297,7 @@ export default function ExpenseScreen() {
         <ExpenseCreation
           openCreationModal={openCreationForm}
           setOpenCreationModal={setOpenCreationModal}
+          setExpenses={setExpenses}
           getUserExpenses={getExpenses}
           getExceedExpenseNotification={handleExceedNotification}
           categories={categories}

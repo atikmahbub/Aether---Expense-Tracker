@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ExpenseCategoryModel } from '@trackingPortal/api/models';
+import { ExpenseCategoryModel, ExpenseModel } from '@trackingPortal/api/models';
 import { IAddExpenseParams } from '@trackingPortal/api/params';
 import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
@@ -26,6 +26,7 @@ import Toast from 'react-native-toast-message';
 interface IExpenseCreation {
   openCreationModal: boolean;
   setOpenCreationModal: React.Dispatch<SetStateAction<boolean>>;
+  setExpenses: React.Dispatch<SetStateAction<ExpenseModel[]>>;
   getUserExpenses: () => void;
   getExceedExpenseNotification: () => void;
   categories: ExpenseCategoryModel[];
@@ -41,6 +42,7 @@ interface IExpenseCreation {
 const ExpenseCreation: React.FC<IExpenseCreation> = ({
   openCreationModal,
   setOpenCreationModal,
+  setExpenses,
   getUserExpenses,
   getExceedExpenseNotification,
   categories,
@@ -100,7 +102,10 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
           categoryId: values.categoryId,
         };
 
-        await apiGateway.expenseService.addExpense(params);
+        const newExpense = await apiGateway.expenseService.addExpense(params);
+
+        // ✅ OPTIMISTIC UI UPDATE (Option A)
+        setExpenses(prev => [newExpense, ...prev]);
 
         resetForm({
           values: {
@@ -111,12 +116,14 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
           },
         });
 
+        // Close modal first for smooth UX
         handleClose();
 
+        // 1. Refresh everything else
         requestAnimationFrame(async () => {
           await getUserExpenses();
           await refreshAnalytics({ force: true });
-
+          
           triggerSuccessHaptic();
           onCategoryUsed?.(params.categoryId);
 
@@ -128,9 +135,10 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
           await getExceedExpenseNotification();
         });
       } catch (error) {
+        console.error('Expense Creation Error:', error);
         Toast.show({
           type: 'error',
-          text1: 'Something went wrong!',
+          text1: 'Failed to add expense. Please try again.',
         });
       } finally {
         setLoading(false);
@@ -144,6 +152,7 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
       handleClose,
       onCategoryUsed,
       refreshAnalytics,
+      setExpenses,
       user?.sub,
     ],
   );

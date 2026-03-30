@@ -16,15 +16,19 @@ import InvestForm from '@trackingPortal/screens/InvestScreen/InvestForm';
 import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
 import Toast from 'react-native-toast-message';
 
+import { InvestModel } from '@trackingPortal/api/models';
+
 interface IInvestCreation {
   openCreationModal: boolean;
   setOpenCreationModal: React.Dispatch<SetStateAction<boolean>>;
+  setInvests: React.Dispatch<SetStateAction<InvestModel[]>>;
   getUserInvestHistory: () => void;
 }
 
 const InvestCreation: React.FC<IInvestCreation> = ({
   openCreationModal,
   setOpenCreationModal,
+  setInvests,
   getUserInvestHistory,
 }) => {
   const {apiGateway} = useStoreContext();
@@ -36,7 +40,7 @@ const InvestCreation: React.FC<IInvestCreation> = ({
     setOpenCreationModal(false);
   }, [setOpenCreationModal]);
 
-  const handleAddInvestment = async (values: INewInvest) => {
+  const handleAddInvestment = useCallback(async (values: INewInvest) => {
     if (!user.userId) return;
     try {
       setLoading(true);
@@ -49,27 +53,34 @@ const InvestCreation: React.FC<IInvestCreation> = ({
         ),
         note: values.note,
       };
-      await apiGateway.investService.addInvest(params);
       
+      const newInvest = await apiGateway.investService.addInvest(params);
+      
+      // ✅ OPTIMISTIC UI (Option A)
+      setInvests(prev => [newInvest, ...prev]);
+
       handleClose();
-      
+
+      // 1. Schedule full refresh & feedback
       requestAnimationFrame(async () => {
         await getUserInvestHistory();
         triggerSuccessHaptic();
+
         Toast.show({
           type: 'success',
           text1: 'Investment added successfully',
         });
       });
     } catch (error) {
+      console.error('Investment Creation Error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Something went wrong!',
+        text1: 'Failed to add investment. Please try again.',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.userId, apiGateway.investService, handleClose, setInvests, getUserInvestHistory]);
 
   return (
     <BaseBottomSheet
