@@ -34,6 +34,12 @@ export default function ExpenseScreen() {
   const [openCreationForm, setOpenCreationModal] = useState(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseModel[]>([]);
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  const visibleData = useMemo(
+    () => expenses.slice(0, visibleCount),
+    [expenses, visibleCount],
+  );
   const [filterMonth, setFilterMonth] = useState(dayjs());
   const [monthLimit, setMonthLimit] = useState<MonthlyLimitModel>(
     {} as MonthlyLimitModel,
@@ -135,6 +141,8 @@ export default function ExpenseScreen() {
   }, [user.userId, apiGateway.monthlyLimitService, filterMonth]);
 
   const loadData = useCallback(async () => {
+    // Reset page count on filter/user change
+    setVisibleCount(12);
     // Only essentials first
     await Promise.all([getMonthlyLimit(), fetchAnalytics()]);
 
@@ -233,7 +241,7 @@ export default function ExpenseScreen() {
     <ExpenseList
       filteredMonth={filterMonth}
       setFilteredMonth={setFilterMonth}
-      expenses={expenses}
+      expenses={visibleData}
       getUserExpenses={getExpenses}
       categories={categories}
       categoriesLoading={categoryLoading}
@@ -243,7 +251,7 @@ export default function ExpenseScreen() {
       onCategoryUsed={addRecentCategory}
       notifyRowOpen={handleNotifyRowOpen}
     />
-  ), [filterMonth, setFilterMonth, expenses, getExpenses, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory, handleNotifyRowOpen]);
+  ), [filterMonth, setFilterMonth, visibleData, getExpenses, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory, handleNotifyRowOpen]);
 
   // 🔥 MAIN LOADER FIX - DISABLED FOR DEBUGGING
   if (
@@ -257,6 +265,17 @@ export default function ExpenseScreen() {
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isNearBottom =
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - 200;
+
+          if (isNearBottom && visibleCount < expenses.length) {
+            setVisibleCount((prev) => prev + 10);
+          }
+        }}
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: insets.bottom + 100 },

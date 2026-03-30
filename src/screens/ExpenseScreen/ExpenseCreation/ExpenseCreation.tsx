@@ -1,29 +1,27 @@
-import {View, StyleSheet} from 'react-native';
+import dayjs from 'dayjs';
+import { Formik } from 'formik';
 import React, {
   SetStateAction,
+  useCallback,
   useMemo,
   useState,
-  useRef,
-  useEffect,
-  useCallback,
 } from 'react';
-import {Formik} from 'formik';
+import { StyleSheet, View } from 'react-native';
 
-
+import { ExpenseCategoryModel } from '@trackingPortal/api/models';
+import { IAddExpenseParams } from '@trackingPortal/api/params';
+import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
+import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
+import { BaseBottomSheet } from '@trackingPortal/components';
+import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
-  EAddExpenseFields,
   CreateExpenseSchema,
+  EAddExpenseFields,
 } from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.constants';
+import { INewExpense } from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.interfaces';
 import ExpenseForm from '@trackingPortal/screens/ExpenseScreen/ExpenseForm';
-import {INewExpense} from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.interfaces';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {IAddExpenseParams} from '@trackingPortal/api/params';
-import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
-import {makeUnixTimestampString} from '@trackingPortal/api/primitives';
+import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
 import Toast from 'react-native-toast-message';
-import {ExpenseCategoryModel} from '@trackingPortal/api/models';
-import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
-import {BaseBottomSheet} from '@trackingPortal/components';
 
 interface IExpenseCreation {
   openCreationModal: boolean;
@@ -54,46 +52,54 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
   lastUsedCategoryId,
   onCategoryUsed,
 }) => {
-  const {apiGateway} = useStoreContext();
-  const {user} = useAuth();
+  const { apiGateway } = useStoreContext();
+  const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
 
-
   const defaultCategoryId = useMemo(() => {
-    if (!categories.length) {
-      return '';
-    }
+    if (!categories.length) return '';
+
     const hasRecent =
       lastUsedCategoryId &&
       categories.some(category => category.id === lastUsedCategoryId);
-    if (hasRecent && lastUsedCategoryId) {
-      return lastUsedCategoryId;
-    }
+
+    if (hasRecent && lastUsedCategoryId) return lastUsedCategoryId;
+
     return categories[0]?.id ?? '';
   }, [categories, lastUsedCategoryId]);
-
-
 
   const handleClose = useCallback(() => {
     setOpenCreationModal(false);
   }, [setOpenCreationModal]);
 
   const handleAddExpense = useCallback(
-    async (values: INewExpense, {resetForm}: any) => {
+    async (values: INewExpense, { resetForm }: any) => {
       if (!user?.sub) return;
+
       try {
         setLoading(true);
+
         const trimmedDescription = values.description?.trim();
         const categoryLabel = categories.find(
           item => item.id === values.categoryId,
         )?.name;
+
+        // ✅ FIXED timezone-safe date
+        const safeDate = dayjs(values.date)
+          .hour(12)
+          .minute(0)
+          .second(0)
+          .millisecond(0)
+          .toDate();
+
         const params: IAddExpenseParams = {
           userId: user.sub as any,
           amount: Number(values.amount),
-          date: makeUnixTimestampString(Number(new Date(values.date))),
+          date: makeUnixTimestampString(Number(safeDate)),
           description: trimmedDescription || categoryLabel || 'Quick entry',
           categoryId: values.categoryId,
         };
+
         await apiGateway.expenseService.addExpense(params);
 
         resetForm({
@@ -105,19 +111,20 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
           },
         });
 
-        // Close modal first for better UX
         handleClose();
 
-        // Refresh data after close start
         requestAnimationFrame(async () => {
           await getUserExpenses();
-          await refreshAnalytics({force: true});
+          await refreshAnalytics({ force: true });
+
           triggerSuccessHaptic();
           onCategoryUsed?.(params.categoryId);
+
           Toast.show({
             type: 'success',
             text1: 'Expense added successfully',
           });
+
           await getExceedExpenseNotification();
         });
       } catch (error) {
@@ -142,9 +149,7 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
   );
 
   return (
-    <BaseBottomSheet
-      index={openCreationModal ? 1 : -1}
-      onClose={handleClose}>
+    <BaseBottomSheet index={openCreationModal ? 1 : -1} onClose={handleClose}>
       <Formik
         initialValues={{
           [EAddExpenseFields.DATE]: new Date(),
@@ -153,24 +158,23 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
           [EAddExpenseFields.CATEGORY_ID]: defaultCategoryId,
         }}
         onSubmit={handleAddExpense}
-        validationSchema={CreateExpenseSchema}>
-        {({handleSubmit}) => {
-          return (
-            <View style={styles.container}>
-              <ExpenseForm
-                categories={categories}
-                categoriesLoading={categoriesLoading}
-                categoryError={categoryError}
-                refreshCategories={refreshCategories}
-                recentCategoryIds={recentCategoryIds}
-                defaultCategoryId={defaultCategoryId}
-                onSubmit={handleSubmit}
-                onCancel={handleClose}
-                loading={loading}
-              />
-            </View>
-          );
-        }}
+        validationSchema={CreateExpenseSchema}
+      >
+        {({ handleSubmit }) => (
+          <View style={styles.container}>
+            <ExpenseForm
+              categories={categories}
+              categoriesLoading={categoriesLoading}
+              categoryError={categoryError}
+              refreshCategories={refreshCategories}
+              recentCategoryIds={recentCategoryIds}
+              defaultCategoryId={defaultCategoryId}
+              onSubmit={handleSubmit}
+              onCancel={handleClose}
+              loading={loading}
+            />
+          </View>
+        )}
       </Formik>
     </BaseBottomSheet>
   );

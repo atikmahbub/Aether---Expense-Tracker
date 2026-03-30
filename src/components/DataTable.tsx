@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useCallback} from 'react';
+import React, {useRef, useEffect, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import Collapsible from 'react-native-collapsible';
@@ -38,120 +39,60 @@ interface DataTableProps {
   renderSwipeActions?: (id: any, close: () => void) => React.ReactNode;
 }
 
-const DataTable: React.FC<DataTableProps> = ({
-  headers,
-  data,
-  onDelete,
-  isAnyRowOpen,
-  expandedRowId,
-  setExpandedRowId,
-  renderCollapsibleContent,
-  renderSwipeActions,
-}) => {
-  const swipeableRefs = useRef<{[key: string]: any}>({});
+const Row = React.memo(
+  ({
+    item,
+    isRowOpen,
+    swipeableRef,
+    onDelete,
+    onEditToggle,
+    renderSwipeActions,
+    defaultSwipeActions,
+    renderCollapsibleContent,
+  }: {
+    item: any;
+    isRowOpen: boolean;
+    swipeableRef: (ref: any) => void;
+    onDelete: (id: any) => void;
+    onEditToggle: (id: any) => void;
+    renderSwipeActions?: (id: any, close: () => void) => React.ReactNode;
+    defaultSwipeActions: (id: any, close: () => void) => React.ReactNode;
+    renderCollapsibleContent: (item: any) => React.ReactNode;
+  }) => {
+    const isLoanRow = item.Type === "Given" || item.Type === "Taken";
 
-  const handleEditToggle = useCallback(
-    (id: number) => {
-      swipeableRefs.current[id]?.close();
-      setExpandedRowId(expandedRowId === id ? null : id);
-    },
-    [expandedRowId, setExpandedRowId],
-  );
-
-  const handleDelete = useCallback(
-    (id: number) => {
-      swipeableRefs.current[id]?.close();
-      Alert.alert('Delete Row', 'Are you sure?', [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Delete', onPress: () => onDelete(id)},
-      ]);
-    },
-    [onDelete],
-  );
-
-  useEffect(() => {
-    isAnyRowOpen(expandedRowId !== null);
-  }, [isAnyRowOpen, expandedRowId]);
-
-  const defaultSwipeActions = useCallback(
-    (id: number, close: () => void) => (
-      <View style={styles.swipeActions}>
-        <View style={styles.swipeActionsBackdrop} />
-        <View style={styles.swipeActionsContent}>
-          <TouchableOpacity
-            style={[styles.swipeActionButton, styles.editAction]}
-            activeOpacity={0.9}
-            onPress={() => {
-              close();
-              handleEditToggle(id);
-            }}>
-            <View style={[styles.actionIconBadge, styles.editBadge]}>
-              <Icon name="edit" size={18} color={colors.background} />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.swipeActionButton, styles.deleteAction]}
-            activeOpacity={0.9}
-            onPress={() => {
-              close();
-              handleDelete(id);
-            }}>
-            <View style={[styles.actionIconBadge, styles.deleteBadge]}>
-              <Icon name="delete" size={18} color={colors.text} />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-    ),
-    [handleEditToggle, handleDelete],
-  );
-
-  const renderRow = (item: any, index: number) => {
-    const isRowOpen = expandedRowId === item.id;
-    const isLoanRow = item.Type === 'Given' || item.Type === 'Taken';
-    const amountValue =
-      item.DisplayAmount ?? item['Amount'] ?? item[headers[2]] ?? '--';
-    const amountText =
-      typeof amountValue === 'number'
-        ? formatNumber(item.Type === 'Taken' ? amountValue * -1 : amountValue, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        : String(amountValue);
-    const categoryName = item.CategoryName;
-    const categoryColor = item.CategoryColor;
     return (
       <Swipeable
-        ref={ref => {
-          swipeableRefs.current[item.id] = ref;
-        }}
+        ref={swipeableRef}
         renderRightActions={
           !isRowOpen
             ? () =>
                 renderSwipeActions
-                  ? renderSwipeActions(item.id, () =>
-                      swipeableRefs.current[item.id]?.close(),
-                    )
-                  : defaultSwipeActions(item.id, () =>
-                      swipeableRefs.current[item.id]?.close(),
-                    )
+                  ? renderSwipeActions(item.id, () => {})
+                  : defaultSwipeActions(item.id, () => {})
             : undefined
         }
-        enabled={!isRowOpen}>
+        enabled={!isRowOpen}
+      >
         <View style={styles.rowWrapper}>
-          <View style={[styles.row, isRowOpen && styles.rowActive]}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onEditToggle(item.id)}
+            style={[styles.row, isRowOpen && styles.rowActive]}
+          >
             {item.Avatar ? (
               <View style={styles.avatarContainer}>
-                <Image source={{uri: item.Avatar}} style={styles.avatarImage} />
+                <Image source={{ uri: item.Avatar }} style={styles.avatarImage} />
                 <View
                   style={[
                     styles.avatarBadge,
-                    item.Type === 'Given'
+                    item.Type === "Given"
                       ? styles.badgeGiven
                       : styles.badgeTaken,
-                  ]}>
+                  ]}
+                >
                   <MaterialCommunityIcons
-                    name={item.Type === 'Given' ? 'arrow-up' : 'arrow-down'}
+                    name={item.Type === "Given" ? "arrow-up" : "arrow-down"}
                     size={10}
                     color={colors.background}
                   />
@@ -162,10 +103,10 @@ const DataTable: React.FC<DataTableProps> = ({
                 style={[
                   styles.iconWrapper,
                   {
-                    backgroundColor:
-                      item.IconBackground || tintHex(item.IconColor, 0.12),
+                    backgroundColor: item.IconBackground,
                   },
-                ]}>
+                ]}
+              >
                 <MaterialCommunityIcons
                   name={item.IconName}
                   size={22}
@@ -178,73 +119,171 @@ const DataTable: React.FC<DataTableProps> = ({
               </View>
             )}
             <View style={styles.textContainer}>
-              <Text style={styles.purposeText}>
-                {item['Purpose'] ||
-                  item['Name'] ||
-                  item[headers[1]] ||
-                  'Transaction'}
-              </Text>
-              {categoryName ? (
+              <Text style={styles.purposeText}>{item.Purpose}</Text>
+              {item.CategoryName ? (
                 <View style={styles.categoryLineRow}>
                   <Text
                     style={[
                       styles.categoryLine,
-                      {color: categoryColor || colors.subText},
-                    ]}>
-                    {categoryName}
+                      { color: item.CategoryColor || colors.subText },
+                    ]}
+                  >
+                    {item.CategoryName}
                   </Text>
                 </View>
               ) : null}
-              <Text style={styles.dateText}>
-                {item['Date'] || item['Deadline'] || item[headers[0]]}
-              </Text>
+              <Text style={styles.dateText}>{item.DateDisplay}</Text>
             </View>
             <View style={styles.amountContainer}>
               <Text
                 style={[
                   styles.amountText,
-                  item.Type === 'Taken' && {color: colors.error},
-                ]}>
-                {amountText}
+                  item.Type === "Taken" && { color: colors.error },
+                ]}
+              >
+                {item.AmountDisplay}
               </Text>
               <View
                 style={[
                   styles.typeBadge,
                   isLoanRow
-                    ? item.Type === 'Given'
+                    ? item.Type === "Given"
                       ? styles.typeBadgeGiven
                       : styles.typeBadgeTaken
-                    : categoryColor
-                      ? {backgroundColor: tintHex(categoryColor, 0.12)}
-                      : undefined,
-                ]}>
+                    : item.CategoryColor
+                    ? { backgroundColor: tintHex(item.CategoryColor, 0.12) }
+                    : undefined,
+                ]}
+              >
                 <Text
                   style={[
                     styles.categoryText,
-                    isLoanRow && item.Type === 'Given' && {color: '#b6f700'},
-                    isLoanRow && item.Type === 'Taken' && {color: '#ff8e8b'},
-                    !isLoanRow && categoryColor && {color: categoryColor},
-                  ]}>
+                    isLoanRow && item.Type === "Given" && { color: "#b6f700" },
+                    isLoanRow && item.Type === "Taken" && { color: "#ff8e8b" },
+                    !isLoanRow &&
+                      item.CategoryColor && { color: item.CategoryColor },
+                  ]}
+                >
                   {isLoanRow
-                    ? item.Type === 'Given'
-                      ? 'LENT'
-                      : 'BORROWED'
-                    : categoryName
-                      ? categoryName.toUpperCase()
-                      : 'EXPENSE'}
+                    ? item.Type === "Given"
+                      ? "LENT"
+                      : "BORROWED"
+                    : item.CategoryName
+                    ? item.CategoryName.toUpperCase()
+                    : "EXPENSE"}
                 </Text>
               </View>
             </View>
-          </View>
-          <Collapsible collapsed={!isRowOpen}>
+          </TouchableOpacity>
+          {isRowOpen && (
             <View style={styles.collapsibleContent}>
               {renderCollapsibleContent(item)}
             </View>
-          </Collapsible>
+          )}
         </View>
       </Swipeable>
     );
-  };
+  },
+);
+
+const DataTable: React.FC<DataTableProps> = ({
+  headers,
+  data,
+  onDelete,
+  isAnyRowOpen,
+  expandedRowId,
+  setExpandedRowId,
+  renderCollapsibleContent,
+  renderSwipeActions,
+}) => {
+  const swipeableRefs = useRef<Record<string, any>>({});
+
+  const formattedData = useMemo(() => {
+    return data.map((item: any) => {
+      const amountValue =
+        item.DisplayAmount ?? item["Amount"] ?? item[headers[2]] ?? "--";
+      const amountText =
+        typeof amountValue === "number"
+          ? formatNumber(item.Type === "Taken" ? amountValue * -1 : amountValue, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : String(amountValue);
+
+      return {
+        ...item,
+        id: item.id,
+        Purpose:
+          item["Purpose"] || item["Name"] || item[headers[1]] || "Transaction",
+        DateDisplay: item["Date"] || item["Deadline"] || item[headers[0]],
+        AmountDisplay: amountText,
+      };
+    });
+  }, [data, headers]);
+
+  const handleEditToggle = useCallback(
+    (id: number) => {
+      // Close others
+      Object.keys(swipeableRefs.current).forEach((key) => {
+        if (key !== id.toString()) {
+          swipeableRefs.current[key]?.close();
+        }
+      });
+
+      setExpandedRowId(expandedRowId === id ? null : id);
+    },
+    [expandedRowId, setExpandedRowId],
+  );
+
+  const handleDelete = useCallback(
+    (id: number) => {
+      swipeableRefs.current[id]?.close();
+      Alert.alert("Delete Row", "Are you sure?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", onPress: () => onDelete(id) },
+      ]);
+    },
+    [onDelete],
+  );
+
+  const defaultSwipeActions = useCallback(
+    (id: number, close: () => void) => (
+      <View style={styles.swipeActions}>
+        <View style={styles.swipeActionsBackdrop} />
+        <View style={styles.swipeActionsContent}>
+          <TouchableOpacity
+            style={[styles.swipeActionButton, styles.editAction]}
+            activeOpacity={0.9}
+            onPress={() => {
+              close();
+              handleEditToggle(id);
+            }}
+          >
+            <View style={[styles.actionIconBadge, styles.editBadge]}>
+              <Icon name="edit" size={18} color={colors.background} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.swipeActionButton, styles.deleteAction]}
+            activeOpacity={0.9}
+            onPress={() => {
+              close();
+              handleDelete(id);
+            }}
+          >
+            <View style={[styles.actionIconBadge, styles.deleteBadge]}>
+              <Icon name="delete" size={18} color={colors.text} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+    ),
+    [handleEditToggle, handleDelete],
+  );
+
+  useEffect(() => {
+    isAnyRowOpen(expandedRowId !== null);
+  }, [isAnyRowOpen, expandedRowId]);
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
@@ -255,11 +294,21 @@ const DataTable: React.FC<DataTableProps> = ({
   return (
     <View style={styles.mainContainer}>
       <View style={styles.table}>
-        {data.length > 0 ? (
-          data.map((item, index) => (
-            <React.Fragment key={item.id?.toString() || index}>
-              {renderRow(item, index)}
-            </React.Fragment>
+        {formattedData.length > 0 ? (
+          formattedData.map((item, index) => (
+            <Row
+              key={item.id?.toString() || index}
+              item={item}
+              isRowOpen={expandedRowId === item.id}
+              swipeableRef={(ref) => {
+                swipeableRefs.current[item.id] = ref;
+              }}
+              onDelete={handleDelete}
+              onEditToggle={handleEditToggle}
+              renderSwipeActions={renderSwipeActions}
+              defaultSwipeActions={defaultSwipeActions}
+              renderCollapsibleContent={renderCollapsibleContent}
+            />
           ))
         ) : (
           renderEmptyComponent()
@@ -434,7 +483,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: {width: 0, height: 10},
-    elevation: 6,
+    elevation: Platform.OS === 'android' ? 2 : 6,
   },
   editAction: {
     backgroundColor: colors.badgePositiveBg,
