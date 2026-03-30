@@ -13,6 +13,7 @@ import { IAddExpenseParams } from '@trackingPortal/api/params';
 import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import { BaseBottomSheet } from '@trackingPortal/components';
+import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
 import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
   CreateExpenseSchema,
@@ -56,6 +57,7 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
 }) => {
   const { apiGateway } = useStoreContext();
   const { user } = useAuth();
+  const { isOnline } = useNetwork();
   const [loading, setLoading] = useState<boolean>(false);
 
   const defaultCategoryId = useMemo(() => {
@@ -78,6 +80,14 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
     async (values: INewExpense, { resetForm }: any) => {
       if (!user?.sub) return;
 
+      if (!isOnline) {
+        Toast.show({
+          type: 'offline',
+          text1: 'No internet connection',
+          text2: 'Please check your connection and try again.',
+        });
+        return;
+      }
       try {
         setLoading(true);
 

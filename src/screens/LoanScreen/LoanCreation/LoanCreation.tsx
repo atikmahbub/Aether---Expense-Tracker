@@ -1,22 +1,22 @@
-import {View, StyleSheet} from 'react-native';
-import React, {SetStateAction, useState, useEffect, useCallback} from 'react';
-import {Formik} from 'formik';
+import { Formik } from 'formik';
+import React, { SetStateAction, useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
+import { LoanType } from '@trackingPortal/api/enums';
+import { LoanModel } from '@trackingPortal/api/models';
+import { IAddLoanParams } from '@trackingPortal/api/params';
+import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
+import { BaseBottomSheet } from '@trackingPortal/components';
+import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
+import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
-  EAddLoanFields,
   AddLoanSchema,
+  EAddLoanFields,
   INewLoan,
 } from '@trackingPortal/screens/LoanScreen';
 import LoanForm from '@trackingPortal/screens/LoanScreen/LoanForm';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {makeUnixTimestampString} from '@trackingPortal/api/primitives';
+import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
 import Toast from 'react-native-toast-message';
-import {LoanType} from '@trackingPortal/api/enums';
-import {IAddLoanParams} from '@trackingPortal/api/params';
-import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
-import {BaseBottomSheet} from '@trackingPortal/components';
-
-import { LoanModel } from '@trackingPortal/api/models';
 
 interface ILoanCreation {
   openCreationModal: boolean;
@@ -32,6 +32,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
 }) => {
   const {apiGateway} = useStoreContext();
   const {currentUser: user} = useStoreContext();
+  const {isOnline} = useNetwork();
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleClose = useCallback(() => {
@@ -40,6 +41,16 @@ const LoanCreation: React.FC<ILoanCreation> = ({
 
   const handleAddLoan = useCallback(async (values: INewLoan) => {
     if (!user.userId) return;
+
+    if (!isOnline) {
+      Toast.show({
+        type: 'offline',
+        text1: 'No internet connection',
+        text2: 'Please check your connection and try again.',
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       const params: IAddLoanParams = {

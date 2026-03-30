@@ -14,12 +14,14 @@ import ExpenseSummary from "@trackingPortal/screens/ExpenseScreen/ExpenseSummary
 import { useDailyExpenseReminder } from "@trackingPortal/screens/ExpenseScreen/hooks/useDailyExpenseReminder";
 import { useExpenseInsights } from "@trackingPortal/screens/ExpenseScreen/hooks/useExpenseInsights";
 import { useRecentCategories } from "@trackingPortal/screens/ExpenseScreen/hooks/useRecentCategories";
+import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { colors } from "@trackingPortal/themes/colors";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function ExpenseScreen() {
   const {
@@ -52,6 +54,8 @@ export default function ExpenseScreen() {
 
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const { isOnline } = useNetwork();
+  const wasOfflineRef = useRef(false);
 
   // 🔥 PRELOAD CREATION UI
   useEffect(() => {
@@ -83,6 +87,8 @@ export default function ExpenseScreen() {
   } = useRecentCategories();
 
   useDailyExpenseReminder();
+
+
 
   const fetchAnalytics = useCallback(
     (options?: { force?: boolean }) => {
@@ -151,6 +157,20 @@ export default function ExpenseScreen() {
     });
   }, [getMonthlyLimit, fetchAnalytics, getExpenses]);
 
+  // 🔄 SMART AUTO-RETRY: when connection is restored, refetch stale data
+  useEffect(() => {
+    if (!isOnline) {
+      wasOfflineRef.current = true;
+      return;
+    }
+    if (wasOfflineRef.current && isFocused) {
+      wasOfflineRef.current = false;
+      loadData();
+      refreshCategories({ force: true });
+    }
+  }, [isOnline, isFocused, loadData, refreshCategories]);
+
+
   // 🔥 OPEN MODAL EVENT
   useEffect(() => {
     const listener = () => {
@@ -199,6 +219,15 @@ export default function ExpenseScreen() {
   }, [expenses, initializeFromHistory, recentCategoryIds, recentHydrated]);
 
   const onRefresh = useCallback(async () => {
+    if (!isOnline) {
+      Toast.show({
+        type: 'offline',
+        text1: 'No internet connection',
+        text2: 'Please connect to refresh data.',
+      });
+      return;
+    }
+
     setRefreshing(true);
     setCombinedLoading(true);
 
@@ -209,7 +238,7 @@ export default function ExpenseScreen() {
     ]);
 
     setRefreshing(false);
-  }, [loadData, fetchAnalytics, refreshCategories]);
+  }, [isOnline, loadData, fetchAnalytics, refreshCategories]);
 
   const totalExpense = useMemo(
     () => expenses.reduce((acc, crr) => acc + crr.amount, 0),

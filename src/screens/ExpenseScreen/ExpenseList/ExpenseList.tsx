@@ -33,6 +33,7 @@ import {
   makeUnixTimestampToNumber,
 } from '@trackingPortal/api/primitives';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
+import {useNetwork} from '@trackingPortal/contexts/NetworkProvider';
 import {IUpdateExpenseParams} from '@trackingPortal/api/params';
 import Toast from 'react-native-toast-message';
 import {AnimatedLoader, LoadingButton} from '@trackingPortal/components';
@@ -92,6 +93,7 @@ const ExpenseList: FC<IExpenseList> = ({
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
   const {currentUser: user, apiGateway, currency} = useStoreContext();
+  const {isOnline} = useNetwork();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const categoryLookup = useMemo(() => {
@@ -124,6 +126,16 @@ const ExpenseList: FC<IExpenseList> = ({
     id: ExpenseId,
   ) => {
     if (user.default) return;
+
+    // 🌐 Network guard
+    if (!isOnline) {
+      Toast.show({
+        type: 'offline',
+        text1: 'No internet connection',
+        text2: 'Please check your connection and try again.',
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -171,6 +183,17 @@ const ExpenseList: FC<IExpenseList> = ({
 
   const handleDeleteExpense = async (rowId: any) => {
     if (!rowId) return;
+
+    // 🌐 Network guard
+    if (!isOnline) {
+      Toast.show({
+        type: 'offline',
+        text1: 'No internet connection',
+        text2: 'Cannot delete while offline.',
+      });
+      return;
+    }
+
     try {
       setDeleteLoading(true);
       await apiGateway.expenseService.deleteExpense(rowId);

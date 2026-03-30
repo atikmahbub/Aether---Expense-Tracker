@@ -7,11 +7,12 @@ import InvestList from "@trackingPortal/screens/InvestScreen/InvestList";
 import InvestSummary from "@trackingPortal/screens/InvestScreen/InvestSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { FlatList, StyleSheet, View, Platform } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useIsFocused } from "@react-navigation/native";
 
 export default function InvestScreen() {
@@ -27,6 +28,20 @@ export default function InvestScreen() {
   );
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const { isOnline } = useNetwork();
+  const wasOfflineRef = useRef(false);
+
+  // 🔄 SMART AUTO-RETRY: when connection is restored, refetch stale data
+  useEffect(() => {
+    if (!isOnline) {
+      wasOfflineRef.current = true;
+      return;
+    }
+    if (wasOfflineRef.current && isFocused) {
+      wasOfflineRef.current = false;
+      getUserInvestHistory();
+    }
+  }, [isOnline, isFocused]);
 
   // 🔥 PRELOAD CREATION UI
   useEffect(() => {
@@ -82,6 +97,15 @@ export default function InvestScreen() {
   };
 
   const handleRefresh = async () => {
+    if (!isOnline) {
+      Toast.show({
+        type: 'offline',
+        text1: 'No internet connection',
+        text2: 'Please connect to refresh data.',
+      });
+      return;
+    }
+
     setRefreshing(true);
     await getUserInvestHistory();
     setRefreshing(false);

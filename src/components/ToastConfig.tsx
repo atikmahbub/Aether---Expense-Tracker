@@ -22,6 +22,12 @@ const TOKEN = {
     bg: 'rgba(196,127,255,0.10)',
     border: 'rgba(196,127,255,0.22)',
   },
+  offline: {
+    icon: 'cloud-off-outline' as const,
+    accent: '#FFB347',
+    bg: 'rgba(255,179,71,0.10)',
+    border: 'rgba(255,179,71,0.22)',
+  },
 } as const;
 
 type Variant = keyof typeof TOKEN;
@@ -77,6 +83,7 @@ export const toastConfig = {
   success: make('success'),
   error: make('error'),
   info: make('info'),
+  offline: make('offline'),
 };
 
 export default toastConfig;

@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { IAddInvestParams } from '@trackingPortal/api/params';
 import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
 import { BaseBottomSheet } from '@trackingPortal/components';
+import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
 import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
   AddInvestSchema,
@@ -33,6 +34,7 @@ const InvestCreation: React.FC<IInvestCreation> = ({
 }) => {
   const {apiGateway} = useStoreContext();
   const {currentUser: user} = useStoreContext();
+  const {isOnline} = useNetwork();
   const [loading, setLoading] = useState<boolean>(false);
 
 
@@ -42,6 +44,16 @@ const InvestCreation: React.FC<IInvestCreation> = ({
 
   const handleAddInvestment = useCallback(async (values: INewInvest) => {
     if (!user.userId) return;
+
+    if (!isOnline) {
+      Toast.show({
+        type: 'offline',
+        text1: 'No internet connection',
+        text2: 'Please check your connection and try again.',
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       const params: IAddInvestParams = {

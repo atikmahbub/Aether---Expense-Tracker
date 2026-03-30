@@ -1,10 +1,10 @@
 import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
   useFonts,
-} from "@expo-google-fonts/poppins";
+} from "@expo-google-fonts/manrope";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -20,12 +20,14 @@ import {
   useAuth,
 } from "@trackingPortal/auth/Auth0ProviderWithHistory";
 import { AnimatedLoader } from "@trackingPortal/components";
-import toastConfig from "@trackingPortal/components/ToastConfig";
-import { StoreProvider } from "@trackingPortal/contexts/StoreProvider";
-import AppLayout from "@trackingPortal/layout";
-import OnboardingScreen from "@trackingPortal/screens/OnboardingScreen";
-import { colors } from "@trackingPortal/themes/colors";
-import { darkTheme } from "@trackingPortal/themes/darkTheme";
+import OfflineBanner from '@trackingPortal/components/OfflineBanner';
+import toastConfig from '@trackingPortal/components/ToastConfig';
+import { NetworkProvider } from '@trackingPortal/contexts/NetworkProvider';
+import { StoreProvider } from '@trackingPortal/contexts/StoreProvider';
+import AppLayout from '@trackingPortal/layout';
+import OnboardingScreen from '@trackingPortal/screens/OnboardingScreen';
+import { colors } from '@trackingPortal/themes/colors';
+import { darkTheme } from '@trackingPortal/themes/darkTheme';
 
 console.log("🔥 LAYOUT LOADED");
 
@@ -41,7 +43,7 @@ const applyDefaultFont = () => {
     const target = component as any;
     target.defaultProps = target.defaultProps || {};
     const existingStyle = target.defaultProps.style;
-    const fontStyle = { fontFamily: "Poppins_400Regular" };
+    const fontStyle = { fontFamily: "Manrope_400Regular" };
     if (Array.isArray(existingStyle)) {
       target.defaultProps.style = [...existingStyle, fontStyle];
     } else if (existingStyle) {
@@ -143,10 +145,10 @@ const NavigationBoundary: React.FC = () => {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
   });
 
   useEffect(() => {
@@ -183,8 +185,12 @@ export default function RootLayout() {
         <PaperProvider theme={darkTheme}>
           <Auth0ProviderWithHistory>
             <StoreProvider>
-              {/* ✅ IMPORTANT: Router must be here */}
-              <NavigationBoundary />
+              <NetworkProvider>
+                {/* ✅ IMPORTANT: Router must be here */}
+                <NavigationBoundary />
+                {/* 🌐 GLOBAL: Floating offline banner */}
+                <OfflineBanner />
+              </NetworkProvider>
             </StoreProvider>
           </Auth0ProviderWithHistory>
         </PaperProvider>
