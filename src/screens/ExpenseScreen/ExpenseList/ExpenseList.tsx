@@ -113,7 +113,7 @@ const ExpenseList: FC<IExpenseList> = ({
   );
 
   const openYearPicker = useCallback(() => {
-    InteractionManager.runAfterInteractions(() => setOpenPicker(true));
+    setOpenPicker(true);
   }, []);
 
   const onExpenseEdit = async (
@@ -219,19 +219,10 @@ const ExpenseList: FC<IExpenseList> = ({
                 categoryError={categoryError}
                 refreshCategories={refreshCategories}
                 recentCategoryIds={recentCategoryIds}
+                onSubmit={handleSubmit}
+                onCancel={() => setExpandedRowId(null)}
+                loading={loading}
               />
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => !loading && setExpandedRowId(null)}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <LoadingButton
-                  label="Save"
-                  loading={loading}
-                  onPress={() => handleSubmit()}
-                />
-              </View>
             </KeyboardAwareScrollView>
           )}
         </Formik>
@@ -373,7 +364,7 @@ const ExpenseList: FC<IExpenseList> = ({
   );
 };
 
-export default ExpenseList;
+export default React.memo(ExpenseList);
 
 const styles = StyleSheet.create({
   mainContainer: {

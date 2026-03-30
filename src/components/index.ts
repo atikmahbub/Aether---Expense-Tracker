@@ -14,6 +14,7 @@ import TabScreenContainer, {
   TAB_CONTENT_BOTTOM_PADDING,
 } from '@trackingPortal/components/TabScreenContainer';
 import OnboardingSlide from '@trackingPortal/components/OnboardingSlide';
+import BaseBottomSheet from './BaseBottomSheet';
 
 export {
   CustomAppBar,
@@ -31,4 +32,5 @@ export {
   TabScreenContainer,
   TAB_CONTENT_BOTTOM_PADDING,
   OnboardingSlide,
+  BaseBottomSheet,
 };

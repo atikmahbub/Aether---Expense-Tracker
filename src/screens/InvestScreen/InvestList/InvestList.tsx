@@ -179,26 +179,19 @@ const InvestList: FC<IInvestList> = ({
                 extraScrollHeight={20}
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.collapsibleContent}>
-                <InvestForm update />
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => !loading && setExpandedRowId(null)}>
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <LoadingButton
-                    label="Save"
-                    loading={loading}
-                    onPress={() => handleSubmit()}
-                  />
-                </View>
+                <InvestForm
+                  update
+                  onSubmit={handleSubmit}
+                  onCancel={() => setExpandedRowId(null)}
+                  loading={loading}
+                />
               </KeyboardAwareScrollView>
             );
           }}
         </Formik>
       );
     },
-    [invests, setExpandedRowId],
+    [invests, setExpandedRowId, onInvestEdit, loading],
   );
 
   const getProfit = (capital: number, totalEarned: number | null) => {
@@ -291,7 +284,7 @@ const InvestList: FC<IInvestList> = ({
   );
 };
 
-export default InvestList;
+export default React.memo(InvestList);
 
 const styles = StyleSheet.create({
   mainContainer: {

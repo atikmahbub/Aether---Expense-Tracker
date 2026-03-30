@@ -1,19 +1,20 @@
-import {View} from 'react-native';
-import React, {SetStateAction, useState} from 'react';
-import FormModal from '@trackingPortal/components/FormModal';
-import {Formik} from 'formik';
 
+import { Formik } from 'formik';
+import React, { SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { IAddInvestParams } from '@trackingPortal/api/params';
+import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
+import { BaseBottomSheet } from '@trackingPortal/components';
+import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
-  INewInvest,
-  EAddInvestFormFields,
   AddInvestSchema,
+  EAddInvestFormFields,
+  INewInvest,
 } from '@trackingPortal/screens/InvestScreen';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {makeUnixTimestampString} from '@trackingPortal/api/primitives';
-import Toast from 'react-native-toast-message';
-import {IAddInvestParams} from '@trackingPortal/api/params';
 import InvestForm from '@trackingPortal/screens/InvestScreen/InvestForm';
-import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
+import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
+import Toast from 'react-native-toast-message';
 
 interface IInvestCreation {
   openCreationModal: boolean;
@@ -30,6 +31,11 @@ const InvestCreation: React.FC<IInvestCreation> = ({
   const {currentUser: user} = useStoreContext();
   const [loading, setLoading] = useState<boolean>(false);
 
+
+  const handleClose = useCallback(() => {
+    setOpenCreationModal(false);
+  }, [setOpenCreationModal]);
+
   const handleAddInvestment = async (values: INewInvest) => {
     if (!user.userId) return;
     try {
@@ -44,11 +50,16 @@ const InvestCreation: React.FC<IInvestCreation> = ({
         note: values.note,
       };
       await apiGateway.investService.addInvest(params);
-      await getUserInvestHistory();
-      triggerSuccessHaptic();
-      Toast.show({
-        type: 'success',
-        text1: 'Investment added successfully',
+      
+      handleClose();
+      
+      requestAnimationFrame(async () => {
+        await getUserInvestHistory();
+        triggerSuccessHaptic();
+        Toast.show({
+          type: 'success',
+          text1: 'Investment added successfully',
+        });
       });
     } catch (error) {
       Toast.show({
@@ -57,41 +68,42 @@ const InvestCreation: React.FC<IInvestCreation> = ({
       });
     } finally {
       setLoading(false);
-      setOpenCreationModal(false);
     }
   };
 
   return (
-    <Formik
-      initialValues={{
-        [EAddInvestFormFields.START_DATE]: new Date(),
-        [EAddInvestFormFields.NOTE]: '',
-        [EAddInvestFormFields.AMOUNT]: '',
-        [EAddInvestFormFields.NAME]: '',
-      }}
-      onSubmit={handleAddInvestment}
-      validationSchema={AddInvestSchema}>
-      {({resetForm, handleSubmit}) => {
-        return (
-          <View>
-            <FormModal
-              title="Add a new Investment"
-              subtitle="Expansion of your financial sanctuary."
-              saveLabel="Save Investment"
-              isVisible={openCreationModal}
-              onClose={() => {
-                setOpenCreationModal(false);
-                resetForm();
-              }}
-              onSave={handleSubmit}
-              children={<InvestForm />}
-              loading={loading}
-            />
-          </View>
-        );
-      }}
-    </Formik>
+    <BaseBottomSheet
+      index={openCreationModal ? 1 : -1}
+      onClose={handleClose}>
+      <Formik
+        initialValues={{
+          [EAddInvestFormFields.START_DATE]: new Date(),
+          [EAddInvestFormFields.NOTE]: '',
+          [EAddInvestFormFields.AMOUNT]: '',
+          [EAddInvestFormFields.NAME]: '',
+        }}
+        onSubmit={handleAddInvestment}
+        validationSchema={AddInvestSchema}>
+        {({handleSubmit}) => {
+          return (
+            <View style={styles.container}>
+              <InvestForm
+                onSubmit={handleSubmit}
+                onCancel={handleClose}
+                loading={loading}
+              />
+            </View>
+          );
+        }}
+      </Formik>
+    </BaseBottomSheet>
   );
 };
 
-export default InvestCreation;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
+
+export default React.memo(InvestCreation);

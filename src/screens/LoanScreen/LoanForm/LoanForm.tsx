@@ -8,6 +8,7 @@ import DatePicker from 'react-native-date-picker';
 import dayjs from 'dayjs';
 import {LoanType} from '@trackingPortal/api/enums';
 import {colors} from '@trackingPortal/themes/colors';
+import {LoadingButton} from '@trackingPortal/components';
 
 const LOAN_TYPE_OPTIONS = [
   {
@@ -22,7 +23,13 @@ const LOAN_TYPE_OPTIONS = [
   },
 ] as const;
 
-export default function LoanForm() {
+interface LoanFormProps {
+  onSubmit: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const deadlineValue = values[EAddLoanFields.DEADLINE];
@@ -35,13 +42,13 @@ export default function LoanForm() {
   }, [deadlineValue]);
 
   const openDeadlinePicker = useCallback(() => {
-    InteractionManager.runAfterInteractions(() => setPickerVisible(true));
+    setPickerVisible(true);
   }, []);
 
   return (
     <View style={styles.formRoot}>
       <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Type</Text>
+        {/* ... existing toggle code ... */}
         <View style={styles.toggleGroup}>
           {LOAN_TYPE_OPTIONS.map(option => {
             const isSelected = values[EAddLoanFields.LOAN_TYPE] === option.value;
@@ -63,7 +70,6 @@ export default function LoanForm() {
                   ]}>
                   {option.label.toUpperCase()}
                 </Text>
-                <Text style={styles.toggleDescription}>{option.description}</Text>
               </TouchableOpacity>
             );
           })}
@@ -123,6 +129,24 @@ export default function LoanForm() {
         }}
         onCancel={() => setPickerVisible(false)}
       />
+
+      <View style={styles.footer}>
+        <TouchableOpacity 
+          style={styles.cancelButton}
+          onPress={onCancel}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.saveButtonWrapper}>
+          <LoadingButton
+            label="Save Loan Entry"
+            loading={loading}
+            onPress={onSubmit}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -182,5 +206,31 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  cancelButtonText: {
+    color: colors.subText,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  saveButtonWrapper: {
+    minWidth: 140,
   },
 });

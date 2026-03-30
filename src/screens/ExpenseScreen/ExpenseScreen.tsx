@@ -17,8 +17,8 @@ import { useRecentCategories } from "@trackingPortal/screens/ExpenseScreen/hooks
 import { colors } from "@trackingPortal/themes/colors";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
-import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { FlatList, Platform, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ExpenseScreen() {
@@ -32,6 +32,7 @@ export default function ExpenseScreen() {
   const activeUserId = user.userId;
 
   const [openCreationForm, setOpenCreationModal] = useState(false);
+  const [isCreationPreloaded, setIsCreationPreloaded] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseModel[]>([]);
   const [filterMonth, setFilterMonth] = useState(dayjs());
   const [monthLimit, setMonthLimit] = useState<MonthlyLimitModel>(
@@ -45,6 +46,14 @@ export default function ExpenseScreen() {
 
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+
+  // 🔥 PRELOAD CREATION UI
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setIsCreationPreloaded(true);
+    }, 800);
+    return () => clearTimeout(id);
+  }, []);
 
   const {
     categories,
@@ -84,12 +93,25 @@ export default function ExpenseScreen() {
     };
   }, [isFocused]);
 
-  // 🔥 LOAD DATA (ON MOUNT)
+  // 🔥 LOAD DATA (ON MOUNT) - Balanced hydration
   useEffect(() => {
     if (activeUserId && !user.default) {
-      loadData();
+      const rafId = requestAnimationFrame(() => {
+        loadData();
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [activeUserId, user.default, filterMonth]);
+
+  // 🔥 ENSURE ANALYTICS LOADS AFTER CATEGORY HYDRATION
+  useEffect(() => {
+    if (!isCategoryHydrated || analyticsLoading) return;
+    
+    // Defer to next frame to avoid UI blocking
+    requestAnimationFrame(() => {
+      refreshAnalytics();
+    });
+  }, [isCategoryHydrated, refreshAnalytics]);
 
   // 🔥 INIT RECENT CATEGORIES
   useEffect(() => {
@@ -104,10 +126,10 @@ export default function ExpenseScreen() {
 
   const fetchAnalytics = useCallback(
     (options?: { force?: boolean }) => {
-      if (!activeUserId) return;
+      if (!activeUserId || !isCategoryHydrated) return;
       return refreshAnalytics(options);
     },
-    [refreshAnalytics, activeUserId],
+    [refreshAnalytics, activeUserId, isCategoryHydrated],
   );
 
   const getExpenses = async () => {
@@ -152,7 +174,8 @@ export default function ExpenseScreen() {
   };
 
   const loadData = async () => {
-    await Promise.all([getExpenses(), getMonthlyLimit(), refreshAnalytics()]);
+    // Only essentials first
+    await Promise.all([getExpenses(), getMonthlyLimit()]);
   };
 
   const onRefresh = async () => {
@@ -168,7 +191,47 @@ export default function ExpenseScreen() {
     setRefreshing(false);
   };
 
-  const totalExpense = expenses.reduce((acc, crr) => acc + crr.amount, 0);
+  const totalExpense = useMemo(
+    () => expenses.reduce((acc, crr) => acc + crr.amount, 0),
+    [expenses]
+  );
+
+  const headerComponent = useMemo(() => (
+    <View>
+      <ExpenseSummary
+        totalExpense={totalExpense}
+        filterMonth={filterMonth}
+        monthLimit={monthLimit}
+        getMonthlyLimit={getMonthlyLimit}
+      />
+
+      <AnalyticsCard
+        analytics={analytics}
+        monthlyLimit={monthLimit?.limit}
+        categories={categoryLookup}
+        loading={analyticsLoading || !isCategoryHydrated}
+        error={analyticsError}
+        onRetry={() => refreshAnalytics({ force: true })}
+        currency={currency}
+      />
+    </View>
+  ), [totalExpense, filterMonth, monthLimit, getMonthlyLimit, analytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, currency, refreshAnalytics]);
+
+  const footerComponent = useMemo(() => (
+    <ExpenseList
+      filteredMonth={filterMonth}
+      setFilteredMonth={setFilterMonth}
+      expenses={expenses}
+      getUserExpenses={getExpenses}
+      categories={categories}
+      categoriesLoading={categoryLoading}
+      refreshCategories={refreshCategories}
+      refreshAnalytics={fetchAnalytics}
+      recentCategoryIds={recentCategoryIds}
+      onCategoryUsed={addRecentCategory}
+      notifyRowOpen={() => {}}
+    />
+  ), [filterMonth, setFilterMonth, expenses, getExpenses, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory]);
 
   // 🔥 MAIN LOADER FIX
   if (
@@ -183,6 +246,10 @@ export default function ExpenseScreen() {
       <FlatList
         data={expenses}
         keyExtractor={(item, index) => `${item.id || index}`}
+        initialNumToRender={5}
+        maxToRenderPerBatch={8}
+        windowSize={5} // Optimized for mobile
+        removeClippedSubviews={Platform.OS === 'android'} // Usually better on Android
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.listContent,
@@ -195,57 +262,26 @@ export default function ExpenseScreen() {
             tintColor={colors.primary}
           />
         }
-        ListHeaderComponent={
-          <View>
-            <ExpenseSummary
-              totalExpense={totalExpense}
-              filterMonth={filterMonth}
-              monthLimit={monthLimit}
-              getMonthlyLimit={getMonthlyLimit}
-            />
-
-            <AnalyticsCard
-              analytics={analytics}
-              monthlyLimit={monthLimit?.limit}
-              categories={categoryLookup}
-              loading={analyticsLoading}
-              error={analyticsError}
-              onRetry={() => refreshAnalytics({ force: true })}
-              currency={currency}
-            />
-          </View>
-        }
-        ListFooterComponent={
-          <ExpenseList
-            filteredMonth={filterMonth}
-            setFilteredMonth={setFilterMonth}
-            expenses={expenses}
-            getUserExpenses={getExpenses}
-            categories={categories}
-            categoriesLoading={categoryLoading}
-            refreshCategories={refreshCategories}
-            refreshAnalytics={fetchAnalytics}
-            recentCategoryIds={recentCategoryIds}
-            onCategoryUsed={addRecentCategory}
-            notifyRowOpen={() => {}}
-          />
-        }
-        renderItem={null}
+        ListHeaderComponent={headerComponent}
+        ListFooterComponent={footerComponent}
+        renderItem={() => null}
       />
 
-      <ExpenseCreation
-        openCreationModal={openCreationForm}
-        setOpenCreationModal={setOpenCreationModal}
-        getUserExpenses={getExpenses}
-        getExceedExpenseNotification={() => {}}
-        categories={categories}
-        categoriesLoading={categoryLoading}
-        refreshCategories={refreshCategories}
-        refreshAnalytics={fetchAnalytics}
-        recentCategoryIds={recentCategoryIds}
-        lastUsedCategoryId={recentCategoryIds[0] || null}
-        onCategoryUsed={addRecentCategory}
-      />
+      {(openCreationForm || isCreationPreloaded) && (
+        <ExpenseCreation
+          openCreationModal={openCreationForm}
+          setOpenCreationModal={setOpenCreationModal}
+          getUserExpenses={getExpenses}
+          getExceedExpenseNotification={() => {}}
+          categories={categories}
+          categoriesLoading={categoryLoading}
+          refreshCategories={refreshCategories}
+          refreshAnalytics={fetchAnalytics}
+          recentCategoryIds={recentCategoryIds}
+          lastUsedCategoryId={recentCategoryIds[0] || null}
+          onCategoryUsed={addRecentCategory}
+        />
+      )}
     </View>
   );
 }

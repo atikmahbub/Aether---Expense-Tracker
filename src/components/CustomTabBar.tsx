@@ -31,9 +31,8 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const handlePress = useCallback(
     (routeName: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      InteractionManager.runAfterInteractions(() => {
-        navigation.navigate(routeName);
-      });
+      // Navigation should be instant for 100% responsiveness
+      navigation.navigate(routeName);
     },
     [navigation],
   );
@@ -112,63 +111,61 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   }
 }
 
-const TabButton = React.memo(
-  ({
-    tab,
-    isFocused,
-    onPress,
-  }: {
-    tab: any;
-    isFocused: boolean;
-    onPress: () => void;
-  }) => {
-    const scale = useRef(new Animated.Value(isFocused ? 1.1 : 1)).current;
+const TabButton = React.memo(function TabButton({
+  tab,
+  isFocused,
+  onPress,
+}: {
+  tab: any;
+  isFocused: boolean;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(isFocused ? 1.1 : 1)).current;
 
-    useEffect(() => {
-      Animated.spring(scale, {
-        toValue: isFocused ? 1.1 : 1,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 100,
-      }).start();
-    }, [isFocused]);
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: isFocused ? 1.1 : 1,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 100,
+    }).start();
+  }, [isFocused]);
 
-    return (
-      <TouchableOpacity
-        onPress={onPress}
-        style={styles.tabWrapper}
-        activeOpacity={0.7}
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={styles.tabWrapper}
+      activeOpacity={0.7}
+    >
+      <Animated.View
+        style={[
+          styles.iconContainer,
+          isFocused && styles.activeIconContainer,
+          {
+            transform: [{ scale }],
+          },
+        ]}
       >
-        <Animated.View
-          style={[
-            styles.iconContainer,
-            isFocused && styles.activeIconContainer,
-            {
-              transform: [{ scale }],
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name={tab.icon}
-            size={22}
-            color={isFocused ? colors.primary : colors.subText}
-          />
-        </Animated.View>
+        <MaterialCommunityIcons
+          name={tab.icon}
+          size={22}
+          color={isFocused ? colors.primary : colors.subText}
+        />
+      </Animated.View>
 
-        <Text
-          style={[
-            styles.label,
-            {
-              color: isFocused ? colors.primary : colors.subText,
-            },
-          ]}
-        >
-          {tab.label}
-        </Text>
-      </TouchableOpacity>
-    );
-  },
-);
+      <Text
+        style={[
+          styles.label,
+          {
+            color: isFocused ? colors.primary : colors.subText,
+          },
+        ]}
+      >
+        {tab.label}
+      </Text>
+    </TouchableOpacity>
+  );
+});
 
 const styles = StyleSheet.create({
   wrapper: {

@@ -6,9 +6,9 @@ import InvestCreation from "@trackingPortal/screens/InvestScreen/InvestCreation"
 import InvestList from "@trackingPortal/screens/InvestScreen/InvestList";
 import InvestSummary from "@trackingPortal/screens/InvestScreen/InvestSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
-import { withHaptic } from "@trackingPortal/utils/haptic";
-import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, InteractionManager, StyleSheet, View } from "react-native";
+import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { FlatList, StyleSheet, View, Platform } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -16,6 +16,7 @@ import { useIsFocused } from "@react-navigation/native";
 
 export default function InvestScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
+  const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
   const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [invests, setInvests] = useState<InvestModel[]>([]);
   const { currentUser: user, apiGateway } = useStoreContext();
@@ -27,10 +28,17 @@ export default function InvestScreen() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
 
+  // 🔥 PRELOAD CREATION UI
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setIsCreationPreloaded(true);
+    }, 1200);
+    return () => clearTimeout(id);
+  }, []);
+
   const handleOpenCreationModal = useCallback(() => {
-    withHaptic(() => {
-      InteractionManager.runAfterInteractions(() => setOpenCreationModal(true));
-    });
+    setOpenCreationModal(true);
+    triggerSuccessHaptic();
   }, []);
 
   useEffect(() => {
@@ -47,7 +55,10 @@ export default function InvestScreen() {
 
   useEffect(() => {
     if (!user.default) {
-      getUserInvestHistory();
+      const rafId = requestAnimationFrame(() => {
+        getUserInvestHistory();
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [user, status]);
 
@@ -76,6 +87,20 @@ export default function InvestScreen() {
     setRefreshing(false);
   };
 
+  const headerComponent = useMemo(() => (
+    <InvestSummary investList={invests} status={status} />
+  ), [invests, status]);
+
+  const footerComponent = useMemo(() => (
+    <InvestList
+      invests={invests}
+      getUserInvestHistory={getUserInvestHistory}
+      notifyRowOpen={(value) => setHideFabIcon(value)}
+      status={status}
+      setStatus={setStatus}
+    />
+  ), [invests, getUserInvestHistory, status]);
+
   if (loading && invests.length === 0) {
     return <AnimatedLoader />;
   }
@@ -85,29 +110,28 @@ export default function InvestScreen() {
       <FlatList
         data={invests}
         keyExtractor={(item, index) => `${item.id || index}`}
-        ListHeaderComponent={
-          <InvestSummary investList={invests} status={status} />
-        }
-        ListFooterComponent={
-          <InvestList
-            invests={invests}
-            getUserInvestHistory={getUserInvestHistory}
-            notifyRowOpen={(value) => setHideFabIcon(value)}
-            status={status}
-            setStatus={setStatus}
-          />
-        }
+        ListHeaderComponent={headerComponent}
+        ListFooterComponent={footerComponent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        renderItem={null}
-        contentContainerStyle={styles.listContent}
+        renderItem={() => null}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 120 }
+        ]}
+        initialNumToRender={5}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
       />
-      <InvestCreation
-        openCreationModal={openCreationModal}
-        setOpenCreationModal={setOpenCreationModal}
-        getUserInvestHistory={getUserInvestHistory}
-      />
+      {(openCreationModal || isCreationPreloaded) && (
+        <InvestCreation
+          openCreationModal={openCreationModal}
+          setOpenCreationModal={setOpenCreationModal}
+          getUserInvestHistory={getUserInvestHistory}
+        />
+      )}
     </View>
   );
 }

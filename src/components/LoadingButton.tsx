@@ -1,12 +1,12 @@
+import { colors } from '@trackingPortal/themes/colors';
+import React from 'react';
 import {
+  ActivityIndicator,
+  GestureResponderEvent,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  GestureResponderEvent,
 } from 'react-native';
-import React from 'react';
-import {colors} from '@trackingPortal/themes/colors';
 
 interface ILoadingButtonProps {
   onPress: (event: GestureResponderEvent) => void;
@@ -38,16 +38,21 @@ export default LoadingButton;
 const styles = StyleSheet.create({
   buttonContainer: {
     backgroundColor: colors.primary,
-    padding: 10,
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
   },
   buttonText: {
     color: colors.background,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
   },
   loader: {
-    marginLeft: 10,
+    marginLeft: 8,
   },
 });

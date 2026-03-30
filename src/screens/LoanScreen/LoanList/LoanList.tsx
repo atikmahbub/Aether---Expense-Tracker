@@ -131,19 +131,11 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
               extraScrollHeight={20}
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.collapsibleContent}>
-              <LoanForm />
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => !loading && setExpandedRowId(null)}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <LoadingButton
-                  label="Save"
-                  loading={loading}
-                  onPress={() => handleSubmit()}
-                />
-              </View>
+              <LoanForm
+                onSubmit={handleSubmit}
+                onCancel={() => setExpandedRowId(null)}
+                loading={loading}
+              />
             </KeyboardAwareScrollView>
           )}
         </Formik>
@@ -189,7 +181,7 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
   );
 };
 
-export default LoanList;
+export default React.memo(LoanList);
 
 const styles = StyleSheet.create({
   mainContainer: {

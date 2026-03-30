@@ -246,9 +246,7 @@ const ExpenseSummary: React.FC<ISummary> = ({
 
   const openLimitModal = useCallback(() => {
     withHaptic(() => {
-      InteractionManager.runAfterInteractions(() =>
-        setIsLimitModalVisible(true),
-      );
+      setIsLimitModalVisible(true);
     });
   }, []);
 
@@ -590,4 +588,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ExpenseSummary;
+export default React.memo(ExpenseSummary);

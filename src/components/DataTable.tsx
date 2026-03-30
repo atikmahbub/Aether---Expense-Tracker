@@ -30,12 +30,12 @@ const tintHex = (hex?: string, alpha = 0.15) => {
 interface DataTableProps {
   headers: string[];
   data: Array<{[key: string]: any}>;
-  onDelete: (id: string | number) => void;
+  onDelete: (id: any) => void;
   isAnyRowOpen: (value: boolean) => void;
-  expandedRowId: number | null;
-  setExpandedRowId: React.Dispatch<React.SetStateAction<number | null>>;
+  expandedRowId: any;
+  setExpandedRowId: React.Dispatch<React.SetStateAction<any>>;
   renderCollapsibleContent: (item: any) => React.ReactNode;
-  renderSwipeActions?: (id: number, close: () => void) => React.ReactNode;
+  renderSwipeActions?: (id: any, close: () => void) => React.ReactNode;
 }
 
 const DataTable: React.FC<DataTableProps> = ({

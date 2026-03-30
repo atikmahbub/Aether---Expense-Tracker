@@ -1,6 +1,5 @@
-import {View} from 'react-native';
-import React, {SetStateAction, useState} from 'react';
-import FormModal from '@trackingPortal/components/FormModal';
+import {View, StyleSheet} from 'react-native';
+import React, {SetStateAction, useState, useEffect, useCallback} from 'react';
 import {Formik} from 'formik';
 
 import {
@@ -15,13 +14,13 @@ import Toast from 'react-native-toast-message';
 import {LoanType} from '@trackingPortal/api/enums';
 import {IAddLoanParams} from '@trackingPortal/api/params';
 import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
+import {BaseBottomSheet} from '@trackingPortal/components';
 
 interface ILoanCreation {
   openCreationModal: boolean;
   setOpenCreationModal: React.Dispatch<SetStateAction<boolean>>;
   getUserLoans: () => void;
 }
-
 const LoanCreation: React.FC<ILoanCreation> = ({
   openCreationModal,
   setOpenCreationModal,
@@ -31,7 +30,11 @@ const LoanCreation: React.FC<ILoanCreation> = ({
   const {currentUser: user} = useStoreContext();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const handleAddExpense = async (values: INewLoan) => {
+  const handleClose = useCallback(() => {
+    setOpenCreationModal(false);
+  }, [setOpenCreationModal]);
+
+  const handleAddLoan = async (values: INewLoan) => {
     if (!user.userId) return;
     try {
       setLoading(true);
@@ -46,11 +49,16 @@ const LoanCreation: React.FC<ILoanCreation> = ({
         note: values.note,
       };
       await apiGateway.loanServices.addLoan(params);
-      await getUserLoans();
-      triggerSuccessHaptic();
-      Toast.show({
-        type: 'success',
-        text1: 'Loan added successfully',
+      
+      handleClose();
+      
+      requestAnimationFrame(async () => {
+        await getUserLoans();
+        triggerSuccessHaptic();
+        Toast.show({
+          type: 'success',
+          text1: 'Loan added successfully',
+        });
       });
     } catch (error) {
       Toast.show({
@@ -59,40 +67,43 @@ const LoanCreation: React.FC<ILoanCreation> = ({
       });
     } finally {
       setLoading(false);
-      setOpenCreationModal(false);
     }
   };
 
   return (
-    <Formik
-      initialValues={{
-        [EAddLoanFields.DEADLINE]: new Date(),
-        [EAddLoanFields.NOTE]: '',
-        [EAddLoanFields.AMOUNT]: '',
-        [EAddLoanFields.NAME]: '',
-        [EAddLoanFields.LOAN_TYPE]: LoanType.GIVEN,
-      }}
-      onSubmit={handleAddExpense}
-      validationSchema={AddLoanSchema}>
-      {({resetForm, handleSubmit}) => {
-        return (
-          <View>
-            <FormModal
-              title="New Entry"
-              isVisible={openCreationModal}
-              onClose={() => {
-                setOpenCreationModal(false);
-                resetForm();
-              }}
-              onSave={handleSubmit}
-              children={<LoanForm />}
-              loading={loading}
-            />
-          </View>
-        );
-      }}
-    </Formik>
+    <BaseBottomSheet
+      index={openCreationModal ? 1 : -1}
+      onClose={handleClose}>
+      <Formik
+        initialValues={{
+          [EAddLoanFields.DEADLINE]: new Date(),
+          [EAddLoanFields.NOTE]: '',
+          [EAddLoanFields.AMOUNT]: '',
+          [EAddLoanFields.NAME]: '',
+          [EAddLoanFields.LOAN_TYPE]: LoanType.GIVEN,
+        }}
+        onSubmit={handleAddLoan}
+        validationSchema={AddLoanSchema}>
+        {({handleSubmit}) => {
+          return (
+            <View style={styles.container}>
+              <LoanForm
+                onSubmit={handleSubmit}
+                onCancel={handleClose}
+                loading={loading}
+              />
+            </View>
+          );
+        }}
+      </Formik>
+    </BaseBottomSheet>
   );
 };
 
-export default LoanCreation;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
+
+export default React.memo(LoanCreation);

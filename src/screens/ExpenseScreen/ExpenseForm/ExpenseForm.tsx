@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, InteractionManager} from 'react-native';
+import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddExpenseFields} from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.constants';
@@ -9,6 +9,8 @@ import dayjs from 'dayjs';
 import {ExpenseCategoryModel} from '@trackingPortal/api/models';
 import CategorySelector from '@trackingPortal/screens/ExpenseScreen/components/CategorySelector';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
+import {LoadingButton} from '@trackingPortal/components';
+import {colors} from '@trackingPortal/themes/colors';
 
 interface ExpenseFormProps {
   categories: ExpenseCategoryModel[];
@@ -17,6 +19,9 @@ interface ExpenseFormProps {
   refreshCategories?: () => Promise<void> | void;
   recentCategoryIds?: string[];
   defaultCategoryId?: string;
+  onSubmit: () => void;
+  onCancel: () => void;
+  loading: boolean;
 }
 
 export default function ExpenseForm({
@@ -26,10 +31,14 @@ export default function ExpenseForm({
   refreshCategories,
   recentCategoryIds,
   defaultCategoryId,
+  onSubmit,
+  onCancel,
+  loading,
 }: ExpenseFormProps) {
+  // ... existing code ...
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
-  const amountInputRef = useRef<TextInput | null>(null);
+  const amountInputRef = useRef<any>(null);
   const {currency} = useStoreContext();
   const dateValue = values[EAddExpenseFields.DATE];
   const categoryValue = values[EAddExpenseFields.CATEGORY_ID];
@@ -61,7 +70,7 @@ export default function ExpenseForm({
   }, [categoryValue, categories, defaultCategoryId, setFieldValue]);
 
   const openDatePicker = useCallback(() => {
-    InteractionManager.runAfterInteractions(() => setPickerVisible(true));
+    setPickerVisible(true);
   }, []);
 
   return (
@@ -143,6 +152,24 @@ export default function ExpenseForm({
         }}
         onCancel={() => setPickerVisible(false)}
       />
+
+      <View style={styles.footer}>
+        <TouchableOpacity 
+          style={styles.cancelButton}
+          onPress={onCancel}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.saveButtonWrapper}>
+          <LoadingButton
+            label="Save Entry"
+            loading={loading}
+            onPress={onSubmit}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -199,5 +226,31 @@ const styles = StyleSheet.create({
   },
   dateInput: {
     backgroundColor: 'transparent',
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  cancelButtonText: {
+    color: colors.subText,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  saveButtonWrapper: {
+    minWidth: 140,
   },
 });

@@ -38,6 +38,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   monthlyLimit,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [showHeavyUI, setShowHeavyUI] = useState(false);
 
   useEffect(() => {
     if (
@@ -46,6 +47,12 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     ) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
+    
+    // 🔥 DEFER HEAVY UI (Segmented progress, list)
+    const rafId = requestAnimationFrame(() => {
+      setShowHeavyUI(true);
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   useEffect(() => {
@@ -73,18 +80,21 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   }, [analytics, monthlyLimit, formatAmount]);
 
   const segments = useMemo(() => {
-    if (!analytics?.categoryBreakdown?.length) {
+    if (!analytics?.categoryBreakdown?.length || !showHeavyUI) {
       return [];
     }
-    return analytics.categoryBreakdown.map(item => {
-      const fallback = categories[item.categoryId];
-      return {
-        id: item.categoryId,
-        percentage: item.percentage,
-        color: fallback?.color || colors.primary,
-      };
-    });
-  }, [analytics?.categoryBreakdown, categories]);
+    return analytics.categoryBreakdown
+      .map(item => {
+        const fallback = categories[item.categoryId];
+        if (!fallback) return null; // Safe lookup
+        return {
+          id: item.categoryId,
+          percentage: item.percentage,
+          color: fallback.color || colors.primary,
+        };
+      })
+      .filter((s): s is {id: string; percentage: number; color: string} => !!s);
+  }, [analytics?.categoryBreakdown, categories, showHeavyUI]);
 
   const sortedCategories = useMemo(() => {
     if (!analytics?.categoryBreakdown?.length) {
@@ -96,11 +106,11 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   }, [analytics?.categoryBreakdown]);
 
   const visibleCategories = useMemo(() => {
-    if (!sortedCategories.length) {
+    if (!sortedCategories.length || !showHeavyUI) {
       return [];
     }
     return expanded ? sortedCategories : sortedCategories.slice(0, 3);
-  }, [expanded, sortedCategories]);
+  }, [expanded, sortedCategories, showHeavyUI]);
 
   const handleToggle = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -108,10 +118,13 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   }, []);
 
   const renderTopCategory = () => {
-    if (!analytics?.topCategory) {
+    if (!analytics?.topCategory || !showHeavyUI) {
       return null;
     }
     const palette = categories[analytics.topCategory.categoryId];
+    // Don't render if category info isn't there yet
+    if (!palette) return null;
+
     return (
       <View
         style={[
@@ -140,6 +153,23 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     </View>
   );
 
+  const renderSkeleton = () => (
+    <View style={styles.skeletonContainer}>
+      <ActivityIndicator color={colors.primary} size="small" />
+      <Text style={styles.skeletonText}>Calculating insights...</Text>
+    </View>
+  );
+
+  // 🔥 ABSOLUTE SAFETY CHECK
+  if (loading && !analytics) {
+    return (
+      <View style={styles.card}>
+         <Text style={styles.title}>Spending Analytics</Text>
+         {renderSkeleton()}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -167,13 +197,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
         </View>
       ) : null}
 
-      {loading && !analytics ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
-      ) : null}
-
-      {!loading && !analytics && !error ? renderEmpty('No data yet') : null}
+      {!analytics && !error && !loading ? renderEmpty('No data yet') : null}
 
       {analytics ? (
         <View>
@@ -182,60 +206,65 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
               <ActivityIndicator color={colors.primary} size="small" />
             </View>
           )}
-          {!loading && (
-            <View>
-              {segments.length ? (
-                <View style={styles.progressBlock}>
-                  <SegmentedProgressBar segments={segments} height={14} />
-                  <Text style={styles.progressHint}>
-                    Share of spend by category
-                  </Text>
-                </View>
-              ) : (
-                renderEmpty('No breakdown yet')
-              )}
-            </View>
-          )}
-
-          {renderTopCategory()}
-
-          {visibleCategories.length ? (
-            <View style={styles.listContainer}>
-              {visibleCategories.map(item => {
-                const palette = categories[item.categoryId];
-                const color = palette?.color || colors.primary;
-                return (
-                  <View key={item.categoryId} style={styles.listRow}>
-                    <View style={[styles.bullet, {backgroundColor: color}]} />
-                    <View style={styles.listLabelColumn}>
-                      <Text style={styles.categoryName}>
-                        {item.categoryName}
-                      </Text>
-                      <Text style={styles.categorySecondary}>
-                        {formatNumber(item.percentage, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
-                          suffix: '%',
-                        })}
-                      </Text>
-                    </View>
-                    <Text style={styles.categoryAmount}>
-                      {formatAmount(item.totalAmount)}
+          
+          {showHeavyUI ? (
+            <>
+              <View>
+                {segments.length ? (
+                  <View style={styles.progressBlock}>
+                    <SegmentedProgressBar segments={segments} height={14} />
+                    <Text style={styles.progressHint}>
+                      Share of spend by category
                     </Text>
                   </View>
-                );
-              })}
-              {sortedCategories.length > 3 ? (
-                <TouchableOpacity
-                  onPress={handleToggle}
-                  style={styles.toggleButton}>
-                  <Text style={styles.toggleText}>
-                    {expanded ? 'Show Less' : 'Show All \u2192'}
-                  </Text>
-                </TouchableOpacity>
+                ) : (
+                  !loading && renderEmpty('No breakdown yet')
+                )}
+              </View>
+
+              {renderTopCategory()}
+
+              {visibleCategories.length ? (
+                <View style={styles.listContainer}>
+                  {visibleCategories.map(item => {
+                    const palette = categories[item.categoryId];
+                    if (!palette) return null; // Safe category lookup
+                    
+                    const color = palette.color || colors.primary;
+                    return (
+                      <View key={item.categoryId} style={styles.listRow}>
+                        <View style={[styles.bullet, {backgroundColor: color}]} />
+                        <View style={styles.listLabelColumn}>
+                          <Text style={styles.categoryName}>
+                            {item.categoryName}
+                          </Text>
+                          <Text style={styles.categorySecondary}>
+                            {formatNumber(item.percentage, {
+                              minimumFractionDigits: 1,
+                              maximumFractionDigits: 1,
+                              suffix: '%',
+                            })}
+                          </Text>
+                        </View>
+                        <Text style={styles.categoryAmount}>
+                          {formatAmount(item.totalAmount)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  {sortedCategories.length > 3 ? (
+                    <TouchableOpacity
+                      onPress={handleToggle}
+                      style={styles.toggleButton}>
+                      <Text style={styles.toggleText}>
+                        {expanded ? 'Show Less' : 'Show All \u2192'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               ) : null}
-            </View>
-          ) : null}
+            </>
+          ) : renderSkeleton()}
         </View>
       ) : null}
     </View>
@@ -386,6 +415,17 @@ const styles = StyleSheet.create({
     color: colors.subText,
     textAlign: 'center',
   },
+  skeletonContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  skeletonText: {
+    color: colors.subText,
+    fontSize: 12,
+    fontWeight: '500',
+  },
 });
 
-export default AnalyticsCard;
+export default React.memo(AnalyticsCard);

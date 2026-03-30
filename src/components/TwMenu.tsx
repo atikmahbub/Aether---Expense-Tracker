@@ -49,8 +49,7 @@ const TwMenu: React.FC<TwMenuProps> = ({
           {Platform.OS === 'ios' && (
             <BlurView
               style={StyleSheet.absoluteFillObject}
-              // blurAmount={20}
-              // reducedTransparencyFallbackColor={colors.surfaceAlt}
+              intensity={20}
             />
           )}
           <View style={styles.menuTint} />

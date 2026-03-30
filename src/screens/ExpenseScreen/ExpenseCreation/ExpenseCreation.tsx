@@ -1,7 +1,14 @@
-import {View} from 'react-native';
-import React, {SetStateAction, useMemo, useState} from 'react';
-import FormModal from '@trackingPortal/components/FormModal';
+import {View, StyleSheet} from 'react-native';
+import React, {
+  SetStateAction,
+  useMemo,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import {Formik} from 'formik';
+
 
 import {
   EAddExpenseFields,
@@ -16,6 +23,7 @@ import {makeUnixTimestampString} from '@trackingPortal/api/primitives';
 import Toast from 'react-native-toast-message';
 import {ExpenseCategoryModel} from '@trackingPortal/api/models';
 import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
+import {BaseBottomSheet} from '@trackingPortal/components';
 
 interface IExpenseCreation {
   openCreationModal: boolean;
@@ -49,6 +57,8 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
   const {apiGateway} = useStoreContext();
   const {user} = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
+
+
   const defaultCategoryId = useMemo(() => {
     if (!categories.length) {
       return '';
@@ -62,77 +72,91 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
     return categories[0]?.id ?? '';
   }, [categories, lastUsedCategoryId]);
 
-  const handleAddExpense = async (values: INewExpense, {resetForm}: any) => {
-    try {
-      setLoading(true);
-      const trimmedDescription = values.description?.trim();
-      const categoryLabel =
-        categories.find(item => item.id === values.categoryId)?.name;
-      const params: IAddExpenseParams = {
-        userId: user.sub,
-        amount: Number(values.amount),
-        date: makeUnixTimestampString(Number(new Date(values.date))),
-        description: trimmedDescription || categoryLabel || 'Quick entry',
-        categoryId: values.categoryId,
-      };
-      await apiGateway.expenseService.addExpense(params);
-      resetForm({
-        values: {
+
+
+  const handleClose = useCallback(() => {
+    setOpenCreationModal(false);
+  }, [setOpenCreationModal]);
+
+  const handleAddExpense = useCallback(
+    async (values: INewExpense, {resetForm}: any) => {
+      if (!user?.sub) return;
+      try {
+        setLoading(true);
+        const trimmedDescription = values.description?.trim();
+        const categoryLabel = categories.find(
+          item => item.id === values.categoryId,
+        )?.name;
+        const params: IAddExpenseParams = {
+          userId: user.sub as any,
+          amount: Number(values.amount),
+          date: makeUnixTimestampString(Number(new Date(values.date))),
+          description: trimmedDescription || categoryLabel || 'Quick entry',
+          categoryId: values.categoryId,
+        };
+        await apiGateway.expenseService.addExpense(params);
+
+        resetForm({
+          values: {
+            [EAddExpenseFields.DATE]: new Date(),
+            [EAddExpenseFields.DESCRIPTION]: '',
+            [EAddExpenseFields.AMOUNT]: '',
+            [EAddExpenseFields.CATEGORY_ID]: params.categoryId,
+          },
+        });
+
+        // Close modal first for better UX
+        handleClose();
+
+        // Refresh data after close start
+        requestAnimationFrame(async () => {
+          await getUserExpenses();
+          await refreshAnalytics({force: true});
+          triggerSuccessHaptic();
+          onCategoryUsed?.(params.categoryId);
+          Toast.show({
+            type: 'success',
+            text1: 'Expense added successfully',
+          });
+          await getExceedExpenseNotification();
+        });
+      } catch (error) {
+        Toast.show({
+          type: 'error',
+          text1: 'Something went wrong!',
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      apiGateway.expenseService,
+      categories,
+      getExceedExpenseNotification,
+      getUserExpenses,
+      handleClose,
+      onCategoryUsed,
+      refreshAnalytics,
+      user?.sub,
+    ],
+  );
+
+  return (
+    <BaseBottomSheet
+      index={openCreationModal ? 1 : -1}
+      onClose={handleClose}>
+      <Formik
+        initialValues={{
           [EAddExpenseFields.DATE]: new Date(),
           [EAddExpenseFields.DESCRIPTION]: '',
           [EAddExpenseFields.AMOUNT]: '',
-          [EAddExpenseFields.CATEGORY_ID]: params.categoryId,
-        },
-      });
-      await getUserExpenses();
-      await refreshAnalytics({force: true});
-      triggerSuccessHaptic();
-      onCategoryUsed?.(params.categoryId);
-      Toast.show({
-        type: 'success',
-        text1: 'Expense added successfully',
-      });
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Something went wrong!',
-      });
-    } finally {
-      setLoading(false);
-      setOpenCreationModal(false);
-      await getExceedExpenseNotification();
-    }
-  };
-
-  return (
-    <Formik
-      initialValues={{
-        [EAddExpenseFields.DATE]: new Date(),
-        [EAddExpenseFields.DESCRIPTION]: '',
-        [EAddExpenseFields.AMOUNT]: '',
-        [EAddExpenseFields.CATEGORY_ID]: defaultCategoryId,
-      }}
-      onSubmit={handleAddExpense}
-      validationSchema={CreateExpenseSchema}>
-      {({resetForm, handleSubmit}) => {
-        return (
-          <View>
-            <FormModal
-              title="New Entry"
-              isVisible={openCreationModal}
-              onClose={() => {
-                setOpenCreationModal(false);
-                resetForm({
-                  values: {
-                    [EAddExpenseFields.DATE]: new Date(),
-                    [EAddExpenseFields.DESCRIPTION]: '',
-                    [EAddExpenseFields.AMOUNT]: '',
-                    [EAddExpenseFields.CATEGORY_ID]: defaultCategoryId,
-                  },
-                });
-              }}
-              onSave={handleSubmit}
-              children={
+          [EAddExpenseFields.CATEGORY_ID]: defaultCategoryId,
+        }}
+        onSubmit={handleAddExpense}
+        validationSchema={CreateExpenseSchema}>
+        {({handleSubmit}) => {
+          return (
+            <View style={styles.container}>
               <ExpenseForm
                 categories={categories}
                 categoriesLoading={categoriesLoading}
@@ -140,15 +164,22 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
                 refreshCategories={refreshCategories}
                 recentCategoryIds={recentCategoryIds}
                 defaultCategoryId={defaultCategoryId}
+                onSubmit={handleSubmit}
+                onCancel={handleClose}
+                loading={loading}
               />
-              }
-              loading={loading}
-            />
-          </View>
-        );
-      }}
-    </Formik>
+            </View>
+          );
+        }}
+      </Formik>
+    </BaseBottomSheet>
   );
 };
 
-export default ExpenseCreation;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
+
+export default React.memo(ExpenseCreation);

@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, InteractionManager} from 'react-native';
+import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity} from 'react-native';
 import React, {Fragment, useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddInvestFormFields} from '@trackingPortal/screens/InvestScreen';
@@ -6,12 +6,17 @@ import {TextInput} from 'react-native-paper';
 import {FormikCheckboxField, FormikTextInput} from '@trackingPortal/components';
 import DatePicker from 'react-native-date-picker';
 import dayjs from 'dayjs';
+import {LoadingButton} from '@trackingPortal/components';
+import {colors} from '@trackingPortal/themes/colors';
 
 interface IInvestForm {
   update?: boolean;
+  onSubmit: () => void;
+  onCancel: () => void;
+  loading: boolean;
 }
 
-const InvestForm: React.FC<IInvestForm> = ({update}) => {
+const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}) => {
   const {values, setFieldValue} = useFormikContext<any>();
   const [startPickerVisible, setStartPickerVisible] = useState(false);
   const [endPickerVisible, setEndPickerVisible] = useState(false);
@@ -37,11 +42,11 @@ const InvestForm: React.FC<IInvestForm> = ({update}) => {
   );
 
   const openStartPicker = useCallback(() => {
-    InteractionManager.runAfterInteractions(() => setStartPickerVisible(true));
+    setStartPickerVisible(true);
   }, []);
 
   const openEndPicker = useCallback(() => {
-    InteractionManager.runAfterInteractions(() => setEndPickerVisible(true));
+    setEndPickerVisible(true);
   }, []);
 
   return (
@@ -149,6 +154,24 @@ const InvestForm: React.FC<IInvestForm> = ({update}) => {
           />
         </Fragment>
       )}
+
+      <View style={styles.footer}>
+        <TouchableOpacity 
+          style={styles.cancelButton}
+          onPress={onCancel}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.saveButtonWrapper}>
+          <LoadingButton
+            label={update ? "Update Investment" : "Save Investment"}
+            loading={loading}
+            onPress={onSubmit}
+          />
+        </View>
+      </View>
     </View>
   );
 };
@@ -173,5 +196,31 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderRadius: 24,
     overflow: 'hidden',
+  },
+  footer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  cancelButtonText: {
+    color: colors.subText,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  saveButtonWrapper: {
+    minWidth: 140,
   },
 });

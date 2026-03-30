@@ -6,9 +6,9 @@ import LoanCreation from "@trackingPortal/screens/LoanScreen/LoanCreation";
 import LoanList from "@trackingPortal/screens/LoanScreen/LoanList";
 import LoanSummary from "@trackingPortal/screens/LoanScreen/LoanSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
-import { withHaptic } from "@trackingPortal/utils/haptic";
-import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, InteractionManager, StyleSheet, View } from "react-native";
+import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { FlatList, StyleSheet, View, Platform } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -16,6 +16,7 @@ import { useIsFocused } from "@react-navigation/native";
 
 export default function LoanScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
+  const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
   const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [loans, setLoans] = useState<LoanModel[]>([]);
   const { currentUser: user, apiGateway } = useStoreContext();
@@ -24,10 +25,18 @@ export default function LoanScreen() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
 
+  // 🔥 PRELOAD MODAL UI
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setIsCreationPreloaded(true);
+    }, 1000);
+    return () => clearTimeout(id);
+  }, []);
+
   const handleOpenCreationModal = useCallback(() => {
-    withHaptic(() => {
-      InteractionManager.runAfterInteractions(() => setOpenCreationModal(true));
-    });
+    // UI reacts immediately - haptics after modal starts
+    setOpenCreationModal(true);
+    triggerSuccessHaptic();
   }, []);
 
   useEffect(() => {
@@ -44,7 +53,10 @@ export default function LoanScreen() {
 
   useEffect(() => {
     if (!user.default) {
-      getUserLoans();
+      const rafId = requestAnimationFrame(() => {
+        getUserLoans();
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [user]);
 
@@ -66,25 +78,37 @@ export default function LoanScreen() {
     }
   };
 
-  const totalGiven = loans?.reduce((acc, crr): number => {
+  const totalGiven = useMemo(() => loans?.reduce((acc, crr): number => {
     if (crr.loanType === LoanType.GIVEN) {
       acc += crr.amount;
     }
     return acc;
-  }, 0);
+  }, 0), [loans]);
 
-  const totalBorrowed = loans?.reduce((acc, crr): number => {
+  const totalBorrowed = useMemo(() => loans?.reduce((acc, crr): number => {
     if (crr.loanType === LoanType.TAKEN) {
       acc += crr.amount;
     }
     return acc;
-  }, 0);
+  }, 0), [loans]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await getUserLoans();
     setRefreshing(false);
   };
+
+  const headerComponent = useMemo(() => (
+    <LoanSummary totalGiven={totalGiven} totalBorrowed={totalBorrowed} />
+  ), [totalGiven, totalBorrowed]);
+
+  const footerComponent = useMemo(() => (
+    <LoanList
+      notifyRowOpen={(value) => setHideFabIcon(value)}
+      loans={loans}
+      getUserLoan={getUserLoans}
+    />
+  ), [loans, getUserLoans]);
 
   if (loading && loans.length === 0) {
     return <AnimatedLoader />;
@@ -95,27 +119,28 @@ export default function LoanScreen() {
       <FlatList
         data={loans}
         keyExtractor={(item, index) => `${item.id || index}`}
-        ListHeaderComponent={
-          <LoanSummary totalGiven={totalGiven} totalBorrowed={totalBorrowed} />
-        }
-        ListFooterComponent={
-          <LoanList
-            notifyRowOpen={(value) => setHideFabIcon(value)}
-            loans={loans}
-            getUserLoan={getUserLoans}
-          />
-        }
+        ListHeaderComponent={headerComponent}
+        ListFooterComponent={footerComponent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        renderItem={null}
-        contentContainerStyle={styles.listContent}
+        renderItem={() => null}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 120 }
+        ]}
+        initialNumToRender={5}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
       />
-      <LoanCreation
-        getUserLoans={getUserLoans}
-        openCreationModal={openCreationModal}
-        setOpenCreationModal={setOpenCreationModal}
-      />
+      {(openCreationModal || isCreationPreloaded) && (
+        <LoanCreation
+          getUserLoans={getUserLoans}
+          openCreationModal={openCreationModal}
+          setOpenCreationModal={setOpenCreationModal}
+        />
+      )}
     </View>
   );
 }
