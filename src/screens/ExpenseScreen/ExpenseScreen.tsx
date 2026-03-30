@@ -18,7 +18,7 @@ import { colors } from "@trackingPortal/themes/colors";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Platform, RefreshControl, StyleSheet, View } from "react-native";
+import { Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ExpenseScreen() {
@@ -39,7 +39,7 @@ export default function ExpenseScreen() {
     {} as MonthlyLimitModel,
   );
 
-  const [combinedLoading, setCombinedLoading] = useState(true);
+  const [combinedLoading, setCombinedLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [limitLoading, setLimitLoading] = useState(false);
@@ -78,6 +78,71 @@ export default function ExpenseScreen() {
 
   useDailyExpenseReminder();
 
+  const fetchAnalytics = useCallback(
+    (options?: { force?: boolean }) => {
+      if (!activeUserId || !isCategoryHydrated) return;
+      return refreshAnalytics(options);
+    },
+    [refreshAnalytics, activeUserId, isCategoryHydrated],
+  );
+
+  const onRetryAnalytics = useCallback(() => {
+    refreshAnalytics({ force: true });
+  }, [refreshAnalytics]);
+
+  const handleNotifyRowOpen = useCallback(() => {}, []);
+  const handleExceedNotification = useCallback(() => {}, []);
+
+  const getExpenses = useCallback(async () => {
+    if (!user.userId) return;
+
+    setLoading(true);
+
+    try {
+      const response = await apiGateway.expenseService.getExpenseByUser({
+        userId: user.userId,
+        date: dayjs(filterMonth).unix() as unknown as UnixTimeStampString,
+      });
+
+      setExpenses(response);
+    } catch (error) {
+      console.log("expense error", error);
+    } finally {
+      setLoading(false);
+      setCombinedLoading(false);
+    }
+  }, [user.userId, apiGateway.expenseService, filterMonth]);
+
+  const getMonthlyLimit = useCallback(async () => {
+    if (!user.userId) return;
+
+    setLimitLoading(true);
+
+    try {
+      const response =
+        await apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
+          userId: user.userId,
+          month: (dayjs(filterMonth).month() + 1) as Month,
+          year: dayjs(filterMonth).year() as Year,
+        });
+
+      setMonthLimit(response);
+    } catch (error) {
+      console.log("limit error", error);
+    } finally {
+      setLimitLoading(false);
+    }
+  }, [user.userId, apiGateway.monthlyLimitService, filterMonth]);
+
+  const loadData = useCallback(async () => {
+    // Only essentials first
+    await Promise.all([getMonthlyLimit(), fetchAnalytics()]);
+
+    requestAnimationFrame(() => {
+      getExpenses();
+    });
+  }, [getMonthlyLimit, fetchAnalytics, getExpenses]);
+
   // 🔥 OPEN MODAL EVENT
   useEffect(() => {
     const listener = () => {
@@ -97,11 +162,12 @@ export default function ExpenseScreen() {
   useEffect(() => {
     if (activeUserId && !user.default) {
       const rafId = requestAnimationFrame(() => {
+        setCombinedLoading(true);
         loadData();
       });
       return () => cancelAnimationFrame(rafId);
     }
-  }, [activeUserId, user.default, filterMonth]);
+  }, [activeUserId, user.default, filterMonth, loadData]);
 
   // 🔥 ENSURE ANALYTICS LOADS AFTER CATEGORY HYDRATION
   useEffect(() => {
@@ -124,61 +190,7 @@ export default function ExpenseScreen() {
     initializeFromHistory(historyIds);
   }, [expenses, initializeFromHistory, recentCategoryIds, recentHydrated]);
 
-  const fetchAnalytics = useCallback(
-    (options?: { force?: boolean }) => {
-      if (!activeUserId || !isCategoryHydrated) return;
-      return refreshAnalytics(options);
-    },
-    [refreshAnalytics, activeUserId, isCategoryHydrated],
-  );
-
-  const getExpenses = async () => {
-    if (!user.userId) return;
-
-    setLoading(true);
-
-    try {
-      const response = await apiGateway.expenseService.getExpenseByUser({
-        userId: user.userId,
-        date: dayjs(filterMonth).unix() as unknown as UnixTimeStampString,
-      });
-
-      setExpenses(response);
-    } catch (error) {
-      console.log("expense error", error);
-    } finally {
-      setLoading(false);
-      setCombinedLoading(false);
-    }
-  };
-
-  const getMonthlyLimit = async () => {
-    if (!user.userId) return;
-
-    setLimitLoading(true);
-
-    try {
-      const response =
-        await apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
-          userId: user.userId,
-          month: (dayjs(filterMonth).month() + 1) as Month,
-          year: dayjs(filterMonth).year() as Year,
-        });
-
-      setMonthLimit(response);
-    } catch (error) {
-      console.log("limit error", error);
-    } finally {
-      setLimitLoading(false);
-    }
-  };
-
-  const loadData = async () => {
-    // Only essentials first
-    await Promise.all([getExpenses(), getMonthlyLimit()]);
-  };
-
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setCombinedLoading(true);
 
@@ -189,7 +201,7 @@ export default function ExpenseScreen() {
     ]);
 
     setRefreshing(false);
-  };
+  }, [loadData, fetchAnalytics, refreshCategories]);
 
   const totalExpense = useMemo(
     () => expenses.reduce((acc, crr) => acc + crr.amount, 0),
@@ -199,7 +211,7 @@ export default function ExpenseScreen() {
   const headerComponent = useMemo(() => (
     <View>
       <ExpenseSummary
-        totalExpense={totalExpense}
+        totalExpense={analytics?.totalExpense ?? 0}
         filterMonth={filterMonth}
         monthLimit={monthLimit}
         getMonthlyLimit={getMonthlyLimit}
@@ -211,11 +223,11 @@ export default function ExpenseScreen() {
         categories={categoryLookup}
         loading={analyticsLoading || !isCategoryHydrated}
         error={analyticsError}
-        onRetry={() => refreshAnalytics({ force: true })}
+        onRetry={onRetryAnalytics}
         currency={currency}
       />
     </View>
-  ), [totalExpense, filterMonth, monthLimit, getMonthlyLimit, analytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, currency, refreshAnalytics]);
+  ), [filterMonth, monthLimit, getMonthlyLimit, analytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
 
   const footerComponent = useMemo(() => (
     <ExpenseList
@@ -229,11 +241,11 @@ export default function ExpenseScreen() {
       refreshAnalytics={fetchAnalytics}
       recentCategoryIds={recentCategoryIds}
       onCategoryUsed={addRecentCategory}
-      notifyRowOpen={() => {}}
+      notifyRowOpen={handleNotifyRowOpen}
     />
-  ), [filterMonth, setFilterMonth, expenses, getExpenses, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory]);
+  ), [filterMonth, setFilterMonth, expenses, getExpenses, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory, handleNotifyRowOpen]);
 
-  // 🔥 MAIN LOADER FIX
+  // 🔥 MAIN LOADER FIX - DISABLED FOR DEBUGGING
   if (
     (combinedLoading || loading || limitLoading || !isCategoryHydrated) &&
     expenses.length === 0
@@ -243,13 +255,7 @@ export default function ExpenseScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={expenses}
-        keyExtractor={(item, index) => `${item.id || index}`}
-        initialNumToRender={5}
-        maxToRenderPerBatch={8}
-        windowSize={5} // Optimized for mobile
-        removeClippedSubviews={Platform.OS === 'android'} // Usually better on Android
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.listContent,
@@ -262,17 +268,17 @@ export default function ExpenseScreen() {
             tintColor={colors.primary}
           />
         }
-        ListHeaderComponent={headerComponent}
-        ListFooterComponent={footerComponent}
-        renderItem={() => null}
-      />
+      >
+        {headerComponent}
+        {footerComponent}
+      </ScrollView>
 
       {(openCreationForm || isCreationPreloaded) && (
         <ExpenseCreation
           openCreationModal={openCreationForm}
           setOpenCreationModal={setOpenCreationModal}
           getUserExpenses={getExpenses}
-          getExceedExpenseNotification={() => {}}
+          getExceedExpenseNotification={handleExceedNotification}
           categories={categories}
           categoriesLoading={categoryLoading}
           refreshCategories={refreshCategories}

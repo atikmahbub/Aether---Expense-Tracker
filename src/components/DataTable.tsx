@@ -106,7 +106,7 @@ const DataTable: React.FC<DataTableProps> = ({
     [handleEditToggle, handleDelete],
   );
 
-  const renderRow = ({item}: {item: any}) => {
+  const renderRow = (item: any, index: number) => {
     const isRowOpen = expandedRowId === item.id;
     const isLoanRow = item.Type === 'Given' || item.Type === 'Taken';
     const amountValue =
@@ -122,7 +122,9 @@ const DataTable: React.FC<DataTableProps> = ({
     const categoryColor = item.CategoryColor;
     return (
       <Swipeable
-        ref={ref => (swipeableRefs.current[item.id] = ref)}
+        ref={ref => {
+          swipeableRefs.current[item.id] = ref;
+        }}
         renderRightActions={
           !isRowOpen
             ? () =>
@@ -252,14 +254,17 @@ const DataTable: React.FC<DataTableProps> = ({
 
   return (
     <View style={styles.mainContainer}>
-      <FlatList
-        data={data}
-        keyExtractor={item => item.id.toString()}
-        renderItem={renderRow}
-        contentContainerStyle={styles.table}
-        nestedScrollEnabled={true}
-        ListEmptyComponent={renderEmptyComponent}
-      />
+      <View style={styles.table}>
+        {data.length > 0 ? (
+          data.map((item, index) => (
+            <React.Fragment key={item.id?.toString() || index}>
+              {renderRow(item, index)}
+            </React.Fragment>
+          ))
+        ) : (
+          renderEmptyComponent()
+        )}
+      </View>
     </View>
   );
 };
