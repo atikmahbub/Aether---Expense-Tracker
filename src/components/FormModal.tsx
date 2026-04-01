@@ -56,10 +56,12 @@ const FormModal: React.FC<IFormModal> = ({
         </TouchableWithoutFeedback>
         <SafeAreaView style={styles.safeArea}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            behavior="padding"
             style={styles.keyboardAvoidingView}>
-            <View style={[styles.modalContent, { flex: 1, maxHeight: '85%' }]}>
+            <View style={styles.modalContent}>
+              <View style={styles.indicatorWrapper}>
+                <View style={styles.indicator} />
+              </View>
               <View>
                 <Text style={styles.title}>{title}</Text>
                 {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -67,7 +69,8 @@ const FormModal: React.FC<IFormModal> = ({
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={[styles.scrollView, { paddingBottom: 24 }]}>
+                bounces={false}
+                contentContainerStyle={styles.scrollView}>
                 {children}
               </ScrollView>
               <View style={styles.buttonContainer}>
@@ -115,20 +118,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  indicatorWrapper: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  indicator: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  },
   modalContent: {
     backgroundColor: colors.overlay,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
-    paddingTop: 22,
-    paddingBottom: 36,
-    justifyContent: 'space-between',
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     shadowColor: colors.primary,
     shadowOpacity: 0.25,
     shadowRadius: 30,
     shadowOffset: {width: 0, height: -12},
+    maxHeight: '90%',
   },
   title: {
     fontSize: 20,
@@ -144,7 +157,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scrollView: {
-    flexGrow: 1,
+    paddingBottom: 8,
   },
   buttonContainer: {
     flexDirection: 'row',

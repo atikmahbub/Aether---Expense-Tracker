@@ -136,6 +136,7 @@ export default function InvestScreen() {
         keyExtractor={(item, index) => `${item.id || index}`}
         ListHeaderComponent={headerComponent}
         ListFooterComponent={footerComponent}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }

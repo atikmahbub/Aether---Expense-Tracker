@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity} from 'react-native';
+import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity, Keyboard} from 'react-native';
 import React, {Fragment, useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddInvestFormFields} from '@trackingPortal/screens/InvestScreen';
@@ -158,7 +158,10 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
       <View style={styles.footer}>
         <TouchableOpacity 
           style={styles.cancelButton}
-          onPress={onCancel}
+          onPress={() => {
+            Keyboard.dismiss();
+            onCancel();
+          }}
           activeOpacity={0.7}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -168,7 +171,10 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
           <LoadingButton
             label={update ? "Update Investment" : "Save Investment"}
             loading={loading}
-            onPress={onSubmit}
+            onPress={() => {
+              Keyboard.dismiss();
+              onSubmit();
+            }}
           />
         </View>
       </View>

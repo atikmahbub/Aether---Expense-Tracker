@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, TouchableOpacity, InteractionManager} from 'react-native';
+import {View, Pressable, StyleSheet, Text, TouchableOpacity, InteractionManager, Keyboard} from 'react-native';
 import React, {useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddLoanFields} from '@trackingPortal/screens/LoanScreen';
@@ -133,7 +133,10 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
       <View style={styles.footer}>
         <TouchableOpacity 
           style={styles.cancelButton}
-          onPress={onCancel}
+          onPress={() => {
+            Keyboard.dismiss();
+            onCancel();
+          }}
           activeOpacity={0.7}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -143,7 +146,10 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
           <LoadingButton
             label="Save Loan Entry"
             loading={loading}
-            onPress={onSubmit}
+            onPress={() => {
+              Keyboard.dismiss();
+              onSubmit();
+            }}
           />
         </View>
       </View>
