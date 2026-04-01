@@ -9,9 +9,9 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Modal,
+  ScrollView,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import LoadingButton from '@trackingPortal/components/LoadingButton';
 import {colors} from '@trackingPortal/themes/colors';
 
@@ -56,41 +56,39 @@ const FormModal: React.FC<IFormModal> = ({
         </TouchableWithoutFeedback>
         <SafeAreaView style={styles.safeArea}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             style={styles.keyboardAvoidingView}>
-            <TouchableWithoutFeedback onPress={dismissKeyboard}>
-              <View style={styles.modalContent}>
-                <View>
-                  <Text style={styles.title}>{title}</Text>
-                  {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-                </View>
-                <KeyboardAwareScrollView
-                  enableOnAndroid
-                  extraScrollHeight={20}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={styles.scrollView}>
-                  {children}
-                </KeyboardAwareScrollView>
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      dismissKeyboard();
-                      onClose();
-                    }}>
-                    <Text style={styles.buttonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <LoadingButton
-                    label={saveLabel || 'Save'}
-                    loading={!!loading}
-                    onPress={() => {
-                      dismissKeyboard();
-                      onSave();
-                    }}
-                  />
-                </View>
+            <View style={[styles.modalContent, { flex: 1, maxHeight: '85%' }]}>
+              <View>
+                <Text style={styles.title}>{title}</Text>
+                {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
               </View>
-            </TouchableWithoutFeedback>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={[styles.scrollView, { paddingBottom: 24 }]}>
+                {children}
+              </ScrollView>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    dismissKeyboard();
+                    onClose();
+                  }}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <LoadingButton
+                  label={saveLabel || 'Save'}
+                  loading={!!loading}
+                  onPress={() => {
+                    dismissKeyboard();
+                    onSave();
+                  }}
+                />
+              </View>
+            </View>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </View>

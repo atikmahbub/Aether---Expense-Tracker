@@ -48,6 +48,7 @@ const BaseBottomSheet = React.memo(
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             style={styles.keyboardView}
           >
             <View style={styles.contentWrapper}>
@@ -57,6 +58,7 @@ const BaseBottomSheet = React.memo(
               <ScrollView 
                 bounces={false} 
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.scrollContent}
               >
                 {children}

@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity} from 'react-native';
+import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity, Keyboard} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddExpenseFields} from '@trackingPortal/screens/ExpenseScreen/ExpenseCreation/ExpenseCreation.constants';
@@ -156,7 +156,10 @@ export default function ExpenseForm({
       <View style={styles.footer}>
         <TouchableOpacity 
           style={styles.cancelButton}
-          onPress={onCancel}
+          onPress={() => {
+            Keyboard.dismiss();
+            onCancel();
+          }}
           activeOpacity={0.7}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -166,7 +169,10 @@ export default function ExpenseForm({
           <LoadingButton
             label="Save Entry"
             loading={loading}
-            onPress={onSubmit}
+            onPress={() => {
+              Keyboard.dismiss();
+              onSubmit();
+            }}
           />
         </View>
       </View>
