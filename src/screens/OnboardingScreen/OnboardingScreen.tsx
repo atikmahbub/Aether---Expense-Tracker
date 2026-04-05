@@ -11,22 +11,32 @@ import {
 
 import {colors} from '@trackingPortal/themes/colors';
 import {OnboardingSlide} from '@trackingPortal/components';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const SLIDES = [
   {
     id: 'slide-1',
     title: 'Track your money effortlessly',
     subtitle: 'See where your money goes, instantly',
+    icon: <MaterialCommunityIcons name="wallet-outline" size={80} color={colors.primary} />,
   },
   {
     id: 'slide-2',
     title: 'Understand your spending',
     subtitle: 'Smart insights & category breakdown',
+    icon: <MaterialCommunityIcons name="chart-pie" size={80} color={colors.secondary} />,
   },
   {
     id: 'slide-3',
     title: 'Add your first expense in seconds',
     subtitle: 'Start building your financial habit today',
+    icon: <MaterialCommunityIcons name="plus-circle-outline" size={80} color={colors.tertiary} />,
+  },
+  {
+    id: 'slide-4',
+    title: 'Works Offline',
+    subtitle: 'Add expenses anytime, even without internet. Your data syncs automatically when you\'re back online.',
+    icon: <MaterialCommunityIcons name="cloud-off-outline" size={80} color={colors.primary} />,
   },
 ] as const;
 
@@ -56,7 +66,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
   }, [currentIndex, onFinish]);
 
   const renderItem = useCallback(({item}: {item: Slide}) => {
-    return <OnboardingSlide title={item.title} subtitle={item.subtitle} />;
+    return (
+      <OnboardingSlide 
+        title={item.title} 
+        subtitle={item.subtitle} 
+        icon={item.icon}
+      />
+    );
   }, []);
 
   const onViewableItemsChanged = useRef(

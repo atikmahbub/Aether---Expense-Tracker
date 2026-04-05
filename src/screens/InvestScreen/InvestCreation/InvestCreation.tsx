@@ -4,8 +4,9 @@ import React, { SetStateAction, useCallback, useEffect, useRef, useState } from 
 import { StyleSheet, View } from 'react-native';
 
 import { IAddInvestParams } from '@trackingPortal/api/params';
-import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
+import { makeUnixTimestampString, InvestId, UserId } from '@trackingPortal/api/primitives';
 import { BaseBottomSheet } from '@trackingPortal/components';
+import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
 import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
 import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
@@ -18,6 +19,7 @@ import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
 import Toast from 'react-native-toast-message';
 
 import { InvestModel } from '@trackingPortal/api/models';
+import { EInvestStatus } from '@trackingPortal/api/enums';
 
 interface IInvestCreation {
   openCreationModal: boolean;
@@ -34,7 +36,7 @@ const InvestCreation: React.FC<IInvestCreation> = ({
 }) => {
   const {apiGateway} = useStoreContext();
   const {currentUser: user} = useStoreContext();
-  const {isOnline} = useNetwork();
+  const {isOnline, saveOffline} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
 
 
@@ -46,12 +48,41 @@ const InvestCreation: React.FC<IInvestCreation> = ({
     if (!user.userId) return;
 
     if (!isOnline) {
-      Toast.show({
-        type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Please check your connection and try again.',
-      });
-      return;
+      try {
+        setLoading(true);
+        const params: IAddInvestParams = {
+          userId: user.userId,
+          name: values.name,
+          amount: Number(values.amount),
+          startDate: makeUnixTimestampString(
+            Number(new Date(Number(values.start_date))),
+          ),
+          note: values.note,
+        };
+        const offlineItem = await saveOffline('invest', params);
+
+        // ✅ Optimistic update
+        const mockInvest: InvestModel = {
+          id: offlineItem.id as unknown as InvestId,
+          name: values.name,
+          amount: Number(values.amount),
+          note: values.note,
+          startDate: params.startDate,
+          endDate: null,
+          status: EInvestStatus.Active,
+          earned: 0,
+          created: makeUnixTimestampString(Date.now()),
+          updated: makeUnixTimestampString(Date.now()),
+        };
+
+        setInvests(prev => [mockInvest, ...prev]);
+        handleClose();
+        return;
+      } catch (error) {
+        console.error('Offline Investment Error:', error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     try {
@@ -92,7 +123,7 @@ const InvestCreation: React.FC<IInvestCreation> = ({
     } finally {
       setLoading(false);
     }
-  }, [user.userId, apiGateway.investService, handleClose, setInvests, getUserInvestHistory]);
+  }, [user.userId, apiGateway.investService, handleClose, setInvests, getUserInvestHistory, isOnline, saveOffline]);
 
   return (
     <BaseBottomSheet

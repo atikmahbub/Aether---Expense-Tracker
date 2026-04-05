@@ -1,5 +1,12 @@
 import { LoanType } from "@trackingPortal/api/enums";
 import { LoanModel } from "@trackingPortal/api/models";
+import { offlineService } from "@trackingPortal/api/utils/OfflineService";
+import {
+  UnixTimeStampString,
+  LoanId,
+  makeUnixTimestampString,
+  UserId,
+} from "@trackingPortal/api/primitives";
 import { AnimatedLoader } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import LoanCreation from "@trackingPortal/screens/LoanScreen/LoanCreation";
@@ -66,6 +73,19 @@ export default function LoanScreen() {
     };
   }, [isFocused, handleOpenCreationModal]);
 
+  // 🔄 SYNC COMPLETED: Refresh data
+  useEffect(() => {
+    const onSyncCompleted = () => {
+      getUserLoans();
+    };
+
+    eventEmitter.on(EVENTS.OFFLINE_SYNC_COMPLETED, onSyncCompleted);
+
+    return () => {
+      eventEmitter.off(EVENTS.OFFLINE_SYNC_COMPLETED, onSyncCompleted);
+    };
+  }, []);
+
   useEffect(() => {
     if (!user.default) {
       const rafId = requestAnimationFrame(() => {
@@ -78,10 +98,37 @@ export default function LoanScreen() {
   const getUserLoans = async () => {
     try {
       setLoading(true);
-      const response = await apiGateway.loanServices.getLoanByUserId(
-        user.userId,
-      );
-      setLoans(response);
+
+      // 1. Fetch from server
+      let serverLoans: LoanModel[] = [];
+      try {
+        serverLoans = await apiGateway.loanServices.getLoanByUserId(
+          user.userId,
+        );
+      } catch (e) {
+        console.log("Server Loan fetch failed", e);
+      }
+
+      // 2. Load from offline queue
+      const queue = await offlineService.getQueue();
+      const offlineLoans: LoanModel[] = queue
+        .filter(item => 
+          item.type === 'loan' && 
+          !item.synced
+        )
+        .map(item => ({
+          id: item.id as unknown as LoanId,
+          userId: item.payload.userId as UserId,
+          name: item.payload.name,
+          amount: item.payload.amount,
+          note: item.payload.note,
+          deadLine: item.payload.deadLine as UnixTimeStampString,
+          loanType: item.payload.loanType,
+          created: makeUnixTimestampString(item.createdAt),
+          updated: makeUnixTimestampString(item.createdAt),
+        }));
+
+      setLoans([...offlineLoans, ...serverLoans]);
     } catch (error) {
       console.log("error", error);
       Toast.show({

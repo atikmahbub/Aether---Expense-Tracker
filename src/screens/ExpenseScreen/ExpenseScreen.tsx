@@ -1,9 +1,13 @@
 import { useIsFocused } from "@react-navigation/native";
 import { ExpenseModel, MonthlyLimitModel } from "@trackingPortal/api/models";
+import { offlineService } from "@trackingPortal/api/utils/OfflineService";
 import {
   Month,
   UnixTimeStampString,
   Year,
+  ExpenseId,
+  UserId,
+  makeUnixTimestampString,
 } from "@trackingPortal/api/primitives";
 import { AnimatedLoader } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
@@ -111,19 +115,48 @@ export default function ExpenseScreen() {
     setLoading(true);
 
     try {
-      const response = await apiGateway.expenseService.getExpenseByUser({
-        userId: user.userId,
-        date: dayjs(filterMonth).unix() as unknown as UnixTimeStampString,
-      });
+      // 1. Fetch from server
+      let serverExpenses: ExpenseModel[] = [];
+      try {
+        serverExpenses = await apiGateway.expenseService.getExpenseByUser({
+          userId: user.userId,
+          date: dayjs(filterMonth).unix() as unknown as UnixTimeStampString,
+        });
+      } catch (e) {
+        console.log("Server Expense fetch failed", e);
+      }
 
-      setExpenses(response);
+      // 2. Load from offline queue
+      const queue = await offlineService.getQueue();
+      const currentMonthStr = dayjs(filterMonth).format("YYYY-MM");
+      
+      const offlineExpenses: ExpenseModel[] = queue
+        .filter(item => 
+          item.type === 'expense' && 
+          !item.synced && 
+          dayjs(Number(item.payload.date) * 1000).format("YYYY-MM") === currentMonthStr
+        )
+        .map(item => ({
+          id: item.id as unknown as ExpenseId,
+          userId: item.payload.userId as UserId,
+          amount: item.payload.amount,
+          date: item.payload.date as UnixTimeStampString,
+          description: item.payload.description,
+          categoryId: item.payload.categoryId,
+          categoryName: categories.find(c => c.id === item.payload.categoryId)?.name || 'Other',
+          created: makeUnixTimestampString(item.createdAt),
+          updated: makeUnixTimestampString(item.createdAt),
+        }));
+
+      // Combine: Offline items at the top (sorted by date desc within each group)
+      setExpenses([...offlineExpenses, ...serverExpenses]);
     } catch (error) {
       console.log("expense error", error);
     } finally {
       setLoading(false);
       setCombinedLoading(false);
     }
-  }, [user.userId, apiGateway.expenseService, filterMonth]);
+  }, [user.userId, apiGateway.expenseService, filterMonth, categories]);
 
   const getMonthlyLimit = useCallback(async () => {
     if (!user.userId) return;
@@ -146,11 +179,11 @@ export default function ExpenseScreen() {
     }
   }, [user.userId, apiGateway.monthlyLimitService, filterMonth]);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (options?: { force?: boolean }) => {
     // Reset page count on filter/user change
     setVisibleCount(12);
     // Only essentials first
-    await Promise.all([getMonthlyLimit(), fetchAnalytics()]);
+    await Promise.all([getMonthlyLimit(), fetchAnalytics(options)]);
 
     requestAnimationFrame(() => {
       getExpenses();
@@ -165,7 +198,7 @@ export default function ExpenseScreen() {
     }
     if (wasOfflineRef.current && isFocused) {
       wasOfflineRef.current = false;
-      loadData();
+      loadData({ force: true });
       refreshCategories({ force: true });
     }
   }, [isOnline, isFocused, loadData, refreshCategories]);
@@ -185,6 +218,20 @@ export default function ExpenseScreen() {
       eventEmitter.off(EVENTS.OPEN_CREATION_MODAL, listener);
     };
   }, [isFocused]);
+
+  // 🔄 SYNC COMPLETED: Refresh data
+  useEffect(() => {
+    const onSyncCompleted = () => {
+      loadData({ force: true });
+      refreshCategories({ force: true });
+    };
+
+    eventEmitter.on(EVENTS.OFFLINE_SYNC_COMPLETED, onSyncCompleted);
+
+    return () => {
+      eventEmitter.off(EVENTS.OFFLINE_SYNC_COMPLETED, onSyncCompleted);
+    };
+  }, [loadData, refreshCategories]);
 
   // 🔥 LOAD DATA (ON MOUNT) - Balanced hydration
   useEffect(() => {
@@ -240,15 +287,20 @@ export default function ExpenseScreen() {
     setRefreshing(false);
   }, [isOnline, loadData, fetchAnalytics, refreshCategories]);
 
-  const totalExpense = useMemo(
-    () => expenses.reduce((acc, crr) => acc + crr.amount, 0),
-    [expenses]
-  );
+  const totalExpense = useMemo(() => {
+    const listTotal = expenses.reduce((acc, crr) => acc + crr.amount, 0);
+    // If list is empty but we have analytics which might have returned first, use that.
+    // However, as soon as list is loaded, use its total (as it includes local offline items).
+    if (listTotal === 0 && (loading || combinedLoading) && analytics?.totalExpense) {
+      return analytics.totalExpense;
+    }
+    return listTotal;
+  }, [expenses, analytics, loading, combinedLoading]);
 
   const headerComponent = useMemo(() => (
     <View>
       <ExpenseSummary
-        totalExpense={analytics?.totalExpense ?? 0}
+        totalExpense={totalExpense}
         filterMonth={filterMonth}
         monthLimit={monthLimit}
         getMonthlyLimit={getMonthlyLimit}

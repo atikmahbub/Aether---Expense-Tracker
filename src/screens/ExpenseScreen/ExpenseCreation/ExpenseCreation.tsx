@@ -10,9 +10,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { ExpenseCategoryModel, ExpenseModel } from '@trackingPortal/api/models';
 import { IAddExpenseParams } from '@trackingPortal/api/params';
-import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
+import { makeUnixTimestampString, ExpenseId, UserId } from '@trackingPortal/api/primitives';
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import { BaseBottomSheet } from '@trackingPortal/components';
+import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
 import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
 import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
@@ -57,7 +58,7 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
 }) => {
   const { apiGateway } = useStoreContext();
   const { user } = useAuth();
-  const { isOnline } = useNetwork();
+  const { isOnline, saveOffline } = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
 
   const defaultCategoryId = useMemo(() => {
@@ -81,12 +82,52 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
       if (!user?.sub) return;
 
       if (!isOnline) {
-        Toast.show({
-          type: 'offline',
-          text1: 'No internet connection',
-          text2: 'Please check your connection and try again.',
-        });
-        return;
+        try {
+          setLoading(true);
+          const trimmedDescription = values.description?.trim();
+          const categoryLabel = categories.find(
+            item => item.id === values.categoryId,
+          )?.name;
+
+          const safeDate = dayjs(values.date)
+            .hour(12)
+            .minute(0)
+            .second(0)
+            .millisecond(0)
+            .toDate();
+
+          const params: IAddExpenseParams = {
+            userId: user.sub as any,
+            amount: Number(values.amount),
+            date: makeUnixTimestampString(Number(safeDate)),
+            description: trimmedDescription || categoryLabel || 'Quick entry',
+            categoryId: values.categoryId,
+          };
+
+          const offlineItem = await saveOffline('expense', params);
+          
+          // ✅ Optimistic update for offline
+          const mockExpense: ExpenseModel = {
+            id: offlineItem.id as unknown as ExpenseId,
+            userId: user.sub as any,
+            amount: Number(values.amount),
+            date: makeUnixTimestampString(Number(safeDate)),
+            description: trimmedDescription || categoryLabel || 'Quick entry',
+            categoryId: values.categoryId,
+            categoryName: categoryLabel,
+            created: makeUnixTimestampString(Date.now()),
+            updated: makeUnixTimestampString(Date.now()),
+          };
+
+          setExpenses(prev => [mockExpense, ...prev]);
+          handleClose();
+          resetForm();
+          return;
+        } catch (error) {
+          console.error('Offline Expense Error:', error);
+        } finally {
+          setLoading(false);
+        }
       }
       try {
         setLoading(true);
@@ -164,6 +205,8 @@ const ExpenseCreation: React.FC<IExpenseCreation> = ({
       refreshAnalytics,
       setExpenses,
       user?.sub,
+      isOnline,
+      saveOffline,
     ],
   );
 

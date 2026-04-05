@@ -1,6 +1,12 @@
 import { EInvestStatus } from "@trackingPortal/api/enums";
 import { InvestModel } from "@trackingPortal/api/models";
+import { offlineService } from "@trackingPortal/api/utils/OfflineService";
 import { AnimatedLoader } from "@trackingPortal/components";
+import {
+  UnixTimeStampString,
+  InvestId,
+  makeUnixTimestampString,
+} from "@trackingPortal/api/primitives";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import InvestCreation from "@trackingPortal/screens/InvestScreen/InvestCreation";
 import InvestList from "@trackingPortal/screens/InvestScreen/InvestList";
@@ -68,6 +74,19 @@ export default function InvestScreen() {
     };
   }, [isFocused, handleOpenCreationModal]);
 
+  // 🔄 SYNC COMPLETED: Refresh data
+  useEffect(() => {
+    const onSyncCompleted = () => {
+      getUserInvestHistory();
+    };
+
+    eventEmitter.on(EVENTS.OFFLINE_SYNC_COMPLETED, onSyncCompleted);
+
+    return () => {
+      eventEmitter.off(EVENTS.OFFLINE_SYNC_COMPLETED, onSyncCompleted);
+    };
+  }, []);
+
   useEffect(() => {
     if (!user.default) {
       const rafId = requestAnimationFrame(() => {
@@ -80,11 +99,39 @@ export default function InvestScreen() {
   const getUserInvestHistory = async () => {
     try {
       setLoading(true);
-      const response = await apiGateway.investService.getInvestByUserId({
-        userId: user.userId,
-        status: status,
-      });
-      setInvests(response);
+
+      // 1. Fetch from server
+      let serverInvests: InvestModel[] = [];
+      try {
+        serverInvests = await apiGateway.investService.getInvestByUserId({
+          userId: user.userId,
+          status: status,
+        });
+      } catch (e) {
+        console.log("Server Invest fetch failed", e);
+      }
+
+      // 2. Load from offline queue
+      const queue = await offlineService.getQueue();
+      const offlineInvests: InvestModel[] = queue
+        .filter(item => 
+          item.type === 'invest' && 
+          !item.synced
+        )
+        .map(item => ({
+          id: item.id as unknown as InvestId,
+          name: item.payload.name,
+          amount: item.payload.amount,
+          note: item.payload.note,
+          startDate: item.payload.startDate as UnixTimeStampString,
+          endDate: null,
+          status: EInvestStatus.Active,
+          earned: 0,
+          created: makeUnixTimestampString(item.createdAt),
+          updated: makeUnixTimestampString(item.createdAt),
+        }));
+
+      setInvests([...offlineInvests, ...serverInvests]);
     } catch (error) {
       console.log("error", error);
       Toast.show({

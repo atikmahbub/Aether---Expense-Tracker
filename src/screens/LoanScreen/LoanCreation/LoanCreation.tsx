@@ -4,9 +4,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { LoanType } from '@trackingPortal/api/enums';
 import { LoanModel } from '@trackingPortal/api/models';
+import { LoanId, makeUnixTimestampString, UserId } from '@trackingPortal/api/primitives';
 import { IAddLoanParams } from '@trackingPortal/api/params';
-import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
 import { BaseBottomSheet } from '@trackingPortal/components';
+import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
 import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
 import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
@@ -32,7 +33,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
 }) => {
   const {apiGateway} = useStoreContext();
   const {currentUser: user} = useStoreContext();
-  const {isOnline} = useNetwork();
+  const {isOnline, saveOffline} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleClose = useCallback(() => {
@@ -43,12 +44,41 @@ const LoanCreation: React.FC<ILoanCreation> = ({
     if (!user.userId) return;
 
     if (!isOnline) {
-      Toast.show({
-        type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Please check your connection and try again.',
-      });
-      return;
+      try {
+        setLoading(true);
+        const params: IAddLoanParams = {
+          userId: user.userId,
+          name: values.name,
+          amount: Number(values.amount),
+          deadLine: makeUnixTimestampString(
+            Number(new Date(Number(values.deadLine))),
+          ),
+          loanType: values.loan_type,
+          note: values.note,
+        };
+        const offlineItem = await saveOffline('loan', params);
+
+        // ✅ Optimistic update
+        const mockLoan: LoanModel = {
+          id: offlineItem.id as unknown as LoanId,
+          userId: user.userId as UserId,
+          name: values.name,
+          amount: Number(values.amount),
+          note: values.note,
+          deadLine: params.deadLine,
+          loanType: values.loan_type,
+          created: makeUnixTimestampString(Date.now()),
+          updated: makeUnixTimestampString(Date.now()),
+        };
+
+        setLoans(prev => [mockLoan, ...prev]);
+        handleClose();
+        return;
+      } catch (error) {
+        console.error('Offline Loan Error:', error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     try {
@@ -90,7 +120,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
     } finally {
       setLoading(false);
     }
-  }, [user.userId, apiGateway.loanServices, handleClose, setLoans, getUserLoans]);
+  }, [user.userId, apiGateway.loanServices, handleClose, setLoans, getUserLoans, isOnline, saveOffline]);
 
   return (
     <BaseBottomSheet

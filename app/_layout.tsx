@@ -24,6 +24,7 @@ import OfflineBanner from '@trackingPortal/components/OfflineBanner';
 import toastConfig from '@trackingPortal/components/ToastConfig';
 import { NetworkProvider } from '@trackingPortal/contexts/NetworkProvider';
 import { StoreProvider } from '@trackingPortal/contexts/StoreProvider';
+import { OfflineProvider } from '@trackingPortal/contexts/OfflineProvider';
 import AppLayout from '@trackingPortal/layout';
 import OnboardingScreen from '@trackingPortal/screens/OnboardingScreen';
 import { colors } from '@trackingPortal/themes/colors';
@@ -186,10 +187,12 @@ export default function RootLayout() {
           <Auth0ProviderWithHistory>
             <StoreProvider>
               <NetworkProvider>
-                {/* ✅ IMPORTANT: Router must be here */}
-                <NavigationBoundary />
-                {/* 🌐 GLOBAL: Floating offline banner */}
-                <OfflineBanner />
+                <OfflineProvider>
+                  {/* ✅ IMPORTANT: Router must be here */}
+                  <NavigationBoundary />
+                  {/* 🌐 GLOBAL: Floating offline banner */}
+                  <OfflineBanner />
+                </OfflineProvider>
               </NetworkProvider>
             </StoreProvider>
           </Auth0ProviderWithHistory>

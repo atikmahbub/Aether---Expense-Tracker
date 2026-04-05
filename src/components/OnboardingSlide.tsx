@@ -5,14 +5,16 @@ import {colors} from '@trackingPortal/themes/colors';
 interface OnboardingSlideProps {
   title: string;
   subtitle: string;
+  icon?: React.ReactNode;
 }
 
 const {width} = Dimensions.get('window');
 
-const OnboardingSlide: React.FC<OnboardingSlideProps> = ({title, subtitle}) => {
+const OnboardingSlide: React.FC<OnboardingSlideProps> = ({title, subtitle, icon}) => {
   return (
     <View style={[styles.container, {width}]}>
       <View style={styles.copyBlock}>
+        {icon && <View style={styles.iconContainer}>{icon}</View>}
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
@@ -45,6 +47,11 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
     maxWidth: 320,
+  },
+  iconContainer: {
+    marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

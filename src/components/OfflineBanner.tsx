@@ -1,106 +1,197 @@
-import React, {useEffect, useRef} from 'react';
-import {Animated, Platform, StyleSheet, Text, View} from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
+import { colors } from '@trackingPortal/themes/colors';
+import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useNetwork} from '@trackingPortal/contexts/NetworkProvider';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const OfflineBanner: React.FC = () => {
-  const {isOnline} = useNetwork();
+  const { isOnline, pendingCount, syncNow, syncInProgress } = useOffline();
   const insets = useSafeAreaInsets();
+  
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-60)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
+
+  const shouldShow = !isOnline || pendingCount > 0;
 
   useEffect(() => {
-    if (!isOnline) {
-      // Slide in + fade in
+    if (shouldShow) {
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 300,
+          duration: 400,
           useNativeDriver: true,
         }),
         Animated.spring(translateY, {
           toValue: 0,
-          speed: 20,
+          speed: 12,
           bounciness: 4,
           useNativeDriver: true,
         }),
       ]).start();
     } else {
-      // Slide out + fade out
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 250,
+          duration: 300,
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
-          toValue: -60,
-          duration: 250,
+          toValue: -100,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [isOnline, opacity, translateY]);
+  }, [shouldShow, opacity, translateY]);
 
   return (
-    <Animated.View
+    <Animated.View 
       style={[
-        styles.banner,
-        {
-          opacity,
-          transform: [{translateY}],
-          top: insets.top + 8,
-        },
+        styles.container, 
+        { 
+          opacity, 
+          transform: [{ translateY }],
+          top: insets.top + 8 
+        }
       ]}
-      pointerEvents="none">
-      <View style={styles.inner}>
-        <MaterialCommunityIcons
-          name="cloud-off-outline"
-          size={16}
-          color="#FF6B6B"
-        />
-        <Text style={styles.text}>No internet connection</Text>
-      </View>
+    >
+      <BlurView intensity={25} tint="dark" style={styles.blurWrapper}>
+        <View style={styles.content}>
+          <View style={styles.statusRow}>
+            {!isOnline ? (
+              <View style={styles.offlineIndicator}>
+                <MaterialCommunityIcons name="cloud-off-outline" size={16} color={colors.error} />
+                <Text style={styles.statusText}>OFFLINE MODE</Text>
+              </View>
+            ) : (
+              <View style={styles.onlineIndicator}>
+                <MaterialCommunityIcons name="cloud-sync-outline" size={18} color={colors.primary} />
+                <Text style={styles.onlineStatusText}>SYNC PENDING</Text>
+              </View>
+            )}
+            {pendingCount > 0 && (
+              <View style={styles.pendingIndicator}>
+                <Text style={styles.pendingText}>
+                  {pendingCount} item{pendingCount > 1 ? 's' : ''} to sync
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {pendingCount > 0 && isOnline && (
+            <Pressable
+              onPress={syncNow}
+              disabled={syncInProgress}
+              style={({ pressed }) => [
+                styles.syncButton,
+                pressed && styles.syncButtonPressed,
+                syncInProgress && styles.syncButtonDisabled,
+              ]}
+            >
+              <Text style={styles.syncButtonText}>
+                {syncInProgress ? 'Syncing...' : 'Sync Now'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      </BlurView>
     </Animated.View>
   );
 };
 
-export default OfflineBanner;
-
 const styles = StyleSheet.create({
-  banner: {
+  container: {
+    paddingHorizontal: 16,
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 0,
+    right: 0,
     zIndex: 9999,
+  },
+  blurWrapper: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(21, 23, 27, 0.75)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOpacity: 0.35,
-        shadowRadius: 14,
-        shadowOffset: {width: 0, height: 6},
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
       },
       android: {
-        elevation: 12,
+        elevation: 8,
       },
     }),
   },
-  inner: {
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#1b2026',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,107,0.30)',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
-  text: {
-    color: '#FF6B6B',
+  statusRow: {
+    flex: 1,
+  },
+  offlineIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  onlineIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  statusText: {
+    color: colors.error,
+    fontSize: 10,
+    fontFamily: 'Manrope',
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  onlineStatusText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontFamily: 'Manrope',
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  pendingIndicator: {
+    marginTop: 1,
+  },
+  pendingText: {
+    color: colors.subText,
     fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontFamily: 'Manrope',
+    fontWeight: '500',
+  },
+  syncButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  syncButtonPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  syncButtonDisabled: {
+    opacity: 0.5,
+  },
+  syncButtonText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Manrope',
   },
 });
+
+export default OfflineBanner;

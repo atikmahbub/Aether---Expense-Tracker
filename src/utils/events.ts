@@ -25,4 +25,5 @@ export const eventEmitter = new EventEmitter();
 
 export const EVENTS = {
   OPEN_CREATION_MODAL: "OPEN_CREATION_MODAL",
+  OFFLINE_SYNC_COMPLETED: "OFFLINE_SYNC_COMPLETED",
 };
