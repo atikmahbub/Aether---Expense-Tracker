@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Aether – Expense Tracker",
+    "name": "Aether",
     "slug": "aether",
     "owner": "atikmahbub100",
     "version": "1.0.0",
@@ -9,11 +9,13 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0f13",
+
     "splash": {
       "backgroundColor": "#0a0f13",
       "resizeMode": "contain",
       "image": "./assets/splash.png"
     },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.atik.aether",
@@ -24,32 +26,23 @@
         "NSFaceIDUsageDescription": "Use Face ID to securely unlock your wallet."
       }
     },
+
     "android": {
       "package": "com.atik.aether",
-      "appName": "Aether",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/screen.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0a0f13"
-      },
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "category": ["BROWSABLE", "DEFAULT"],
-          "data": [
-            {
-              "scheme": "aether",
-              "host": "auth",
-              "pathPrefix": "/callback"
-            }
-          ]
-        }
-      ]
+      }
     },
+
     "web": {
       "output": "static",
       "favicon": "./assets/icon.png"
     },
+
     "plugins": ["expo-router", "expo-secure-store", "expo-font"],
+
     "extra": {
       "auth0Domain": "dev-pm0712stgt281lme.us.auth0.com",
       "auth0ClientId": "ZKFTcNI7NKpHeAv11HY5qQjCIpkddOH9",
@@ -59,6 +52,7 @@
         "projectId": "f6321d98-7753-456b-b4c8-61857344a854"
       }
     },
+
     "experiments": {
       "typedRoutes": true,
       "newArchEnabled": false

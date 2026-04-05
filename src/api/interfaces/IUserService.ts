@@ -6,4 +6,5 @@ export interface IUserService {
   addUser: (params: IAddUserParams) => Promise<UserModel>;
   getUser: (userId: UserId) => Promise<UserModel>;
   updateUser: (params: IUpdateUserParams) => Promise<UserModel>;
+  deleteUser: (userId: UserId) => Promise<void>;
 }

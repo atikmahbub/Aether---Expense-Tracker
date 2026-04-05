@@ -43,4 +43,12 @@ export class UserService implements IUserService {
     }
     throw new Error(response.error);
   }
+
+  async deleteUser(userId: UserId): Promise<void> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'user', userId));
+    const response = await this.ajaxUtils.delete(url);
+    if (!response.isOk()) {
+      throw new Error(response.error);
+    }
+  }
 }
