@@ -3,6 +3,7 @@ import {
   ExpenseCategoryModel, // Categories might still be named ExpenseCategory or just Category
   TransactionModel,
   TransactionModelV1,
+  TransactionSummaryModel,
 } from '@trackingPortal/api/models';
 import {
   IAddTransactionParams,
@@ -24,4 +25,5 @@ export interface ITransactionService {
     params: IGetTransactionAnalyticsParams,
   ) => Promise<TransactionAnalyticsModel>;
   getIncomeCategories: (userId: UserId) => Promise<ExpenseCategoryModel[]>;
+  getTransactionSummary: (userId: UserId) => Promise<TransactionSummaryModel>;
 }

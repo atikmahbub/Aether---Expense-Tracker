@@ -13,7 +13,7 @@ WebBrowser.maybeCompleteAuthSession();
 const ACCESS_TOKEN_KEY = "auth_access_token";
 const PROFILE_CACHE_KEY = "auth_profile_cache";
 
-const LOGGED_IN_ROUTE = "/(tabs)/expense";
+const LOGGED_IN_ROUTE = "/(tabs)/transactions";
 const LOGIN_ROUTE = "/login";
 
 /* ===== READ FROM app.json ===== */

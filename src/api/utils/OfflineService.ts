@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const OFFLINE_QUEUE_KEY = 'offline_queue';
 
-export type OfflineEntityType = 'expense' | 'loan' | 'invest';
+export type OfflineEntityType = 'expense' | 'loan' | 'invest' | 'transaction';
 
 export interface OfflineQueueItem {
   id: string;

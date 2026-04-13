@@ -15,10 +15,10 @@ import AnalyticsCard from "@trackingPortal/screens/TransactionScreen/components/
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
+import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
 import { useDailyTransactionReminder } from "@trackingPortal/screens/TransactionScreen/hooks/useDailyTransactionReminder";
 import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
-import { useTrendSnapshot } from "@trackingPortal/screens/TransactionScreen/hooks/useTrendSnapshot";
 import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { colors } from "@trackingPortal/themes/colors";
@@ -49,11 +49,7 @@ export default function TransactionScreen() {
     return transactions.filter(t => t.type?.toLowerCase() === typeFilter);
   }, [transactions, typeFilter]);
 
-  const monthlyIncome = useMemo(() => {
-    return transactions
-      .filter(t => t.type?.toLowerCase() === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [transactions]);
+
 
   const visibleData = useMemo(
     () => filteredTransactions.slice(0, visibleCount),
@@ -68,6 +64,8 @@ export default function TransactionScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [limitLoading, setLimitLoading] = useState(false);
+  const [summary, setSummary] = useState<TransactionSummaryModel | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
 
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -106,12 +104,18 @@ export default function TransactionScreen() {
     initializeFromHistory,
   } = useRecentCategories();
 
-  const { trend, loading: trendLoading } = useTrendSnapshot({
-    userId: activeUserId as any,
-    totalValue: totalDisplayValue ?? 0,
-    type: typeFilter,
-    filterMonth,
-  });
+  const fetchSummary = useCallback(async () => {
+    if (!activeUserId) return;
+    setLoadingSummary(true);
+    try {
+      const data = await apiGateway.transactionService.getTransactionSummary(user.userId);
+      setSummary(data);
+    } catch (error) {
+      console.log("Summary fetch failed", error);
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, [activeUserId, apiGateway, user.userId]);
 
   useDailyTransactionReminder();
 
@@ -208,12 +212,13 @@ export default function TransactionScreen() {
       await Promise.all([
         getMonthlyLimit(), 
         fetchAnalytics(options),
-        getTransactions()
+        getTransactions(),
+        fetchSummary(),
       ]);
     } finally {
       setCombinedLoading(false);
     }
-  }, [getMonthlyLimit, fetchAnalytics, getTransactions]);
+  }, [getMonthlyLimit, fetchAnalytics, getTransactions, fetchSummary]);
 
   useEffect(() => {
     if (!isOnline) {
@@ -297,28 +302,36 @@ export default function TransactionScreen() {
       loadData(),
       fetchAnalytics({ force: true }),
       refreshCategories({ force: true }),
+      fetchSummary(),
     ]);
 
     setRefreshing(false);
-  }, [isOnline, loadData, fetchAnalytics, refreshCategories]);
+  }, [isOnline, loadData, fetchAnalytics, refreshCategories, fetchSummary]);
 
   const totalDisplayValue = useMemo(() => {
-    const listTotal = transactions
-      .filter(t => t.type?.toLowerCase() === typeFilter)
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    // If we have list items, use their sum
-    if (listTotal > 0) return listTotal;
-    
-    const activeAnalytics = typeFilter === 'expense' ? expenseAnalytics : incomeAnalytics;
+    if (loadingSummary || !summary) return null;
+    return typeFilter === 'expense' ? summary.totalExpense : summary.totalIncome;
+  }, [summary, loadingSummary, typeFilter]);
 
-    // If list is empty but we are still loading, return null to show loading state in summary
-    if (combinedLoading || loading || analyticsLoading) {
-      return activeAnalytics?.totalTransaction ?? null;
-    }
+  const crossTabTotal = useMemo(() => {
+    if (loadingSummary || !summary) return 0;
+    return typeFilter === 'expense' ? summary.totalIncome : summary.totalExpense;
+  }, [summary, loadingSummary, typeFilter]);
 
-    return activeAnalytics?.totalTransaction ?? 0;
-  }, [transactions, expenseAnalytics, incomeAnalytics, loading, combinedLoading, analyticsLoading, typeFilter]);
+  const activeTrend = useMemo(() => {
+    if (loadingSummary || !summary) return null;
+    const value = typeFilter === 'expense' ? summary.expenseChangePercentage : summary.incomeChangePercentage;
+    const isIncrease = value > 0;
+    const isDecrease = value < 0;
+
+    return {
+      percent: Math.abs(value),
+      isLower: value < 0,
+      label: value === 0 ? "0% vs last month" : `${isIncrease ? "↑" : "↓"} ${Math.abs(value)}% vs last month`,
+      color: value === 0 ? colors.subText : (isIncrease ? '#4ADE80' : '#F87171'),
+      icon: isIncrease ? 'arrow-top-right' : (isDecrease ? 'arrow-bottom-right' : 'minus'),
+    };
+  }, [summary, loadingSummary, typeFilter]);
 
   const headerComponent = useMemo(() => (
     <View>
@@ -333,17 +346,11 @@ export default function TransactionScreen() {
       <TransactionSummary
         totalValue={totalDisplayValue ?? 0}
         type={typeFilter}
-        monthlyIncome={
-          typeFilter === 'expense'
-            ? monthlyIncome // Sum of income items
-            : transactions // Sum of expense items
-                .filter(t => t.type?.toLowerCase() === 'expense')
-                .reduce((sum, t) => sum + t.amount, 0)
-        }
+        monthlyIncome={crossTabTotal}
         filterMonth={filterMonth}
         monthLimit={monthLimit}
         getMonthlyLimit={getMonthlyLimit}
-        isLoading={totalDisplayValue === null}
+        isLoading={loadingSummary}
       />
 
       <AnalyticsCard
@@ -355,11 +362,11 @@ export default function TransactionScreen() {
         onRetry={onRetryAnalytics}
         currency={currency}
         mode={typeFilter}
-        trend={trend}
-        trendLoading={trendLoading}
+        trend={activeTrend}
+        trendLoading={loadingSummary}
       />
     </View>
-  ), [typeFilter, totalDisplayValue, monthlyIncome, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
+  ), [typeFilter, totalDisplayValue, crossTabTotal, activeTrend, loadingSummary, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
 
   const footerComponent = useMemo(() => (
     <TransactionList

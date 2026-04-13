@@ -14,6 +14,7 @@ import {
   ExpenseCategoryModel,
   TransactionModel,
   TransactionModelV1,
+  TransactionSummaryModel,
 } from '@trackingPortal/api/models';
 
 export class TransactionService implements ITransactionService {
@@ -127,6 +128,16 @@ export class TransactionService implements ITransactionService {
 
     if (response.isOk()) {
       return response.value as ExpenseCategoryModel[];
+    }
+    throw new Error(response.error);
+  }
+
+  async getTransactionSummary(userId: UserId): Promise<TransactionSummaryModel> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'transactions', 'summary', userId));
+    const response = await this.ajaxUtils.get(url);
+
+    if (response.isOk()) {
+      return response.value as TransactionSummaryModel;
     }
     throw new Error(response.error);
   }

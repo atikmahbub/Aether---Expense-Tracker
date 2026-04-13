@@ -37,62 +37,12 @@ const TransactionSummary: React.FC<ISummary> = ({
   const [isLimitModalVisible, setIsLimitModalVisible] =
     useState<boolean>(false);
   const {apiGateway, currentUser: user} = useStoreContext();
-  const [loading, setLoading] = useState<boolean>(false);
   const {currency} = useStoreContext();
-  const [previousMonthTotal, setPreviousMonthTotal] = useState<number | null>(
-    null,
-  );
-  const [previousMonthLoading, setPreviousMonthLoading] =
-    useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const limitValue = monthLimit?.limit ?? 0;
   const hasLimit = type === 'expense' && limitValue > 0;
-  const previousMonthDate = useMemo(
-    () => dayjs(filterMonth).subtract(1, 'month'),
-    [filterMonth],
-  );
-  const previousMonthKey = previousMonthDate.format('YYYY-MM');
-  const previousMonthLabel = previousMonthDate.format('MMM');
-  const previousMonthLabelFull = previousMonthDate.format('MMMM');
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchPreviousMonth = async () => {
-      if (!user?.userId) {
-        return;
-      }
-      try {
-        setPreviousMonthLoading(true);
-        const response = await apiGateway.transactionService.getTransactionsByUser({
-          userId: user.userId,
-          date: previousMonthDate.unix() as unknown as UnixTimeStampString,
-          type,
-        });
-        const total = response.reduce(
-          (sum, expense) => sum + expense.amount,
-          0,
-        );
-        if (isMounted) {
-          setPreviousMonthTotal(total);
-        }
-      } catch (error) {
-        console.log('Failed to fetch previous month summary', error);
-        if (isMounted) {
-          setPreviousMonthTotal(null);
-        }
-      } finally {
-        if (isMounted) {
-          setPreviousMonthLoading(false);
-        }
-      }
-    };
-
-    fetchPreviousMonth();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [apiGateway, user.userId, previousMonthKey, previousMonthDate, type]);
 
 
 
@@ -192,7 +142,7 @@ const TransactionSummary: React.FC<ISummary> = ({
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
               })}{' '}
-              {type === 'expense' ? 'earned this month' : 'expensed this month'}
+              {type === 'expense' ? 'earned this month' : 'spent this month'}
             </Text>
 
         </View>
