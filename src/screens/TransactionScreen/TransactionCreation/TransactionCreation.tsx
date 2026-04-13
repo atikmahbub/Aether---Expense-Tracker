@@ -29,6 +29,7 @@ import Toast from 'react-native-toast-message';
 interface ITransactionCreation {
   openCreationModal: boolean;
   setOpenCreationModal: React.Dispatch<SetStateAction<boolean>>;
+  initialType?: 'Expense' | 'Income';
   setTransactions: React.Dispatch<SetStateAction<TransactionModel[]>>;
   getUserExpenses: () => void;
   getExceedExpenseNotification: () => void;
@@ -47,6 +48,7 @@ interface ITransactionCreation {
 const TransactionCreation: React.FC<ITransactionCreation> = ({
   openCreationModal,
   setOpenCreationModal,
+  initialType = 'Expense',
   setTransactions,
   getUserExpenses,
   getExceedExpenseNotification,
@@ -66,7 +68,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   const { isOnline, saveOffline } = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
   const [transactionType, setTransactionType] = useState<'Expense' | 'Income'>(
-    'Expense',
+    initialType,
   );
 
   const activeCategories = useMemo(() => 

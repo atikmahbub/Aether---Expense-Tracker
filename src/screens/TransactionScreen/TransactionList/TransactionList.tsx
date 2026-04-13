@@ -287,36 +287,7 @@ const TransactionList: FC<ITransactionList> = ({
         <View style={styles.timelineRow}>
           <Text style={styles.title}>Timeline</Text>
 
-          <View style={styles.segmentedToggle}>
-            <Pressable
-              onPress={() => setTypeFilter('expense')}
-              style={({ pressed }) => [
-                styles.toggleButton,
-                (typeFilter === 'expense' || pressed) && styles.toggleButtonActive,
-              ]}>
-              <Text
-                style={[
-                  styles.toggleText,
-                  typeFilter === 'expense' && styles.toggleTextActive,
-                ]}>
-                Expense
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setTypeFilter('income')}
-              style={({ pressed }) => [
-                styles.toggleButton,
-                (typeFilter === 'income' || pressed) && styles.toggleButtonActive,
-              ]}>
-              <Text
-                style={[
-                  styles.toggleText,
-                  typeFilter === 'income' && styles.toggleTextActive,
-                ]}>
-                Income
-              </Text>
-            </Pressable>
-          </View>
+
 
           <Button
             mode="contained-tonal"
@@ -488,31 +459,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     borderRadius: 8,
   },
-  segmentedToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  toggleButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 7,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.surface,
-  },
-  toggleText: {
-    color: colors.subText,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  toggleTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
+
   monthButtonLabel: {
     color: colors.text,
     fontSize: 14,

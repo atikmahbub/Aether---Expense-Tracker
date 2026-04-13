@@ -16,7 +16,8 @@ import {withHaptic} from '@trackingPortal/utils/haptic';
 import {colors} from '@trackingPortal/themes/colors';
 
 interface ISummary {
-  totalExpense: number;
+  totalValue: number;
+  type: 'expense' | 'income';
   monthlyIncome: number;
   filterMonth: Dayjs;
   monthLimit: MonthlyLimitModel;
@@ -25,7 +26,8 @@ interface ISummary {
 }
 
 const TransactionSummary: React.FC<ISummary> = ({
-  totalExpense,
+  totalValue,
+  type,
   monthlyIncome,
   filterMonth,
   monthLimit,
@@ -44,7 +46,7 @@ const TransactionSummary: React.FC<ISummary> = ({
     useState<boolean>(false);
 
   const limitValue = monthLimit?.limit ?? 0;
-  const hasLimit = limitValue > 0;
+  const hasLimit = type === 'expense' && limitValue > 0;
   const previousMonthDate = useMemo(
     () => dayjs(filterMonth).subtract(1, 'month'),
     [filterMonth],
@@ -64,6 +66,7 @@ const TransactionSummary: React.FC<ISummary> = ({
         const response = await apiGateway.transactionService.getTransactionsByUser({
           userId: user.userId,
           date: previousMonthDate.unix() as unknown as UnixTimeStampString,
+          type,
         });
         const total = response.reduce(
           (sum, expense) => sum + expense.amount,
@@ -89,103 +92,12 @@ const TransactionSummary: React.FC<ISummary> = ({
     return () => {
       isMounted = false;
     };
-  }, [apiGateway, user.userId, previousMonthKey, previousMonthDate]);
+  }, [apiGateway, user.userId, previousMonthKey, previousMonthDate, type]);
 
-  const trendSnapshot = useMemo(() => {
-    if (previousMonthLoading) {
-      return {
-        icon: 'progress-clock',
-        color: colors.subText,
-        label: 'Measuring…',
-        isLower: null as boolean | null,
-        deltaAmount: 0,
-      };
-    }
 
-    if (previousMonthTotal === null) {
-      return {
-        icon: 'minus',
-        color: colors.subText,
-        label: 'No comparison',
-        isLower: null as boolean | null,
-        deltaAmount: 0,
-      };
-    }
 
-    if (previousMonthTotal === 0) {
-      if (totalExpense === 0) {
-        return {
-          icon: 'minus',
-          color: colors.subText,
-          label: 'Even with last month',
-          isLower: null as boolean | null,
-          deltaAmount: 0,
-        };
-      }
-      return {
-        icon: 'arrow-top-right',
-        color: colors.error,
-        label: `Higher vs ${previousMonthLabel}`,
-        isLower: false,
-        deltaAmount: totalExpense,
-      };
-    }
 
-    const delta = totalExpense - previousMonthTotal;
-    const isLower = delta <= 0;
-    const percent = (Math.abs(delta) / previousMonthTotal) * 100;
-    const percentLabel = formatNumber(percent, {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-      suffix: '%',
-    });
-
-    return {
-      icon: isLower ? 'arrow-bottom-right' : 'arrow-top-right',
-      color: isLower ? colors.accent : colors.error,
-      label: `${percentLabel} ${isLower ? 'lower' : 'higher'} vs ${previousMonthLabel}`,
-      isLower,
-      deltaAmount: Math.abs(delta),
-    };
-  }, [
-    previousMonthLoading,
-    previousMonthTotal,
-    totalExpense,
-    previousMonthLabel,
-  ]);
-
-  const comparisonSentence = useMemo(() => {
-    if (previousMonthLoading || previousMonthTotal === null) {
-      return '';
-    }
-
-    if (previousMonthTotal === 0) {
-      if (totalExpense === 0) {
-        return 'Exactly aligned with last month.';
-      }
-      return `Spending resumed after a quiet ${previousMonthLabelFull}.`;
-    }
-
-    if (trendSnapshot.deltaAmount === 0) {
-      return 'Exactly aligned with last month.';
-    }
-
-    const direction = trendSnapshot.isLower ? 'less' : 'more';
-    return `${formatCurrency(
-      trendSnapshot.deltaAmount,
-      currency,
-    )} ${direction} than ${previousMonthLabelFull}.`;
-  }, [
-    previousMonthLoading,
-    previousMonthTotal,
-    totalExpense,
-    trendSnapshot.deltaAmount,
-    trendSnapshot.isLower,
-    currency,
-    previousMonthLabelFull,
-  ]);
-
-  const progressRatio = hasLimit ? totalExpense / limitValue : 0;
+  const progressRatio = hasLimit ? totalValue / limitValue : 0;
   const clampedProgress = hasLimit
     ? Math.max(0, Math.min(progressRatio, 1))
     : 0;
@@ -197,52 +109,6 @@ const TransactionSummary: React.FC<ISummary> = ({
         suffix: '%',
       })
     : '--';
-  const remainingBudget = hasLimit ? limitValue - totalExpense : 0;
-  const isBudgetOnTrack = remainingBudget >= 0;
-  const budgetDeltaText = hasLimit
-    ? isBudgetOnTrack
-      ? `${formatCurrency(remainingBudget, currency)} left`
-      : `${formatCurrency(Math.abs(remainingBudget), currency)} over`
-    : '';
-  const statusBackgroundColor = hasLimit
-    ? isBudgetOnTrack
-      ? 'rgba(161, 250, 255, 0.15)'
-      : 'rgba(255, 107, 107, 0.14)'
-    : 'rgba(255, 255, 255, 0.08)';
-  const statusColor = hasLimit
-    ? isBudgetOnTrack
-      ? colors.accent
-      : colors.error
-    : colors.subText;
-  const statusLabel = hasLimit
-    ? isBudgetOnTrack
-      ? 'Safe Velocity'
-      : 'Over Velocity'
-    : 'Set Limit';
-
-  const insightCopy = useMemo(() => {
-    const comparison =
-      comparisonSentence.length > 0 ? ` ${comparisonSentence}` : '';
-    if (!hasLimit) {
-      return `Set a monthly limit to unlock pacing insights.${comparison}`;
-    }
-    if (isBudgetOnTrack) {
-      return `You're pacing safely with ${formatCurrency(
-        remainingBudget,
-        currency,
-      )} remaining.${comparison}`;
-    }
-    return `You've exceeded the budget by ${formatCurrency(
-      Math.abs(remainingBudget),
-      currency,
-    )}.${comparison}`;
-  }, [
-    comparisonSentence,
-    hasLimit,
-    isBudgetOnTrack,
-    remainingBudget,
-    currency,
-  ]);
 
   const closeLimitModal = () => {
     setIsLimitModalVisible(false);
@@ -308,7 +174,9 @@ const TransactionSummary: React.FC<ISummary> = ({
 
   return (
     <View style={styles.mainContainer}>
-      <Text style={styles.headingLabel}>MONTHLY SPENDING</Text>
+      <Text style={styles.headingLabel}>
+        {type === 'expense' ? 'MONTHLY SPENDING' : 'MONTHLY INCOME'}
+      </Text>
 
       <View style={styles.heroRow}>
         <View style={styles.totalValueColumn}>
@@ -317,15 +185,16 @@ const TransactionSummary: React.FC<ISummary> = ({
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.7}>
-              {isLoading ? "…" : formatCurrency(totalExpense, currency)}
+              {isLoading ? "…" : formatCurrency(totalValue, currency)}
             </Text>
             <Text style={styles.earnedText}>
               {formatCurrency(monthlyIncome, currency, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
               })}{' '}
-              earned this month
+              {type === 'expense' ? 'earned this month' : 'expensed this month'}
             </Text>
+
         </View>
         {hasLimit ? (
           <View style={styles.progressWrapper}>
@@ -341,81 +210,59 @@ const TransactionSummary: React.FC<ISummary> = ({
         ) : null}
       </View>
 
-      <View style={styles.subHeroRow}>
-        <View style={styles.trendBadge}>
-          <MaterialCommunityIcons
-            name={trendSnapshot.icon}
-            size={14}
-            color={trendSnapshot.color}
-          />
-          <Text
-            style={[styles.trendBadgeText, {color: trendSnapshot.color}]}
-            numberOfLines={1}>
-            {trendSnapshot.label}
-          </Text>
-        </View>
-        <View
-          style={[styles.statusPill, {backgroundColor: statusBackgroundColor}]}>
-          <View style={[styles.statusDot, {backgroundColor: statusColor}]} />
-          <Text style={[styles.statusText, {color: statusColor}]}>
-            {statusLabel}
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.insightCard}>
-        <Text style={styles.helperText}>{insightCopy}</Text>
-      </View>
 
-      <View style={styles.metricsRow}>
-        <View style={styles.metricSquareCard}>
-          <MaterialCommunityIcons
-            name="target"
-            size={18}
-            color={colors.primary}
-            style={styles.metricIcon}
-          />
-          <Text style={styles.metricLabelCard}>Target Limit</Text>
-          <View style={styles.targetValueRow}>
-            <Text
-              style={styles.metricLabelValue}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}>
-              {limitValue
-                ? formatCurrency(limitValue, currency, {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                  })
-                : 'Set Limit'}
+      {type === 'expense' && (
+        <View style={styles.metricsRow}>
+          <View style={styles.metricSquareCard}>
+            <MaterialCommunityIcons
+              name="target"
+              size={18}
+              color={colors.primary}
+              style={styles.metricIcon}
+            />
+            <Text style={styles.metricLabelCard}>Target Limit</Text>
+            <View style={styles.targetValueRow}>
+              <Text
+                style={styles.metricLabelValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}>
+                {limitValue
+                  ? formatCurrency(limitValue, currency, {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })
+                  : 'No Limit'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.editLink}
+              onPress={() => setIsLimitModalVisible(true)}>
+              <Text style={styles.editLinkText}>
+                {limitValue ? 'Adjust' : 'Set Limit'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.metricSquareCard}>
+            <MaterialCommunityIcons
+              name="chart-line"
+              size={18}
+              color="#4ADE80"
+              style={styles.metricIcon}
+            />
+            <Text style={styles.metricLabelCard}>Daily Avg</Text>
+            <Text style={styles.metricLabelValue}>
+              {formatCurrency(
+                totalValue / Math.max(dayjs().date(), 1),
+                currency,
+                {minimumFractionDigits: 0, maximumFractionDigits: 0},
+              )}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.editLink}
-            onPress={openLimitModal}>
-            <Text style={styles.editLinkText}>
-              {limitValue ? 'Tap to edit limit' : 'Tap to set limit'}
-            </Text>
-          </TouchableOpacity>
         </View>
-
-        <View style={styles.metricSquareCard}>
-          <MaterialCommunityIcons
-            name="chart-bell-curve-cumulative"
-            size={18}
-            color={colors.accent}
-            style={styles.metricIcon}
-          />
-          <Text style={styles.metricLabelCard}>Daily Avg</Text>
-          <Text style={styles.metricLabelValue}>
-            {formatCurrency(
-              totalExpense / Math.max(dayjs().date(), 1),
-              currency,
-              {minimumFractionDigits: 0, maximumFractionDigits: 0},
-            )}
-          </Text>
-        </View>
-      </View>
+      )}
 
       <Formik
         enableReinitialize={true}
@@ -499,6 +346,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginTop: 2,
   },
+  trendText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
   progressWrapper: {
     alignItems: 'center',
     gap: 6,
@@ -510,53 +362,6 @@ const styles = StyleSheet.create({
   progressSubLabel: {
     color: colors.subText,
     fontSize: 11,
-  },
-  subHeroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  trendBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  trendBadgeText: {
-    color: colors.accent,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    color: '#e0e0e0',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  insightCard: {
-    borderRadius: 24,
-    marginBottom: 16,
-    backgroundColor: '#16191d',
-    padding: 20,
-  },
-  helperText: {
-    color: '#656b73',
-    fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '500',
   },
   metricsRow: {
     flexDirection: 'row',
@@ -592,9 +397,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   editLink: {
-    marginTop: 6,
+    marginTop: 10,
     alignSelf: 'flex-start',
-    paddingVertical: 4,
+    backgroundColor: 'rgba(161, 250, 255, 0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(161, 250, 255, 0.15)',
   },
   editLinkText: {
     color: colors.primary,

@@ -9,6 +9,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   TransactionAnalyticsModel,
   ExpenseCategoryModel,
@@ -26,6 +27,15 @@ interface AnalyticsCardProps {
   onRetry?: () => void;
   currency?: CurrencyPreference;
   monthlyLimit?: number;
+  mode?: 'expense' | 'income';
+  trend?: {
+    label: string;
+    color: string;
+    icon: any;
+    percent: number;
+    isLower: boolean | null;
+  } | null;
+  trendLoading?: boolean;
 }
 
 const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -36,6 +46,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   onRetry,
   currency,
   monthlyLimit,
+  mode = 'expense',
+  trend,
+  trendLoading,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [showHeavyUI, setShowHeavyUI] = useState(false);
@@ -132,7 +145,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           palette && {borderColor: palette.color},
         ]}>
         <View>
-          <Text style={styles.topCategoryLabel}>Top category</Text>
+          <Text style={styles.topCategoryLabel}>
+            {mode === 'expense' ? 'Top category' : 'Top income source'}
+          </Text>
           <Text style={styles.topCategoryName}>
             {analytics.topCategory.categoryName}
           </Text>
@@ -164,7 +179,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   if (loading && !analytics) {
     return (
       <View style={styles.card}>
-         <Text style={styles.title}>Spending Analytics</Text>
+         <Text style={styles.title}>
+           {mode === 'expense' ? 'Spending Analytics' : 'Income Analytics'}
+         </Text>
          {renderSkeleton()}
       </View>
     );
@@ -173,7 +190,20 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Spending Analytics</Text>
+        <Text style={styles.title}>
+          {mode === 'expense' ? 'Spending Analytics' : 'Income Analytics'}
+        </Text>
+        {trend && !trendLoading && (
+          <View style={styles.trendContainer}>
+            <View style={[styles.trendPill, {backgroundColor: trend.color + '15', borderColor: trend.color + '30'}]}>
+              <MaterialCommunityIcons name={trend.icon} size={14} color={trend.color} />
+              <Text style={[styles.trendPillText, {color: trend.color}]}>
+                {formatNumber(trend.percent, { maximumFractionDigits: 0 })}%
+              </Text>
+            </View>
+            <Text style={styles.trendSubLabel}>vs last month</Text>
+          </View>
+        )}
         {error && onRetry ? (
           <TouchableOpacity onPress={onRetry}>
             <Text style={styles.retryText}>Retry</Text>
@@ -214,7 +244,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
                   <View style={styles.progressBlock}>
                     <SegmentedProgressBar segments={segments} height={14} />
                     <Text style={styles.progressHint}>
-                      Share of spend by category
+                      {mode === 'expense' ? 'Share of spend by category' : 'Share of income by source'}
                     </Text>
                   </View>
                 ) : (
@@ -347,6 +377,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1,
     textTransform: 'uppercase',
+  },
+  topCategoryAmount: {
+    color: '#E2E8F0',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  trendPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  trendPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  trendContainer: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  trendSubLabel: {
+    color: colors.subText,
+    fontSize: 10,
+    fontWeight: '600',
+    opacity: 0.6,
   },
   topCategoryName: {
     color: colors.text,

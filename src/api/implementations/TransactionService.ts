@@ -45,8 +45,9 @@ export class TransactionService implements ITransactionService {
   }
 
   async getTransactionsByUser(params: IGetUserTransactions): Promise<TransactionModelV1[]> {
+    const resource = params.type === 'income' ? 'income' : 'expenses';
     const url = new URL(
-      urlJoin(this.config.baseUrl, 'v0', 'expenses', params.userId),
+      urlJoin(this.config.baseUrl, 'v0', resource, params.userId),
     );
     const response = await this.ajaxUtils.get(url, {...params});
 
@@ -98,8 +99,9 @@ export class TransactionService implements ITransactionService {
   async getTransactionAnalytics(
     params: IGetTransactionAnalyticsParams,
   ): Promise<TransactionAnalyticsModel> {
+    const resource = params.type === 'income' ? 'income' : 'expenses';
     const url = new URL(
-      urlJoin(this.config.baseUrl, 'v0', 'expenses', 'analytics'),
+      urlJoin(this.config.baseUrl, 'v0', resource, 'analytics'),
     );
     const response = await this.ajaxUtils.get(url, {...params});
 

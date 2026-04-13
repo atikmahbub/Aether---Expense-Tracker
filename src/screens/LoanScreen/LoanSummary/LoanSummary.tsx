@@ -34,26 +34,7 @@ const LoanSummary: React.FC<ISummary> = ({
         </View>
       </View>
       
-      <View style={styles.subHeroRow}>
-        <View style={styles.statusPillBox}>
-          <View
-            style={[
-              styles.netPill,
-              netPosition >= 0 ? styles.netPositive : styles.netNegative,
-            ]}>
-            <View style={[styles.statusDot, {backgroundColor: netPosition >= 0 ? '#b6f700' : '#ff4d4f'}]} />
-            <Text style={[styles.netPillText, netPosition >= 0 ? {color: '#b6f700'} : {color: '#ff4d4f'}]}>
-              {netPosition >= 0 ? 'IN CREDIT STATUS' : 'OWED STATUS'}
-            </Text>
-          </View>
-        </View>
-      </View>
 
-      <View style={styles.insightCard}>
-        <Text style={styles.helperText}>
-          Track your lent assets vs active borrowing. Keep your net position in the green.
-        </Text>
-      </View>
 
       <View style={styles.metricsRow}>
         <View style={styles.metricSquareCard}>
@@ -115,52 +96,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     includeFontPadding: false,
   },
-  subHeroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  statusPillBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  netPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  netPositive: {
-    backgroundColor: 'rgba(182, 247, 0, 0.08)',
-  },
-  netNegative: {
-    backgroundColor: 'rgba(255, 77, 79, 0.08)',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  netPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  insightCard: {
-    borderRadius: 24,
-    marginBottom: 16,
-    backgroundColor: '#16191d',
-    padding: 20,
-  },
-  helperText: {
-    color: '#656b73',
-    fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '500',
-  },
+
   metricsRow: {
     flexDirection: 'row',
     gap: 16,

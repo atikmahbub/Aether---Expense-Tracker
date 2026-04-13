@@ -23,7 +23,8 @@ export const useTransactionInsights = ({
     refreshCategories,
   } = useStoreContext();
 
-  const [analytics, setAnalytics] = useState<TransactionAnalyticsModel | null>(null);
+  const [expenseAnalytics, setExpenseAnalytics] = useState<TransactionAnalyticsModel | null>(null);
+  const [incomeAnalytics, setIncomeAnalytics] = useState<TransactionAnalyticsModel | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
@@ -35,23 +36,31 @@ export const useTransactionInsights = ({
 
       const key = `${userId}-${dayjs(month).format("YYYY-MM")}`;
 
-      if (cache.current[key] && !force) {
-        setAnalytics(cache.current[key]);
+      if (cache.current[`${key}-expense`] && cache.current[`${key}-income`] && !force) {
+        setExpenseAnalytics(cache.current[`${key}-expense`]);
+        setIncomeAnalytics(cache.current[`${key}-income`]);
         return;
       }
 
       setAnalyticsLoading(true);
       setAnalyticsError(null);
       try {
-        const payload = await apiGateway.transactionService.getTransactionAnalytics({
+        const commonParams = {
           userId: userId as any,
           date: dayjs(month)
             .startOf("month")
             .unix() as unknown as UnixTimeStampString,
-        });
+        };
 
-        cache.current[key] = payload;
-        setAnalytics(payload);
+        const [expenseData, incomeData] = await Promise.all([
+          apiGateway.transactionService.getTransactionAnalytics({ ...commonParams, type: 'expense' }),
+          apiGateway.transactionService.getTransactionAnalytics({ ...commonParams, type: 'income' }),
+        ]);
+
+        cache.current[`${key}-expense`] = expenseData;
+        cache.current[`${key}-income`] = incomeData;
+        setExpenseAnalytics(expenseData);
+        setIncomeAnalytics(incomeData);
       } catch (error) {
         console.log("Analytics error", error);
         setAnalyticsError("Failed to load analytics");
@@ -63,17 +72,18 @@ export const useTransactionInsights = ({
   );
 
   const categoryLookup = useMemo(() => {
-    return categories.reduce<Record<string, ExpenseCategoryModel>>((acc, c) => {
-      acc[c.id] = c;
-      return acc;
-    }, {});
-  }, [categories]);
+    const lookup: Record<string, ExpenseCategoryModel> = {};
+    categories.forEach(c => { lookup[c.id] = c; });
+    incomeCategories.forEach(c => { lookup[c.id] = c; });
+    return lookup;
+  }, [categories, incomeCategories]);
 
   return {
     categories,
     categoryLoading,
     refreshCategories,
-    analytics,
+    expenseAnalytics,
+    incomeAnalytics,
     analyticsLoading,
     analyticsError,
     refreshAnalytics,

@@ -18,12 +18,14 @@ import TransactionSummary from "@trackingPortal/screens/TransactionScreen/Transa
 import { useDailyTransactionReminder } from "@trackingPortal/screens/TransactionScreen/hooks/useDailyTransactionReminder";
 import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
+import { useTrendSnapshot } from "@trackingPortal/screens/TransactionScreen/hooks/useTrendSnapshot";
+import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { colors } from "@trackingPortal/themes/colors";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -84,7 +86,8 @@ export default function TransactionScreen() {
     categories,
     categoryLoading,
     refreshCategories,
-    analytics,
+    expenseAnalytics,
+    incomeAnalytics,
     analyticsLoading,
     analyticsError,
     refreshAnalytics,
@@ -102,6 +105,13 @@ export default function TransactionScreen() {
     recordRecentCategory: addRecentCategory,
     initializeFromHistory,
   } = useRecentCategories();
+
+  const { trend, loading: trendLoading } = useTrendSnapshot({
+    userId: activeUserId as any,
+    totalValue: totalDisplayValue ?? 0,
+    type: typeFilter,
+    filterMonth,
+  });
 
   useDailyTransactionReminder();
 
@@ -292,44 +302,64 @@ export default function TransactionScreen() {
     setRefreshing(false);
   }, [isOnline, loadData, fetchAnalytics, refreshCategories]);
 
-  const totalExpense = useMemo(() => {
+  const totalDisplayValue = useMemo(() => {
     const listTotal = transactions
-      .filter(t => t.type?.toLowerCase() === 'expense')
+      .filter(t => t.type?.toLowerCase() === typeFilter)
       .reduce((sum, t) => sum + t.amount, 0);
     
     // If we have list items, use their sum
     if (listTotal > 0) return listTotal;
     
+    const activeAnalytics = typeFilter === 'expense' ? expenseAnalytics : incomeAnalytics;
+
     // If list is empty but we are still loading, return null to show loading state in summary
     if (combinedLoading || loading || analyticsLoading) {
-      return analytics?.totalTransaction ?? null;
+      return activeAnalytics?.totalTransaction ?? null;
     }
 
-    return analytics?.totalTransaction ?? 0;
-  }, [transactions, analytics, loading, combinedLoading, analyticsLoading]);
+    return activeAnalytics?.totalTransaction ?? 0;
+  }, [transactions, expenseAnalytics, incomeAnalytics, loading, combinedLoading, analyticsLoading, typeFilter]);
 
   const headerComponent = useMemo(() => (
     <View>
+      <View style={styles.topToggleRow}>
+        <TransactionSegmentedControl
+          options={['expense', 'income']}
+          selectedOption={typeFilter}
+          onOptionPress={(option) => setTypeFilter(option as 'expense' | 'income')}
+        />
+      </View>
+
       <TransactionSummary
-        totalExpense={totalExpense ?? 0}
-        monthlyIncome={monthlyIncome}
+        totalValue={totalDisplayValue ?? 0}
+        type={typeFilter}
+        monthlyIncome={
+          typeFilter === 'expense'
+            ? monthlyIncome // Sum of income items
+            : transactions // Sum of expense items
+                .filter(t => t.type?.toLowerCase() === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0)
+        }
         filterMonth={filterMonth}
         monthLimit={monthLimit}
         getMonthlyLimit={getMonthlyLimit}
-        isLoading={totalExpense === null}
+        isLoading={totalDisplayValue === null}
       />
 
       <AnalyticsCard
-        analytics={analytics}
-        monthlyLimit={monthLimit?.limit}
+        analytics={typeFilter === 'expense' ? expenseAnalytics : incomeAnalytics}
+        monthlyLimit={typeFilter === 'expense' ? monthLimit?.limit : undefined}
         categories={categoryLookup}
         loading={analyticsLoading || !isCategoryHydrated}
         error={analyticsError}
         onRetry={onRetryAnalytics}
         currency={currency}
+        mode={typeFilter}
+        trend={trend}
+        trendLoading={trendLoading}
       />
     </View>
-  ), [filterMonth, monthLimit, getMonthlyLimit, analytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
+  ), [typeFilter, totalDisplayValue, monthlyIncome, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
 
   const footerComponent = useMemo(() => (
     <TransactionList
@@ -392,6 +422,7 @@ export default function TransactionScreen() {
         <TransactionCreation
           openCreationModal={openCreationForm}
           setOpenCreationModal={setOpenCreationModal}
+          initialType={typeFilter === 'expense' ? 'Expense' : 'Income'}
           setTransactions={setTransactions}
           getUserExpenses={getTransactions}
           getExceedExpenseNotification={handleExceedNotification}
@@ -417,5 +448,40 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 10,
+  },
+  topToggleRow: {
+    paddingHorizontal: 20,
+    marginBottom: 0,
+    alignItems: 'flex-end',
+  },
+  segmentedToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 10,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  toggleButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 7,
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  toggleText: {
+    color: colors.subText,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  toggleTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
   },
 });

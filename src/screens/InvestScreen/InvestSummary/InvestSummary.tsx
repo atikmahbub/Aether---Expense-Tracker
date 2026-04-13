@@ -88,39 +88,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
         </View>
       </View>
 
-      <View style={styles.subHeroRow}>
-        <View style={styles.profitBadge}>
-          <MaterialCommunityIcons name="arrow-up" size={14} color="#b6f700" />
-          <Text style={styles.profitBadgeText}>
-            {profitPercentLabel}
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.statusPill,
-            isActive ? styles.statusActive : styles.statusCompleted,
-          ]}>
-          <View
-            style={[
-              styles.statusDot,
-              isActive
-                ? {backgroundColor: '#b6f700'}
-                : {backgroundColor: colors.subText},
-            ]}
-          />
-          <Text style={styles.statusText}>
-            {isActive ? 'Active portfolio' : 'Closed positions'}
-          </Text>
-        </View>
-      </View>
 
-      <GlassCard style={styles.insightCard} padding={20}>
-        <Text style={styles.helperText}>
-          {isActive
-            ? 'Great time to review upcoming maturities and reinvest with confidence. Your current yield is outperforming the benchmark by 1.2%.'
-            : 'Celebrate the wins and use the insights to refine your next moves.'}
-        </Text>
-      </GlassCard>
 
       <View style={styles.metricsRow}>
         <GlassCard style={styles.metricSquareCard} padding={16}>
@@ -204,60 +172,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     includeFontPadding: false,
   },
-  subHeroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingLeft: 30,
-    marginBottom: 24,
-  },
-  profitBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  profitBadgeText: {
-    color: '#b6f700',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  statusActive: {
-    backgroundColor: 'rgba(182, 247, 0, 0.15)',
-  },
-  statusCompleted: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    color: '#e0e0e0',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  insightCard: {
-    borderRadius: 24,
-    marginBottom: 16,
-    backgroundColor: '#16191d',
-    borderWidth: 0,
-  },
-  helperText: {
-    color: '#656b73',
-    fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '500',
-  },
+
   metricsRow: {
     flexDirection: 'row',
     gap: 16,
