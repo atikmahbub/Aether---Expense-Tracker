@@ -1,5 +1,5 @@
 import {
-  ExpenseService,
+  TransactionService,
   UserService,
   MonthlyLimitService,
   LoanService,
@@ -12,7 +12,7 @@ export interface IApiGateWay {
   config: TrackingWalletConfig;
   ajaxUtils: IAxiosAjaxUtils;
   userService: UserService;
-  expenseService: ExpenseService;
+  transactionService: TransactionService;
   monthlyLimitService: MonthlyLimitService;
   loanServices: LoanService;
   investService: InvestService;

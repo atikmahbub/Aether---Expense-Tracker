@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   Alert,
   Platform,
 } from 'react-native';
@@ -75,10 +75,12 @@ const Row = React.memo(
         enabled={!isRowOpen}
       >
         <View style={styles.rowWrapper}>
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <Pressable
             onPress={() => onEditToggle(item.id)}
-            style={[styles.row, isRowOpen && styles.rowActive]}
+            style={({ pressed }) => [
+              styles.row,
+              (isRowOpen || pressed) && styles.rowActive
+            ]}
           >
             {item.Avatar ? (
               <View style={styles.avatarContainer}>
@@ -139,9 +141,9 @@ const Row = React.memo(
                 style={[
                   styles.amountText,
                   item.Type === "Taken" && { color: colors.error },
-                ]}
-              >
-                {item.AmountDisplay}
+                  item.IsIncome && { color: "#4ADE80" },
+                ]}>
+                {item.IsIncome ? `+${item.AmountDisplay}` : item.AmountDisplay}
               </Text>
               <View
                 style={[
@@ -160,21 +162,25 @@ const Row = React.memo(
                     styles.categoryText,
                     isLoanRow && item.Type === "Given" && { color: "#b6f700" },
                     isLoanRow && item.Type === "Taken" && { color: "#ff8e8b" },
+                    item.IsIncome && { color: "#4ADE80", opacity: 0.8 },
                     !isLoanRow &&
+                      !item.IsIncome &&
                       item.CategoryColor && { color: item.CategoryColor },
                   ]}
                 >
                   {isLoanRow
-                    ? item.Type === "Given"
-                      ? "LENT"
-                      : "BORROWED"
+                    ? item.Type === 'Given'
+                      ? 'LENT'
+                      : 'BORROWED'
+                    : item.IsIncome
+                    ? 'INCOME'
                     : item.CategoryName
                     ? item.CategoryName.toUpperCase()
-                    : "EXPENSE"}
+                    : 'EXPENSE'}
                 </Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </Pressable>
           {isRowOpen && (
             <View style={styles.collapsibleContent}>
               {renderCollapsibleContent(item)}
@@ -251,9 +257,8 @@ const DataTable: React.FC<DataTableProps> = ({
       <View style={styles.swipeActions}>
         <View style={styles.swipeActionsBackdrop} />
         <View style={styles.swipeActionsContent}>
-          <TouchableOpacity
+          <Pressable
             style={[styles.swipeActionButton, styles.deleteAction]}
-            activeOpacity={0.9}
             onPress={() => {
               close();
               handleDelete(id);
@@ -262,7 +267,7 @@ const DataTable: React.FC<DataTableProps> = ({
             <View style={[styles.actionIconBadge, styles.deleteBadge]}>
               <Icon name="delete" size={20} color={colors.text} />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     ),

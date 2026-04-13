@@ -32,7 +32,7 @@ import { darkTheme } from '@trackingPortal/themes/darkTheme';
 
 console.log("🔥 LAYOUT LOADED");
 
-const DEFAULT_AUTHENTICATED_ROUTE = "/(tabs)/expense";
+const DEFAULT_AUTHENTICATED_ROUTE = "/(tabs)/transactions";
 const LOGIN_ROUTE = "/login";
 const ONBOARDING_DONE_KEY = "onboarding_done";
 

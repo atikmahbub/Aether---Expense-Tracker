@@ -10,7 +10,7 @@ export default function TabsLayout() {
       }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
-      <Tabs.Screen name="index" options={{ lazy: false }} />
+      <Tabs.Screen name="transactions" options={{ lazy: false }} />
       <Tabs.Screen name="loan" />
       <Tabs.Screen name="investment" />
       <Tabs.Screen name="settings" />

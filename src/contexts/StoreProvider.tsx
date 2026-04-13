@@ -18,7 +18,7 @@ import {
 import {
   FALLBACK_CATEGORIES,
   normalizeCategoryIcon,
-} from "@trackingPortal/screens/ExpenseScreen/ExpenseScreen.constants";
+} from "@trackingPortal/screens/TransactionScreen/TransactionScreen.constants";
 import { getCountryData } from "country-currency-utils";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
@@ -35,6 +35,8 @@ type StoreContextType = {
   categoryLoading: boolean;
   isCategoryHydrated: boolean;
   refreshCategories: (options?: { force?: boolean }) => Promise<void>;
+  incomeCategories: ExpenseCategoryModel[];
+  incomeCategoryLoading: boolean;
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -65,6 +67,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     useState<ExpenseCategoryModel[]>(FALLBACK_CATEGORIES);
 
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [incomeCategories, setIncomeCategories] = useState<ExpenseCategoryModel[]>([]);
+  const [incomeCategoryLoading, setIncomeCategoryLoading] = useState(false);
   const [isCategoryHydrated, setIsCategoryHydrated] = useState(false);
 
   useEffect(() => {
@@ -87,13 +91,19 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [currentUser.default, isCategoryHydrated]);
 
+  useEffect(() => {
+    if (!currentUser.default && currentUser.userId && currentUser.userId !== 'admin') {
+      fetchIncomeCategories(currentUser.userId);
+    }
+  }, [currentUser.userId, currentUser.default]);
+
   const refreshCategories = async (options?: { force?: boolean }) => {
     if (isCategoryHydrated && !options?.force) return;
 
     setCategoryLoading(true);
 
     try {
-      const response = await apiGateway.expenseService.getCategories();
+      const response = await apiGateway.transactionService.getCategories();
 
       const normalized = response
         .map((c) => ({
@@ -114,9 +124,24 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.log("category error", error);
       setCategories(FALLBACK_CATEGORIES);
-      // Removed setIsCategoryHydrated(true) to allow retry when user authenticates
     } finally {
       setCategoryLoading(false);
+    }
+  };
+
+  const fetchIncomeCategories = async (userId: UserId) => {
+    setIncomeCategoryLoading(true);
+    try {
+      const response = await apiGateway.transactionService.getIncomeCategories(userId);
+      const normalized = response.map((c) => ({
+        ...c,
+        icon: normalizeCategoryIcon(c.icon),
+      }));
+      setIncomeCategories(normalized);
+    } catch (error) {
+      console.log("income category error", error);
+    } finally {
+      setIncomeCategoryLoading(false);
     }
   };
 
@@ -183,6 +208,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         categoryLoading,
         isCategoryHydrated,
         refreshCategories,
+        incomeCategories,
+        incomeCategoryLoading,
       }}
     >
       {children}

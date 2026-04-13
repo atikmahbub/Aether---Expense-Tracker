@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 const TABS: { name: string; label: string; icon: IconName }[] = [
-  { name: "expense", label: "EXPENSES", icon: "cash" },
+  { name: "transactions", label: "TRANSACTIONS", icon: "swap-horizontal" },
   { name: "loan", label: "LOANS", icon: "bank-outline" },
   { name: "investment", label: "INVEST", icon: "chart-line-variant" },
   { name: "settings", label: "SETTINGS", icon: "cog-outline" },
@@ -51,7 +51,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       {Platform.OS === "ios" ? (
         <BlurView intensity={30} tint="dark" style={styles.container}>
           <View style={styles.side}>
-            {renderTabByName("expense")}
+            {renderTabByName("transactions")}
             {renderTabByName("loan")}
           </View>
           <View style={styles.centerSpace} />
@@ -63,7 +63,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       ) : (
         <View style={[styles.container, styles.androidContainer]}>
           <View style={styles.side}>
-            {renderTabByName("expense")}
+            {renderTabByName("transactions")}
             {renderTabByName("loan")}
           </View>
           <View style={styles.centerSpace} />

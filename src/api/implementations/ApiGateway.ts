@@ -1,5 +1,5 @@
 import {
-  ExpenseService,
+  TransactionService,
   InvestService,
   LoanService,
   MonthlyLimitService,
@@ -16,7 +16,7 @@ export class ApiGateway implements IApiGateWay {
   public config: TrackingWalletConfig;
   public ajaxUtils: AxiosAjaxUtils;
   public userService: UserService;
-  public expenseService: ExpenseService;
+  public transactionService: TransactionService;
   public monthlyLimitService: MonthlyLimitService;
   public loanServices: LoanService;
   public investService: InvestService;
@@ -28,7 +28,7 @@ export class ApiGateway implements IApiGateWay {
     this.ajaxUtils = new AxiosAjaxUtils();
 
     this.userService = new UserService(this.config, this.ajaxUtils);
-    this.expenseService = new ExpenseService(this.config, this.ajaxUtils);
+    this.transactionService = new TransactionService(this.config, this.ajaxUtils);
     this.monthlyLimitService = new MonthlyLimitService(
       this.config,
       this.ajaxUtils,

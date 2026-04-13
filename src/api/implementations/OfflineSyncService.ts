@@ -46,8 +46,8 @@ export class OfflineSyncService {
   private async processItem(item: OfflineQueueItem): Promise<boolean> {
     try {
       switch (item.type) {
-        case "expense":
-          await this.apiGateway.expenseService.addExpense(item.payload);
+        case "transaction":
+          await this.apiGateway.transactionService.addTransaction(item.payload);
           return true;
         case "loan":
           await this.apiGateway.loanServices.addLoan(item.payload);
