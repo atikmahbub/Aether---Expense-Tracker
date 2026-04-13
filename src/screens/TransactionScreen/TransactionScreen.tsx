@@ -442,6 +442,7 @@ export default function TransactionScreen() {
           recentCategoryIds={recentCategoryIds}
           lastUsedCategoryId={recentCategoryIds[0] || null}
           onCategoryUsed={addRecentCategory}
+          refreshSummary={fetchSummary}
         />
       )}
     </View>

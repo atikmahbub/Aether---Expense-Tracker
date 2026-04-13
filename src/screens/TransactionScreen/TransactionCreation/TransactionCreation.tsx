@@ -43,6 +43,7 @@ interface ITransactionCreation {
   recentCategoryIds: string[];
   lastUsedCategoryId: string | null;
   onCategoryUsed?: (categoryId: string) => void;
+  refreshSummary?: () => Promise<void> | void;
 }
 
 const TransactionCreation: React.FC<ITransactionCreation> = ({
@@ -62,6 +63,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   recentCategoryIds,
   lastUsedCategoryId,
   onCategoryUsed,
+  refreshSummary,
 }) => {
   const { apiGateway } = useStoreContext();
   const { user } = useAuth();
@@ -197,6 +199,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         requestAnimationFrame(async () => {
           await getUserExpenses();
           await refreshAnalytics({ force: true });
+          await refreshSummary?.();
           
           triggerSuccessHaptic();
           onCategoryUsed?.(params.categoryId);
