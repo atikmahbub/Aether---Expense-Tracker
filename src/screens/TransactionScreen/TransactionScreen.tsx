@@ -1,31 +1,27 @@
 import { useIsFocused } from "@react-navigation/native";
-import { MonthlyLimitModel, TransactionModel, TransactionModelV1 } from "@trackingPortal/api/models";
-import { offlineService } from "@trackingPortal/api/utils/OfflineService";
+import { MonthlyLimitModel, TransactionModel } from "@trackingPortal/api/models";
+import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
 import {
   Month,
   UnixTimeStampString,
-  Year,
-  TransactionId,
-  UserId,
-  makeUnixTimestampString,
+  Year
 } from "@trackingPortal/api/primitives";
+import { offlineService } from "@trackingPortal/api/utils/OfflineService";
 import { AnimatedLoader } from "@trackingPortal/components";
+import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import AnalyticsCard from "@trackingPortal/screens/TransactionScreen/components/AnalyticsCard";
+import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
+import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
+import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
-import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
-import { useDailyTransactionReminder } from "@trackingPortal/screens/TransactionScreen/hooks/useDailyTransactionReminder";
-import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
-import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
-import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
-import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { colors } from "@trackingPortal/themes/colors";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -117,7 +113,7 @@ export default function TransactionScreen() {
     }
   }, [activeUserId, apiGateway, user.userId]);
 
-  useDailyTransactionReminder();
+  // useDailyTransactionReminder();
 
   const fetchAnalytics = useCallback(
     (options?: { force?: boolean }) => {
