@@ -320,6 +320,26 @@ const TransactionList: FC<ITransactionList> = ({
     return <AnimatedLoader />;
   }
 
+  const tableData = useMemo(() => {
+    return transactions.map(item => {
+      const formattedAmount = formatCurrency(item.amount, currency);
+
+      return {
+        id: item.id,
+        Date: dayjs(parseDate(item.date)).format('MMM D, YYYY'),
+        Purpose: item.description,
+        Amount: item.amount,
+        DisplayAmount: formattedAmount,
+        CategoryName: item.category?.name || 'Uncategorized',
+        CategoryColor: item.category?.color,
+        IconName: normalizeCategoryIcon(item.category?.icon),
+        IconColor: item.category?.color,
+        IconBackground: tintFromHex(item.category?.color, 0.16),
+        IsIncome: item.type === 'income',
+      };
+    });
+  }, [transactions, currency]);
+
   return (
     <View style={styles.mainContainer}>
       <View style={styles.listCard}>
@@ -367,23 +387,7 @@ const TransactionList: FC<ITransactionList> = ({
         <View style={styles.tableContainer}>
           <DataTable
             headers={headers}
-            data={transactions.map(item => {
-              const formattedAmount = formatCurrency(item.amount, currency);
-
-              return {
-                id: item.id,
-                Date: dayjs(parseDate(item.date)).format('MMM D, YYYY'),
-                Purpose: item.description,
-                Amount: item.amount,
-                DisplayAmount: formattedAmount,
-                CategoryName: item.category?.name || 'Uncategorized',
-                CategoryColor: item.category?.color,
-                IconName: normalizeCategoryIcon(item.category?.icon),
-                IconColor: item.category?.color,
-                IconBackground: tintFromHex(item.category?.color, 0.16),
-                IsIncome: item.type === 'income',
-              };
-            })}
+            data={tableData}
             onDelete={handleDeleteTransaction}
             isAnyRowOpen={notifyRowOpen}
             expandedRowId={expandedRowId}

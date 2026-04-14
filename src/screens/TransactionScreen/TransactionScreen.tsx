@@ -22,7 +22,7 @@ import { parseDate } from "@trackingPortal/utils/date";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated as RNAnimated, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Animated as RNAnimated, InteractionManager, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -47,7 +47,15 @@ export default function TransactionScreen() {
     return transactions.filter(t => t.type?.toLowerCase() === typeFilter);
   }, [transactions, typeFilter]);
 
-
+  const handleTypeFilterChange = useCallback((option: string) => {
+    // Reset visible count first to reduce render load
+    setVisibleCount(12);
+    
+    // Defer the heavy state change until after interaction
+    InteractionManager.runAfterInteractions(() => {
+      setTypeFilter(option as 'expense' | 'income');
+    });
+  }, []);
 
   const visibleData = useMemo(
     () => filteredTransactions.slice(0, visibleCount),
@@ -337,7 +345,7 @@ export default function TransactionScreen() {
         <TransactionSegmentedControl
           options={['expense', 'income']}
           selectedOption={typeFilter}
-          onOptionPress={(option) => setTypeFilter(option as 'expense' | 'income')}
+          onOptionPress={handleTypeFilterChange}
         />
       </View>
 
