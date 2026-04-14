@@ -179,11 +179,6 @@ const styles = StyleSheet.create({
   },
   metricSquareCard: {
     flex: 1,
-    borderRadius: 24,
-    backgroundColor: '#16191d',
-    borderWidth: 0,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
   },
   metricIconWrapChart: {
     marginBottom: 12,

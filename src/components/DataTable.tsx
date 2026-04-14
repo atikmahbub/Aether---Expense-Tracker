@@ -39,9 +39,19 @@ interface DataTableProps {
   renderSwipeActions?: (id: any, close: () => void) => React.ReactNode;
 }
 
+import Animated, { 
+  FadeInDown, 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withSpring, 
+  withTiming 
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+
 const Row = React.memo(
   ({
     item,
+    index,
     isRowOpen,
     swipeableRef,
     onDelete,
@@ -51,6 +61,7 @@ const Row = React.memo(
     renderCollapsibleContent,
   }: {
     item: any;
+    index: number;
     isRowOpen: boolean;
     swipeableRef: (ref: any) => void;
     onDelete: (id: any) => void;
@@ -60,134 +71,165 @@ const Row = React.memo(
     renderCollapsibleContent: (item: any) => React.ReactNode;
   }) => {
     const isLoanRow = item.Type === "Given" || item.Type === "Taken";
+    
+    // Press animations
+    const scale = useSharedValue(1);
+    const opacity = useSharedValue(1);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    }));
+
+    const handlePressIn = () => {
+      scale.value = withTiming(0.98, { duration: 100 });
+      opacity.value = withTiming(0.95, { duration: 100 });
+    };
+
+    const handlePressOut = () => {
+      scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      opacity.value = withTiming(1, { duration: 150 });
+    };
+
+    const handlePress = () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onEditToggle(item.id);
+    };
 
     return (
-      <Swipeable
-        ref={swipeableRef}
-        renderRightActions={
-          !isRowOpen
-            ? () =>
-                renderSwipeActions
-                  ? renderSwipeActions(item.id, () => {})
-                  : defaultSwipeActions(item.id, () => {})
-            : undefined
-        }
-        enabled={!isRowOpen}
+      <Animated.View 
+        entering={FadeInDown.delay(index * 60).duration(400).springify()}
+        style={[styles.rowContainer, animatedStyle]}
       >
-        <View style={styles.rowWrapper}>
-          <Pressable
-            onPress={() => onEditToggle(item.id)}
-            style={({ pressed }) => [
-              styles.row,
-              (isRowOpen || pressed) && styles.rowActive
-            ]}
-          >
-            {item.Avatar ? (
-              <View style={styles.avatarContainer}>
-                <Image source={{ uri: item.Avatar }} style={styles.avatarImage} />
+        <Swipeable
+          ref={swipeableRef}
+          renderRightActions={
+            !isRowOpen
+              ? () =>
+                  renderSwipeActions
+                    ? renderSwipeActions(item.id, () => {})
+                    : defaultSwipeActions(item.id, () => {})
+              : undefined
+          }
+          enabled={!isRowOpen}
+        >
+          <View style={styles.rowWrapper}>
+            <Pressable
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              onPress={handlePress}
+              style={({ pressed }) => [
+                styles.row,
+                (isRowOpen || pressed) && styles.rowActive
+              ]}
+            >
+              {item.Avatar ? (
+                <View style={styles.avatarContainer}>
+                  <Image source={{ uri: item.Avatar }} style={styles.avatarImage} />
+                  <View
+                    style={[
+                      styles.avatarBadge,
+                      item.Type === "Given"
+                        ? styles.badgeGiven
+                        : styles.badgeTaken,
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name={item.Type === "Given" ? "arrow-up" : "arrow-down"}
+                      size={10}
+                      color={colors.background}
+                    />
+                  </View>
+                </View>
+              ) : item.IconName ? (
                 <View
                   style={[
-                    styles.avatarBadge,
-                    item.Type === "Given"
-                      ? styles.badgeGiven
-                      : styles.badgeTaken,
+                    styles.iconWrapper,
+                    {
+                      backgroundColor: item.IconBackground,
+                    },
                   ]}
                 >
                   <MaterialCommunityIcons
-                    name={item.Type === "Given" ? "arrow-up" : "arrow-down"}
-                    size={10}
-                    color={colors.background}
+                    name={item.IconName}
+                    size={22}
+                    color={item.IconColor || colors.primary}
                   />
                 </View>
-              </View>
-            ) : item.IconName ? (
-              <View
-                style={[
-                  styles.iconWrapper,
-                  {
-                    backgroundColor: item.IconBackground,
-                  },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={item.IconName}
-                  size={22}
-                  color={item.IconColor || colors.primary}
-                />
-              </View>
-            ) : (
-              <View style={styles.iconWrapper}>
-                <Icon name="receipt" size={24} color={colors.primary} />
-              </View>
-            )}
-            <View style={styles.textContainer}>
-              <Text style={styles.purposeText}>{item.Purpose}</Text>
-              {item.CategoryName ? (
-                <View style={styles.categoryLineRow}>
-                  <Text
-                    style={[
-                      styles.categoryLine,
-                      { color: item.CategoryColor || colors.subText },
-                    ]}
-                  >
-                    {item.CategoryName}
-                  </Text>
+              ) : (
+                <View style={styles.iconWrapper}>
+                  <Icon name="receipt" size={24} color={colors.primary} />
                 </View>
-              ) : null}
-              <Text style={styles.dateText}>{item.DateDisplay}</Text>
-            </View>
-            <View style={styles.amountContainer}>
-              <Text
-                style={[
-                  styles.amountText,
-                  item.Type === "Taken" && { color: colors.error },
-                  item.IsIncome && { color: "#4ADE80" },
-                ]}>
-                {item.IsIncome ? `+${item.AmountDisplay}` : item.AmountDisplay}
-              </Text>
-              <View
-                style={[
-                  styles.typeBadge,
-                  isLoanRow
-                    ? item.Type === "Given"
-                      ? styles.typeBadgeGiven
-                      : styles.typeBadgeTaken
-                    : item.CategoryColor
-                    ? { backgroundColor: tintHex(item.CategoryColor, 0.12) }
-                    : undefined,
-                ]}
-              >
+              )}
+              <View style={styles.textContainer}>
+                <Text style={styles.purposeText}>{item.Purpose}</Text>
+                {item.CategoryName ? (
+                  <View style={styles.categoryLineRow}>
+                    <Text
+                      style={[
+                        styles.categoryLine,
+                        { color: item.CategoryColor || colors.subText },
+                      ]}
+                    >
+                      {item.CategoryName}
+                    </Text>
+                  </View>
+                ) : null}
+                <Text style={styles.dateText}>{item.DateDisplay}</Text>
+              </View>
+              <View style={styles.amountContainer}>
                 <Text
                   style={[
-                    styles.categoryText,
-                    isLoanRow && item.Type === "Given" && { color: "#b6f700" },
-                    isLoanRow && item.Type === "Taken" && { color: "#ff8e8b" },
-                    item.IsIncome && { color: "#4ADE80", opacity: 0.8 },
-                    !isLoanRow &&
-                      !item.IsIncome &&
-                      item.CategoryColor && { color: item.CategoryColor },
+                    styles.amountText,
+                    item.Type === "Taken" && { color: colors.error },
+                    item.IsIncome && { color: "#4ADE80" },
+                  ]}>
+                  {item.IsIncome ? `+${item.AmountDisplay}` : item.AmountDisplay}
+                </Text>
+                <View
+                  style={[
+                    styles.typeBadge,
+                    isLoanRow
+                      ? item.Type === "Given"
+                        ? styles.typeBadgeGiven
+                        : styles.typeBadgeTaken
+                      : item.CategoryColor
+                      ? { backgroundColor: tintHex(item.CategoryColor, 0.12) }
+                      : undefined,
                   ]}
                 >
-                  {isLoanRow
-                    ? item.Type === 'Given'
-                      ? 'LENT'
-                      : 'BORROWED'
-                    : item.IsIncome
-                    ? 'INCOME'
-                    : item.CategoryName
-                    ? item.CategoryName.toUpperCase()
-                    : 'EXPENSE'}
-                </Text>
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      isLoanRow && item.Type === "Given" && { color: "#b6f700" },
+                      isLoanRow && item.Type === "Taken" && { color: "#ff8e8b" },
+                      item.IsIncome && { color: "#4ADE80", opacity: 0.8 },
+                      !isLoanRow &&
+                        !item.IsIncome &&
+                        item.CategoryColor && { color: item.CategoryColor },
+                    ]}
+                  >
+                    {isLoanRow
+                      ? item.Type === 'Given'
+                        ? 'LENT'
+                        : 'BORROWED'
+                      : item.IsIncome
+                      ? 'INCOME'
+                      : item.CategoryName
+                      ? item.CategoryName.toUpperCase()
+                      : 'EXPENSE'}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Pressable>
-          {isRowOpen && (
-            <View style={styles.collapsibleContent}>
-              {renderCollapsibleContent(item)}
-            </View>
-          )}
-        </View>
-      </Swipeable>
+            </Pressable>
+            {isRowOpen && (
+              <View style={styles.collapsibleContent}>
+                {renderCollapsibleContent(item)}
+              </View>
+            )}
+          </View>
+        </Swipeable>
+      </Animated.View>
     );
   },
 );
@@ -292,6 +334,7 @@ const DataTable: React.FC<DataTableProps> = ({
             <Row
               key={item.id?.toString() || index}
               item={item}
+              index={index}
               isRowOpen={expandedRowId === item.id}
               swipeableRef={(ref) => {
                 swipeableRefs.current[item.id] = ref;
@@ -327,6 +370,9 @@ const styles = StyleSheet.create({
   table: {
     width: '100%',
     paddingVertical: 10,
+  },
+  rowContainer: {
+    width: '100%',
   },
   rowWrapper: {
     width: '100%',

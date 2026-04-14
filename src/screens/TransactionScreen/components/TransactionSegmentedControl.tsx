@@ -13,6 +13,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { colors } from '@trackingPortal/themes/colors';
 
 interface SegmentedControlProps {
@@ -45,8 +46,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   useEffect(() => {
     if (dimensions.width > 0) {
       translateX.value = withSpring(selectedIndex * segmentWidth, {
-        damping: 20,
-        stiffness: 150,
+        damping: 25,
+        stiffness: 180,
       });
     }
   }, [selectedIndex, segmentWidth, dimensions.width]);
@@ -64,7 +65,9 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   const handlePress = (option: string) => {
     if (option === selectedOption) return;
     
-    // Slight scale effect on press
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Subtle scale up on change
     scale.value = withSequence(
       withTiming(1.02, { duration: 100 }),
       withSpring(1, { damping: 12, stiffness: 200 })
@@ -113,11 +116,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 44,
-    backgroundColor: 'rgba(15, 20, 24, 0.7)', // obsidianLow glass
+    backgroundColor: 'rgba(15, 20, 24, 0.7)',
     borderRadius: 22,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(68, 72, 77, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -126,16 +129,16 @@ const styles = StyleSheet.create({
     top: 4,
     bottom: 4,
     left: 4,
-    backgroundColor: 'rgba(161, 250, 255, 0.12)', 
+    backgroundColor: 'rgba(0, 255, 200, 0.08)', 
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(161, 250, 255, 0.35)',
-    // Glow effect
-    shadowColor: '#a1faff',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 255, 200, 0.4)',
+    // Enhanced Glow effect
+    shadowColor: 'rgba(0, 255, 200, 0.5)',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 4,
   },
   segment: {
     flex: 1,
@@ -150,10 +153,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   activeLabel: {
-    color: '#a1faff',
+    color: '#00ffc8',
   },
   inactiveLabel: {
-    color: 'rgba(241, 244, 250, 0.4)',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
 });
 

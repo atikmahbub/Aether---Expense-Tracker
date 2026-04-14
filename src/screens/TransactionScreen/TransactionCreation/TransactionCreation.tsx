@@ -124,6 +124,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           };
 
           const offlineItem = await saveOffline('transaction', params);
+          triggerSuccessHaptic();
           
           // ✅ Optimistic update for offline
           const mockTransaction: TransactionModel = {

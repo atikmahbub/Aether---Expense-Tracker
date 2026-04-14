@@ -8,6 +8,14 @@ import { darkTheme } from "@trackingPortal/themes/darkTheme";
 
 const TAB_CONTENT_BOTTOM_PADDING = 24; // slightly increased
 
+import Animated, { 
+  FadeInDown, 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withTiming, 
+  Easing 
+} from "react-native-reanimated";
+
 type Props = {
   children: React.ReactNode;
 };
@@ -34,7 +42,8 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={80} // adjust if needed
       >
-        <View
+        <Animated.View
+          entering={FadeInDown.duration(280).easing(Easing.out(Easing.quad))}
           style={[
             styles.content,
             {
@@ -43,7 +52,7 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
           ]}
         >
           {children}
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </View>
   );

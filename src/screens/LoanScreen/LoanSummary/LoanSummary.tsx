@@ -37,7 +37,7 @@ const LoanSummary: React.FC<ISummary> = ({
 
 
       <View style={styles.metricsRow}>
-        <View style={styles.metricSquareCard}>
+        <GlassCard style={styles.metricSquareCard} padding={16}>
           <View style={styles.iconBoxGiven}>
             <MaterialCommunityIcons name="arrow-top-right" size={16} color="#a1faff" />
           </View>
@@ -45,9 +45,9 @@ const LoanSummary: React.FC<ISummary> = ({
           <Text style={styles.metricLabelValue}>
             {formatCurrency(totalGiven, currency)}
           </Text>
-        </View>
+        </GlassCard>
         
-        <View style={styles.metricSquareCard}>
+        <GlassCard style={styles.metricSquareCard} padding={16}>
           <View style={styles.iconBoxTaken}>
             <MaterialCommunityIcons name="arrow-bottom-left" size={16} color="#ff8e8b" />
           </View>
@@ -55,7 +55,7 @@ const LoanSummary: React.FC<ISummary> = ({
           <Text style={styles.metricLabelValue}>
             {formatCurrency(totalBorrowed, currency)}
           </Text>
-        </View>
+        </GlassCard>
       </View>
     </View>
   );
@@ -103,10 +103,6 @@ const styles = StyleSheet.create({
   },
   metricSquareCard: {
     flex: 1,
-    borderRadius: 24,
-    backgroundColor: '#16191d',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
   },
   iconBoxGiven: {
     width: 32,

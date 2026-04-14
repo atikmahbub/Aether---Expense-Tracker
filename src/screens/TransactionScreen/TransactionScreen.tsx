@@ -22,7 +22,7 @@ import { parseDate } from "@trackingPortal/utils/date";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Animated as RNAnimated, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -41,6 +41,7 @@ export default function TransactionScreen() {
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
   const [typeFilter, setTypeFilter] = useState<'expense' | 'income'>('expense');
   const [visibleCount, setVisibleCount] = useState(12);
+  const scrollY = useRef(new RNAnimated.Value(0)).current;
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => t.type?.toLowerCase() === typeFilter);
@@ -393,20 +394,27 @@ export default function TransactionScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <RNAnimated.ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isNearBottom =
-            layoutMeasurement.height + contentOffset.y >=
-            contentSize.height - 200;
+        decelerationRate="normal"
+        onScroll={RNAnimated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          {
+            useNativeDriver: true,
+            listener: (event: any) => {
+              const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+              const isNearBottom =
+                layoutMeasurement.height + contentOffset.y >=
+                contentSize.height - 200;
 
-          if (isNearBottom && visibleCount < filteredTransactions.length) {
-            setVisibleCount((prev) => prev + 10);
+              if (isNearBottom && visibleCount < filteredTransactions.length) {
+                setVisibleCount((prev) => prev + 10);
+              }
+            },
           }
-        }}
+        )}
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: insets.bottom + 100 },
@@ -419,9 +427,24 @@ export default function TransactionScreen() {
           />
         }
       >
-        {headerComponent}
+        <RNAnimated.View style={{
+          transform: [{
+            translateY: scrollY.interpolate({
+              inputRange: [-100, 0, 100],
+              outputRange: [50, 0, -20],
+              extrapolate: 'clamp',
+            })
+          }],
+          opacity: scrollY.interpolate({
+            inputRange: [0, 150],
+            outputRange: [1, 0.9],
+            extrapolate: 'clamp',
+          })
+        }}>
+          {headerComponent}
+        </RNAnimated.View>
         {footerComponent}
-      </ScrollView>
+      </RNAnimated.ScrollView>
 
       {(openCreationForm || isCreationPreloaded) && (
         <TransactionCreation
