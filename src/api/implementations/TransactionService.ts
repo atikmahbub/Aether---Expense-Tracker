@@ -23,34 +23,87 @@ export class TransactionService implements ITransactionService {
     protected ajaxUtils: IAxiosAjaxUtils,
   ) {}
 
-  async addTransaction(params: IAddTransactionParams): Promise<TransactionModelV1> {
+  async addExpense(params: Omit<IAddTransactionParams, 'type'>): Promise<TransactionModelV1> {
     const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'expense', 'add'));
-    const response = await this.ajaxUtils.post(url, {...params});
-
+    const response = await this.ajaxUtils.post(url, params);
     if (response.isOk()) {
       return response.value as TransactionModelV1;
     }
     throw new Error(response.error);
+  }
+
+  async addIncome(params: Omit<IAddTransactionParams, 'type'>): Promise<TransactionModelV1> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'income', 'add'));
+    const response = await this.ajaxUtils.post(url, params);
+    if (response.isOk()) {
+      return response.value as TransactionModelV1;
+    }
+    throw new Error(response.error);
+  }
+
+  async updateExpense(id: TransactionId, params: Omit<IUpdateTransactionParams, 'id' | 'type'>): Promise<TransactionModelV1> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'expense', id));
+    // Include id in body as some backends require it matched with path
+    const response = await this.ajaxUtils.put(url, {id, ...params});
+    if (response.isOk()) {
+      return response.value as TransactionModelV1;
+    }
+    throw new Error(response.error);
+  }
+
+  async updateIncome(id: TransactionId, params: Omit<IUpdateTransactionParams, 'id' | 'type'>): Promise<TransactionModelV1> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'income', id));
+    // Include id in body as some backends require it matched with path
+    const response = await this.ajaxUtils.put(url, {id, ...params});
+    if (response.isOk()) {
+      return response.value as TransactionModelV1;
+    }
+    throw new Error(response.error);
+  }
+
+  async deleteExpense(id: TransactionId): Promise<void> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'expense', id));
+    const response = await this.ajaxUtils.delete(url);
+    if (response.isOk()) {
+      return response.value as void;
+    }
+    throw new Error(response.error);
+  }
+
+  async deleteIncome(id: TransactionId): Promise<void> {
+    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'income', id));
+    const response = await this.ajaxUtils.delete(url);
+    if (response.isOk()) {
+      return response.value as void;
+    }
+    throw new Error(response.error);
+  }
+
+  async addTransaction(params: IAddTransactionParams): Promise<TransactionModelV1> {
+    const {type, ...payload} = params;
+    if (type === 'income') {
+      return this.addIncome(payload);
+    } else {
+      return this.addExpense(payload);
+    }
   }
 
   async updateTransaction(params: IUpdateTransactionParams): Promise<TransactionModelV1> {
-    const url = new URL(
-      urlJoin(this.config.baseUrl, 'v0', 'expense', params.id),
-    );
-    const response = await this.ajaxUtils.put(url, {...params});
-
-    if (response.isOk()) {
-      return response.value as TransactionModelV1;
+    const {id, type, ...payload} = params;
+    if (type === 'income') {
+      return this.updateIncome(id, payload);
+    } else {
+      return this.updateExpense(id, payload);
     }
-    throw new Error(response.error);
   }
 
   async getTransactionsByUser(params: IGetUserTransactions): Promise<TransactionModelV1[]> {
-    const resource = params.type === 'income' ? 'income' : 'expenses';
+    const {userId, type, ...query} = params;
+    const resource = type === 'income' ? 'income' : 'expenses';
     const url = new URL(
-      urlJoin(this.config.baseUrl, 'v0', resource, params.userId),
+      urlJoin(this.config.baseUrl, 'v0', resource, userId),
     );
-    const response = await this.ajaxUtils.get(url, {...params});
+    const response = await this.ajaxUtils.get(url, query);
 
     if (response.isOk()) {
       return response.value as TransactionModelV1[];
@@ -58,14 +111,12 @@ export class TransactionService implements ITransactionService {
     throw new Error(response.error);
   }
 
-  async deleteTransaction(id: TransactionId): Promise<void> {
-    const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'expense', id));
-    const response = await this.ajaxUtils.delete(url);
-
-    if (response.isOk()) {
-      return response.value as void;
+  async deleteTransaction(id: TransactionId, type?: 'expense' | 'income'): Promise<void> {
+    if (type === 'income') {
+      return this.deleteIncome(id);
+    } else {
+      return this.deleteExpense(id);
     }
-    throw new Error(response.error);
   }
 
   async exceedTransactionNotification(userId: UserId): Promise<boolean> {
@@ -100,11 +151,12 @@ export class TransactionService implements ITransactionService {
   async getTransactionAnalytics(
     params: IGetTransactionAnalyticsParams,
   ): Promise<TransactionAnalyticsModel> {
-    const resource = params.type === 'income' ? 'income' : 'expenses';
+    const {type, ...query} = params;
+    const resource = type === 'income' ? 'income' : 'expenses';
     const url = new URL(
       urlJoin(this.config.baseUrl, 'v0', resource, 'analytics'),
     );
-    const response = await this.ajaxUtils.get(url, {...params});
+    const response = await this.ajaxUtils.get(url, query);
 
     if (response.isOk()) {
       return response.value as TransactionAnalyticsModel;

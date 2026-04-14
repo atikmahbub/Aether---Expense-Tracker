@@ -18,6 +18,7 @@ import TransactionCreation from "@trackingPortal/screens/TransactionScreen/Trans
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
 import { colors } from "@trackingPortal/themes/colors";
+import { parseDate } from "@trackingPortal/utils/date";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -155,7 +156,7 @@ export default function TransactionScreen() {
         .filter(item => 
           item.type === 'transaction' && 
           !item.synced && 
-          dayjs(Number(item.payload.date) * 1000).format("YYYY-MM") === currentMonthStr
+          dayjs(parseDate(item.payload.date)).format("YYYY-MM") === currentMonthStr
         )
         .map(item => ({
           id: item.id as string,
@@ -164,9 +165,9 @@ export default function TransactionScreen() {
           date: item.payload.date as string,
           description: item.payload.description,
           category: {
-            name: categories.find(c => c.id === item.payload.categoryId)?.name || 'Other',
-            icon: categories.find(c => c.id === item.payload.categoryId)?.icon || 'receipt',
-            color: categories.find(c => c.id === item.payload.categoryId)?.color || colors.subText,
+            name: (item.payload.type === 'income' ? incomeCategories : categories).find(c => c.id === item.payload.categoryId)?.name || 'Other',
+            icon: (item.payload.type === 'income' ? incomeCategories : categories).find(c => c.id === item.payload.categoryId)?.icon || 'receipt',
+            color: (item.payload.type === 'income' ? incomeCategories : categories).find(c => c.id === item.payload.categoryId)?.color || colors.subText,
           }
         }));
 
@@ -372,15 +373,16 @@ export default function TransactionScreen() {
       typeFilter={typeFilter}
       setTypeFilter={setTypeFilter}
       getUserExpenses={getTransactions}
-      categories={categories}
-      categoriesLoading={categoryLoading}
+      categories={typeFilter === 'expense' ? categories : incomeCategories}
+      categoriesLoading={typeFilter === 'expense' ? categoryLoading : incomeCategoryLoading}
       refreshCategories={refreshCategories}
       refreshAnalytics={fetchAnalytics}
       recentCategoryIds={recentCategoryIds}
       onCategoryUsed={addRecentCategory}
       notifyRowOpen={handleNotifyRowOpen}
+      refreshSummary={fetchSummary}
     />
-  ), [filterMonth, setFilterMonth, visibleData, getTransactions, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory, handleNotifyRowOpen]);
+  ), [filterMonth, setFilterMonth, visibleData, getTransactions, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory, handleNotifyRowOpen, fetchSummary]);
 
   if (
     (combinedLoading || loading || limitLoading || !isCategoryHydrated || user.default) &&

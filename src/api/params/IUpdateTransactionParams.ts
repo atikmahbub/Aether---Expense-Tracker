@@ -10,4 +10,5 @@ export interface IUpdateTransactionParams {
   description?: string | null;
   date?: UnixTimeStampString;
   categoryId?: string | null;
+  type?: 'expense' | 'income';
 }

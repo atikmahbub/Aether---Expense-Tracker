@@ -44,6 +44,7 @@ import {
 } from '@trackingPortal/utils/haptic';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {normalizeCategoryIcon} from '@trackingPortal/screens/TransactionScreen/TransactionScreen.constants';
+import {parseDate} from '@trackingPortal/utils/date';
 
 interface ITransactionList {
   notifyRowOpen: (value: boolean) => void;
@@ -60,6 +61,7 @@ interface ITransactionList {
   refreshAnalytics: (options?: {force?: boolean}) => Promise<void> | void;
   recentCategoryIds: string[];
   onCategoryUsed?: (categoryId: string) => void;
+  refreshSummary?: () => Promise<void> | void;
 }
 
 const headers = ['Date', 'Purpose', 'Amount'];
@@ -91,6 +93,7 @@ const TransactionList: FC<ITransactionList> = ({
   refreshAnalytics,
   recentCategoryIds,
   onCategoryUsed,
+  refreshSummary,
 }) => {
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
@@ -123,7 +126,7 @@ const TransactionList: FC<ITransactionList> = ({
     setOpenPicker(true);
   }, []);
 
-  const onTransactionEdit = async (
+  const onTransactionEdit = useCallback(async (
     values: any,
     {resetForm}: any,
     id: TransactionId,
@@ -146,14 +149,19 @@ const TransactionList: FC<ITransactionList> = ({
         (values.categoryId && categoryLookup[values.categoryId]?.name) || '';
       const description =
         values.description?.trim() || categoryName || 'Quick entry';
-      const params: IUpdateTransactionParams = {
-        id: id,
+      
+      const payload: any = {
         amount: Number(values.amount),
         date: makeUnixTimestampString(Number(new Date(values.date))),
         description,
         categoryId: values.categoryId,
       };
-      await apiGateway.transactionService.updateTransaction(params);
+
+      if (typeFilter === 'income') {
+        await apiGateway.transactionService.updateIncome(id, payload);
+      } else {
+        await apiGateway.transactionService.updateExpense(id, payload);
+      }
 
       resetForm();
       setExpandedRowId(null);
@@ -161,27 +169,44 @@ const TransactionList: FC<ITransactionList> = ({
       requestAnimationFrame(async () => {
         await getUserExpenses();
         await refreshAnalytics({force: true});
+        await refreshSummary?.();
         triggerSuccessHaptic();
-        if (params.categoryId) {
-          onCategoryUsed?.(params.categoryId);
+        if (payload.categoryId) {
+          onCategoryUsed?.(payload.categoryId);
         }
         Toast.show({
           type: 'success',
-          text1: 'Transaction updated successfully!',
+          text1: 'Updated successfully!',
         });
       });
-    } catch (error) {
-      console.log('error', error);
+    } catch (error: any) {
+      console.log('Update error', error);
+      let message = 'Failed to update. Please try again.';
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 400) message = 'Invalid data provided.';
+        else if (status === 401) message = 'Session expired.';
+        else if (status === 404) message = 'Entry not found.';
+      }
       Toast.show({
         type: 'error',
-        text1: 'Failed to update. Please try again.',
+        text1: message,
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    apiGateway.transactionService,
+    categoryLookup,
+    getUserExpenses,
+    isOnline,
+    onCategoryUsed,
+    refreshAnalytics,
+    typeFilter,
+    user.default,
+  ]);
 
-  const handleDeleteTransaction = async (rowId: any) => {
+  const handleDeleteTransaction = useCallback(async (rowId: any) => {
     if (!rowId) return;
 
     // 🌐 Network guard
@@ -196,29 +221,47 @@ const TransactionList: FC<ITransactionList> = ({
 
     try {
       setDeleteLoading(true);
-      await apiGateway.transactionService.deleteTransaction(rowId);
+      if (typeFilter === 'income') {
+        await apiGateway.transactionService.deleteIncome(rowId);
+      } else {
+        await apiGateway.transactionService.deleteExpense(rowId);
+      }
 
       setExpandedRowId(null);
 
       requestAnimationFrame(async () => {
         await getUserExpenses();
         await refreshAnalytics({force: true});
+        await refreshSummary?.();
         triggerWarningHaptic();
         Toast.show({
           type: 'success',
-          text1: 'Deleted Successfully!',
+          text1: 'Deleted successfully!',
         });
       });
-    } catch (error) {
-      console.log('error', error);
+    } catch (error: any) {
+      console.log('Delete error', error);
+      let message = 'Failed to delete. Please try again.';
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 401) message = 'Session expired.';
+        else if (status === 404) message = 'Entry already deleted or not found.';
+      }
       Toast.show({
         type: 'error',
-        text1: 'Failed to delete. Please try again.',
+        text1: message,
       });
     } finally {
       setDeleteLoading(false);
     }
-  };
+  }, [
+    apiGateway.transactionService,
+    getUserExpenses,
+    isOnline,
+    refreshAnalytics,
+    typeFilter,
+    refreshSummary,
+  ]);
 
   const renderCollapsibleContent = useCallback(
     (item: any) => {
@@ -229,15 +272,15 @@ const TransactionList: FC<ITransactionList> = ({
       return (
         <Formik
           enableReinitialize
-          initialValues={{
+           initialValues={{
             id: selectedItem.id,
-            [EAddTransactionFields.DATE]: new Date(selectedItem.date),
+            [EAddTransactionFields.DATE]: parseDate(selectedItem.date),
             [EAddTransactionFields.DESCRIPTION]: selectedItem.description || '',
             [EAddTransactionFields.AMOUNT]: formatNumber(selectedItem.amount, {
               useGrouping: false,
               maximumFractionDigits: 2,
             }),
-            [EAddTransactionFields.CATEGORY_ID]: (selectedItem as any).categoryId || '',
+            [EAddTransactionFields.CATEGORY_ID]: (selectedItem as any).categoryId || categories.find(c => c.name === selectedItem.category?.name)?.id || '',
           }}
           onSubmit={(values, formikHelpers) =>
             onTransactionEdit(values, formikHelpers, currentRowId)
@@ -274,6 +317,7 @@ const TransactionList: FC<ITransactionList> = ({
       recentCategoryIds,
       loading,
       onTransactionEdit,
+      typeFilter,
     ],
   );
 
@@ -333,7 +377,7 @@ const TransactionList: FC<ITransactionList> = ({
 
               return {
                 id: item.id,
-                Date: dayjs(item.date).format('MMM D, YYYY'),
+                Date: dayjs(parseDate(item.date)).format('MMM D, YYYY'),
                 Purpose: item.description,
                 Amount: item.amount,
                 DisplayAmount: formattedAmount,

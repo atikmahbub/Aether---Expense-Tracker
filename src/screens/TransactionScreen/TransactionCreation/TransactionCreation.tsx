@@ -6,7 +6,8 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { StyleSheet, View, Pressable, Text } from 'react-native';
+import { StyleSheet, View, Pressable, Text, InteractionManager, Keyboard } from 'react-native';
+import { IconButton } from 'react-native-paper';
 
 import { ExpenseCategoryModel, TransactionModel, TransactionModelV1 } from '@trackingPortal/api/models';
 import { IAddTransactionParams } from '@trackingPortal/api/params';
@@ -72,6 +73,10 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   const [transactionType, setTransactionType] = useState<'Expense' | 'Income'>(
     initialType,
   );
+
+  React.useEffect(() => {
+    setTransactionType(initialType);
+  }, [initialType]);
 
   const activeCategories = useMemo(() => 
     transactionType === 'Expense' ? categories : incomeCategories,
@@ -160,21 +165,28 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           .millisecond(0)
           .toDate();
 
-        const params: IAddTransactionParams = {
+        const params: any = {
           userId: user.sub as any,
           amount: Number(values.amount),
           date: makeUnixTimestampString(Number(safeDate)),
           description: trimmedDescription || categoryLabel || 'Quick entry',
           categoryId: values.categoryId,
-          type: transactionType.toLowerCase() as 'expense' | 'income',
         };
 
-        const newTransaction = await apiGateway.transactionService.addTransaction(params);
+        let newTransaction: TransactionModelV1;
+        if (transactionType.toLowerCase() === 'income') {
+          newTransaction = await apiGateway.transactionService.addIncome(params);
+        } else {
+          newTransaction = await apiGateway.transactionService.addExpense(params);
+        }
 
         // ✅ OPTIMISTIC UI UPDATE
         const mockTransaction: TransactionModel = {
-          ...newTransaction,
-          type: (newTransaction.type || params.type || 'expense') as 'expense' | 'income',
+          id: newTransaction.id,
+          amount: Number(newTransaction.amount),
+          date: newTransaction.date,
+          description: newTransaction.description || trimmedDescription || 'Quick entry',
+          type: transactionType.toLowerCase() as 'expense' | 'income',
           category: {
             name: activeCategories.find(c => c.id === values.categoryId)?.name || newTransaction.categoryName || 'Other',
             icon: activeCategories.find(c => c.id === values.categoryId)?.icon || 'receipt',
@@ -188,7 +200,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
             [EAddTransactionFields.DATE]: new Date(),
             [EAddTransactionFields.DESCRIPTION]: '',
             [EAddTransactionFields.AMOUNT]: '',
-            [EAddTransactionFields.CATEGORY_ID]: params.categoryId,
+            [EAddTransactionFields.CATEGORY_ID]: values.categoryId,
           },
         });
 
@@ -206,16 +218,33 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
 
           Toast.show({
             type: 'success',
-            text1: 'Transaction added successfully',
+            text1: `${transactionType} added successfully`,
           });
 
           await getExceedExpenseNotification();
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Transaction Creation Error:', error);
+        
+        let message = 'Failed to add transaction. Please try again.';
+        
+        // Handle axios/network errors
+        if (error.response) {
+          const status = error.response.status;
+          if (status === 400) {
+            message = 'Invalid data provided. Please check your entries.';
+          } else if (status === 401) {
+            message = 'Session expired. Please log in again.';
+          } else if (status === 404) {
+            message = 'Service endpoint not found.';
+          } else if (error.response.data?.message) {
+            message = error.response.data.message;
+          }
+        }
+
         Toast.show({
           type: 'error',
-          text1: 'Failed to add transaction. Please try again.',
+          text1: message,
         });
       } finally {
         setLoading(false);
@@ -230,9 +259,9 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
       onCategoryUsed,
       refreshAnalytics,
       setTransactions,
-      user?.sub,
       isOnline,
       saveOffline,
+      transactionType,
     ],
   );
 
@@ -248,7 +277,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         onSubmit={handleAddTransaction}
         validationSchema={CreateTransactionSchema}
       >
-        {({ handleSubmit }) => (
+        {({ handleSubmit, isValid, dirty }) => (
           <View style={styles.container}>
             <View style={styles.modalToggleRow}>
               <View style={styles.segmentedToggle}>
@@ -339,6 +368,15 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: colors.primary,
     fontWeight: '700',
+  },
+  topHeader: {
+    position: 'absolute',
+    top: 5,
+    right: 8,
+    zIndex: 10,
+  },
+  checkIcon: {
+    margin: 0,
   },
 });
 
