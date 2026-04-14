@@ -1,16 +1,16 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  ViewToken,
   Dimensions,
+  FlatList,
+  StyleSheet,
   Text,
+  TouchableOpacity,
+  View,
+  ViewToken,
 } from 'react-native';
 
-import {colors} from '@trackingPortal/themes/colors';
-import {OnboardingSlide} from '@trackingPortal/components';
+import { OnboardingSlide } from '@trackingPortal/components';
+import { colors } from '@trackingPortal/themes/colors';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const SLIDES = [
@@ -28,7 +28,7 @@ const SLIDES = [
   },
   {
     id: 'slide-3',
-    title: 'Add your first expense in seconds',
+    title: 'Add income or expense in seconds',
     subtitle: 'Start building your financial habit today',
     icon: <MaterialCommunityIcons name="plus-circle-outline" size={80} color={colors.tertiary} />,
   },

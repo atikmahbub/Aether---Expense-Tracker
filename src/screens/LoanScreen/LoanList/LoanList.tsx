@@ -28,7 +28,6 @@ import {
   triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 interface ILoanList {
   notifyRowOpen: (value: boolean) => void;
@@ -126,17 +125,13 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
           }
           validationSchema={AddLoanSchema}>
           {({handleSubmit}) => (
-            <KeyboardAwareScrollView
-              enableOnAndroid
-              extraScrollHeight={20}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.collapsibleContent}>
+            <View style={styles.collapsibleContent}>
               <LoanForm
                 onSubmit={handleSubmit}
                 onCancel={() => setExpandedRowId(null)}
                 loading={loading}
               />
-            </KeyboardAwareScrollView>
+            </View>
           )}
         </Formik>
       );

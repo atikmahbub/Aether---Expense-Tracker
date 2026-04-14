@@ -42,7 +42,6 @@ import {
   triggerSuccessHaptic,
   triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {normalizeCategoryIcon} from '@trackingPortal/screens/TransactionScreen/TransactionScreen.constants';
 import {parseDate} from '@trackingPortal/utils/date';
 
@@ -287,11 +286,7 @@ const TransactionList: FC<ITransactionList> = ({
           }
           validationSchema={CreateTransactionSchema}>
           {({handleSubmit}) => (
-            <KeyboardAwareScrollView
-              enableOnAndroid
-              extraScrollHeight={20}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.collapsibleContent}>
+            <View style={styles.collapsibleContent}>
               <TransactionForm
                 categories={categories}
                 categoriesLoading={categoriesLoading}
@@ -302,7 +297,7 @@ const TransactionList: FC<ITransactionList> = ({
                 onCancel={() => setExpandedRowId(null)}
                 loading={loading}
               />
-            </KeyboardAwareScrollView>
+            </View>
           )}
         </Formik>
       );

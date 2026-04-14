@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, TextInput } from "react-native";
+import { Text, TextInput, KeyboardAvoidingView, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -188,10 +188,15 @@ export default function RootLayout() {
             <StoreProvider>
               <NetworkProvider>
                 <OfflineProvider>
-                  {/* ✅ IMPORTANT: Router must be here */}
-                  <NavigationBoundary />
-                  {/* 🌐 GLOBAL: Floating offline banner */}
-                  <OfflineBanner />
+                  <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    style={{ flex: 1 }}
+                  >
+                    {/* ✅ IMPORTANT: Router must be here */}
+                    <NavigationBoundary />
+                    {/* 🌐 GLOBAL: Floating offline banner */}
+                    <OfflineBanner />
+                  </KeyboardAvoidingView>
                 </OfflineProvider>
               </NetworkProvider>
             </StoreProvider>

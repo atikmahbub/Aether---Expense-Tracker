@@ -47,8 +47,7 @@ const BaseBottomSheet = React.memo(
           deviceHeight={SCREEN_HEIGHT}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardView}
           >
             <View style={styles.contentWrapper}>
@@ -61,7 +60,9 @@ const BaseBottomSheet = React.memo(
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.scrollContent}
               >
-                {children}
+                <View onStartShouldSetResponder={() => true}>
+                  {children}
+                </View>
               </ScrollView>
             </View>
           </KeyboardAvoidingView>
@@ -80,6 +81,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   keyboardView: {
+    flex: 1,
     width: '100%',
     justifyContent: 'flex-end',
   },
@@ -89,8 +91,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    minHeight: SCREEN_HEIGHT * 0.6,
-    maxHeight: SCREEN_HEIGHT * 0.92,
+    maxHeight: SCREEN_HEIGHT * 0.9,
     paddingTop: 8,
   },
   indicatorWrapper: {
@@ -106,7 +107,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 30,
+    paddingBottom: 80,
+    flexGrow: 1,
   },
 });
 

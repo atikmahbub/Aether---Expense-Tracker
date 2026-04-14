@@ -39,7 +39,6 @@ import {
   triggerSuccessHaptic,
   triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 
 interface IInvestList {
   notifyRowOpen: (value: boolean) => void;
@@ -174,18 +173,14 @@ const InvestList: FC<IInvestList> = ({
           validationSchema={AddInvestSchema}>
           {({handleSubmit}) => {
             return (
-              <KeyboardAwareScrollView
-                enableOnAndroid
-                extraScrollHeight={20}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.collapsibleContent}>
+              <View style={styles.collapsibleContent}>
                 <InvestForm
                   update
                   onSubmit={handleSubmit}
                   onCancel={() => setExpandedRowId(null)}
                   loading={loading}
                 />
-              </KeyboardAwareScrollView>
+              </View>
             );
           }}
         </Formik>
