@@ -165,7 +165,7 @@ const TransactionList: FC<ITransactionList> = ({
       resetForm();
       setExpandedRowId(null);
 
-      requestAnimationFrame(async () => {
+      InteractionManager.runAfterInteractions(async () => {
         await getUserExpenses();
         await refreshAnalytics({force: true});
         await refreshSummary?.();
@@ -228,7 +228,7 @@ const TransactionList: FC<ITransactionList> = ({
 
       setExpandedRowId(null);
 
-      requestAnimationFrame(async () => {
+      InteractionManager.runAfterInteractions(async () => {
         await getUserExpenses();
         await refreshAnalytics({force: true});
         await refreshSummary?.();
@@ -316,9 +316,6 @@ const TransactionList: FC<ITransactionList> = ({
     ],
   );
 
-  if (deleteLoading) {
-    return <AnimatedLoader />;
-  }
 
   const tableData = useMemo(() => {
     return transactions.map(item => {
