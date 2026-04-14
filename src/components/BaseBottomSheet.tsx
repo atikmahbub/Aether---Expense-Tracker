@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, View, Platform, TouchableOpacity, Dimensions, KeyboardAvoidingView, ScrollView} from 'react-native';
+import {StyleSheet, View, Platform, TouchableOpacity, Dimensions, KeyboardAvoidingView, ScrollView, Keyboard, Pressable} from 'react-native';
 import Modal from 'react-native-modal';
 import {colors} from '@trackingPortal/themes/colors';
 
@@ -60,9 +60,9 @@ const BaseBottomSheet = React.memo(
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.scrollContent}
               >
-                <View onStartShouldSetResponder={() => true}>
+                <Pressable onPress={Keyboard.dismiss} style={{flex: 1}} accessible={false}>
                   {children}
-                </View>
+                </Pressable>
               </ScrollView>
             </View>
           </KeyboardAvoidingView>
