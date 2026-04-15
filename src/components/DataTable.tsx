@@ -98,7 +98,7 @@ const Row = React.memo(
 
     return (
       <Animated.View 
-        entering={FadeInDown.delay(index * 60).duration(400).springify()}
+        entering={FadeInDown.delay(index < 12 ? index * 60 : 0).duration(400).springify()}
         style={[styles.rowContainer, animatedStyle]}
       >
         <Swipeable
