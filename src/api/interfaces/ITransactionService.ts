@@ -33,5 +33,5 @@ export interface ITransactionService {
     params: IGetTransactionAnalyticsParams,
   ) => Promise<TransactionAnalyticsModel>;
   getIncomeCategories: (userId: UserId) => Promise<ExpenseCategoryModel[]>;
-  getTransactionSummary: (userId: UserId) => Promise<TransactionSummaryModel>;
+  getTransactionSummary: (userId: UserId, date?: string) => Promise<TransactionSummaryModel>;
 }

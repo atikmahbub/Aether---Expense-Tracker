@@ -184,9 +184,9 @@ export class TransactionService implements ITransactionService {
     throw new Error(response.error);
   }
 
-  async getTransactionSummary(userId: UserId): Promise<TransactionSummaryModel> {
+  async getTransactionSummary(userId: UserId, date?: string): Promise<TransactionSummaryModel> {
     const url = new URL(urlJoin(this.config.baseUrl, 'v0', 'transactions', 'summary', userId));
-    const response = await this.ajaxUtils.get(url);
+    const response = await this.ajaxUtils.get(url, { date });
 
     if (response.isOk()) {
       return response.value as TransactionSummaryModel;

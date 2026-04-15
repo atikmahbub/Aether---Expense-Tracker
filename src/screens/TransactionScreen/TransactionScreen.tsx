@@ -18,7 +18,7 @@ import TransactionCreation from "@trackingPortal/screens/TransactionScreen/Trans
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
 import { colors } from "@trackingPortal/themes/colors";
-import { parseDate } from "@trackingPortal/utils/date";
+import { parseDate, getMonthTimestamp } from "@trackingPortal/utils/date";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -114,14 +114,15 @@ export default function TransactionScreen() {
     if (!activeUserId) return;
     setLoadingSummary(true);
     try {
-      const data = await apiGateway.transactionService.getTransactionSummary(user.userId);
+      const ts = getMonthTimestamp(dayjs(filterMonth).year(), dayjs(filterMonth).month());
+      const data = await apiGateway.transactionService.getTransactionSummary(user.userId, ts as string);
       setSummary(data);
     } catch (error) {
       console.log("Summary fetch failed", error);
     } finally {
       setLoadingSummary(false);
     }
-  }, [activeUserId, apiGateway, user.userId]);
+  }, [activeUserId, apiGateway, user.userId, filterMonth]);
 
   // useDailyTransactionReminder();
 
@@ -151,7 +152,7 @@ export default function TransactionScreen() {
       try {
         serverTransactions = await apiGateway.transactionService.getTransactions({
           userId: user.userId,
-          date: dayjs(filterMonth).unix() as unknown as UnixTimeStampString,
+          date: getMonthTimestamp(dayjs(filterMonth).year(), dayjs(filterMonth).month()),
         });
       } catch (e) {
         console.log("Server Transactions fetch failed", e);

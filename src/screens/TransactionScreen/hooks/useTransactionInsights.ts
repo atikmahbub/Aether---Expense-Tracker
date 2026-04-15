@@ -5,6 +5,7 @@ import {
 import { UnixTimeStampString } from "@trackingPortal/api/primitives";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import dayjs, { Dayjs } from "dayjs";
+import { getMonthTimestamp } from "@trackingPortal/utils/date";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 export const useTransactionInsights = ({
@@ -47,9 +48,7 @@ export const useTransactionInsights = ({
       try {
         const commonParams = {
           userId: userId as any,
-          date: dayjs(month)
-            .startOf("month")
-            .unix() as unknown as UnixTimeStampString,
+          date: getMonthTimestamp(dayjs(month).year(), dayjs(month).month()),
         };
 
         const [expenseData, incomeData] = await Promise.all([
