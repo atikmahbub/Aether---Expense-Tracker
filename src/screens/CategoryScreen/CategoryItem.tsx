@@ -15,10 +15,9 @@ interface CategoryItemProps {
 
 const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
   const isSystem = item.userId === null;
-  const isOther = item.name === 'Other';
-
+  
   const renderRightActions = () => {
-    if (isSystem || isOther) return null;
+    if (isSystem) return null;
     
     return (
       <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
@@ -50,7 +49,7 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
         
         <View style={styles.rightContent}>
           <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
-          {!isSystem && !isOther && (
+          {!isSystem && (
             <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(255,255,255,0.2)" />
           )}
         </View>

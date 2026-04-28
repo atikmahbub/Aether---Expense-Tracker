@@ -32,21 +32,21 @@ const CategoryScreen = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (name === 'Other') {
-      Alert.alert('Action Restricted', 'The "Other" category cannot be deleted.');
+  const handleDelete = (item: ExpenseCategoryModel | IncomeCategoryModel) => {
+    if (item.userId === null) {
+      Alert.alert('System Category', 'Default categories cannot be deleted.');
       return;
     }
     
     Alert.alert(
       'Delete Category',
-      `Are you sure you want to delete "${name}"?`,
+      `Are you sure you want to delete "${item.name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => deleteCategory(id)
+          onPress: () => deleteCategory(item.id)
         },
       ]
     );
@@ -56,7 +56,7 @@ const CategoryScreen = () => {
     <CategoryItem 
       item={item} 
       onEdit={() => handleEdit(item)}
-      onDelete={() => handleDelete(item.id, item.name)}
+      onDelete={() => handleDelete(item)}
     />
   );
 
