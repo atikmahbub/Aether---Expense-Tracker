@@ -1,17 +1,15 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as AuthSession from "expo-auth-session";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import { AppState, AppStateStatus } from "react-native";
+import { isTokenExpired } from "@trackingPortal/utils/tokenUtils";
+import { authStorage } from "./authStorage";
 
 WebBrowser.maybeCompleteAuthSession();
 
 /* ================= CONFIG ================= */
-
-const ACCESS_TOKEN_KEY = "auth_access_token";
-const PROFILE_CACHE_KEY = "auth_profile_cache";
 
 const LOGGED_IN_ROUTE = "/(tabs)/transactions";
 const LOGIN_ROUTE = "/login";
@@ -35,8 +33,6 @@ const redirectUri = AuthSession.makeRedirectUri({
   path: "auth/callback",
 });
 
-console.log("👉 redirectUri:", redirectUri);
-
 /* ================= TYPES ================= */
 
 type UserProfile = Record<string, unknown> | null;
@@ -44,6 +40,7 @@ type UserProfile = Record<string, unknown> | null;
 type AuthContextType = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  getValidToken: () => Promise<string | null>;
   token: string | null;
   user: UserProfile;
   loading: boolean;
@@ -75,15 +72,27 @@ export const Auth0ProviderWithHistory = ({
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile>(null);
   const [loading, setLoading] = useState(true);
+  
+  const refreshPromise = useRef<Promise<string | null> | null>(null);
+  const appState = useRef(AppState.currentState);
 
   const discovery = AuthSession.useAutoDiscovery(`https://${AUTH0_DOMAIN}`);
+
+  /* ================= ACTIONS ================= */
+
+  const logout = useCallback(async () => {
+    await authStorage.clearAll();
+    setToken(null);
+    setUser(null);
+    router.replace(LOGIN_ROUTE);
+  }, [router]);
 
   /* ================= AUTH REQUEST ================= */
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: AUTH0_CLIENT_ID,
-      scopes: ["openid", "profile", "email"],
+      scopes: ["openid", "profile", "email", "offline_access"],
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
       redirectUri,
@@ -91,35 +100,118 @@ export const Auth0ProviderWithHistory = ({
         ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
         connection: "google-oauth2",
         prompt: "select_account",
-        max_age: "0",
       },
     },
     discovery,
   );
+
+  /* ================= REFRESH LOGIC ================= */
+
+  const refreshAccessToken = async (storedRefreshToken: string): Promise<string | null> => {
+    if (refreshPromise.current) return refreshPromise.current;
+
+    refreshPromise.current = (async () => {
+      if (!discovery?.tokenEndpoint) return null;
+
+      try {
+        const tokenResponse = await AuthSession.refreshAsync(
+          {
+            clientId: AUTH0_CLIENT_ID,
+            refreshToken: storedRefreshToken,
+          },
+          { tokenEndpoint: discovery.tokenEndpoint }
+        );
+
+        if (tokenResponse.accessToken) {
+          await authStorage.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken);
+          setToken(tokenResponse.accessToken);
+          return tokenResponse.accessToken;
+        }
+      } catch (e) {
+        console.error("❌ Token refresh failed:", e);
+        await logout();
+      } finally {
+        refreshPromise.current = null;
+      }
+      return null;
+    })();
+
+    return refreshPromise.current;
+  };
+
+  const getValidToken = useCallback(async (): Promise<string | null> => {
+    // 1. Proactive check state
+    if (token && !isTokenExpired(token)) return token;
+
+    // 2. Check storage
+    const storedToken = await authStorage.getAccessToken();
+    if (storedToken && !isTokenExpired(storedToken)) {
+      setToken(storedToken);
+      return storedToken;
+    }
+
+    // 3. Try refreshing
+    const storedRefreshToken = await authStorage.getRefreshToken();
+    if (storedRefreshToken) {
+      return await refreshAccessToken(storedRefreshToken);
+    }
+
+    return null;
+  }, [token, discovery, logout]);
+
+  const syncProfile = useCallback(async (tokenToUse: string) => {
+    try {
+      const profile = await fetchUserInfo(tokenToUse);
+      setUser(profile);
+      await authStorage.saveProfile(profile);
+    } catch (e) {
+      console.error("❌ Profile sync failed:", e);
+    }
+  }, []);
+
+  /* ================= APP LIFECYCLE ================= */
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        // App has come to the foreground, proactively check/refresh token
+        const validToken = await getValidToken();
+        if (validToken) {
+          syncProfile(validToken); // Background sync profile
+        }
+      }
+      appState.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription.remove();
+  }, [getValidToken, syncProfile]);
 
   /* ================= RESTORE SESSION ================= */
 
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const storedToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+        const cachedProfile = await authStorage.getProfile();
+        if (cachedProfile) setUser(cachedProfile);
 
-        if (!storedToken) return;
-
-        const profile = await fetchUserInfo(storedToken);
-
-        setToken(storedToken);
-        setUser(profile);
-      } catch {
-        await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-        await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
+        const validToken = await getValidToken();
+        if (validToken) {
+          syncProfile(validToken); // Refresh profile in background
+        }
+      } catch (e) {
+        console.error("❌ Bootstrap error:", e);
+        await logout();
       } finally {
         setLoading(false);
       }
     };
 
-    bootstrap();
-  }, []);
+    if (discovery) bootstrap();
+  }, [discovery, getValidToken, syncProfile, logout]);
 
   /* ================= HANDLE LOGIN RESPONSE ================= */
 
@@ -128,38 +220,28 @@ export const Auth0ProviderWithHistory = ({
       if (response?.type !== "success") return;
 
       try {
-        if (!request?.codeVerifier) {
-          throw new Error("Missing codeVerifier");
-        }
-
-        if (!discovery?.tokenEndpoint) {
-          throw new Error("Auth discovery is not ready");
-        }
+        if (!request?.codeVerifier) throw new Error("Missing codeVerifier");
+        if (!discovery?.tokenEndpoint) throw new Error("Auth discovery not ready");
 
         const tokenResponse = await AuthSession.exchangeCodeAsync(
           {
             clientId: AUTH0_CLIENT_ID,
             code: response.params.code,
             redirectUri,
-            extraParams: {
-              code_verifier: request.codeVerifier,
-            },
+            extraParams: { code_verifier: request.codeVerifier },
           },
           { tokenEndpoint: discovery.tokenEndpoint },
         );
 
-        const accessToken = tokenResponse.accessToken;
-
+        const { accessToken, refreshToken } = tokenResponse;
         if (!accessToken) throw new Error("No access token");
 
-        const profile = await fetchUserInfo(accessToken);
-
-        await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-
-        await AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
-
+        await authStorage.saveTokens(accessToken, refreshToken);
         setToken(accessToken);
+        
+        const profile = await fetchUserInfo(accessToken);
         setUser(profile);
+        await authStorage.saveProfile(profile);
 
         router.replace(LOGGED_IN_ROUTE);
       } catch (e) {
@@ -168,31 +250,21 @@ export const Auth0ProviderWithHistory = ({
     };
 
     handleAuth();
-  }, [response]);
+  }, [response, discovery, request, router]);
 
-  /* ================= ACTIONS ================= */
+  /* ================= LOGIN ACTION ================= */
 
   const login = async () => {
     if (!request) return;
     await promptAsync();
   };
 
-  const logout = async () => {
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
-    setToken(null);
-    setUser(null);
-    router.replace(LOGIN_ROUTE);
-  };
-
   return (
-    <AuthContext.Provider value={{ login, logout, token, user, loading }}>
+    <AuthContext.Provider value={{ login, logout, getValidToken, token, user, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-/* ================= HOOK ================= */
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);

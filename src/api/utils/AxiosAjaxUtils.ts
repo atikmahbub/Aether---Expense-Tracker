@@ -1,22 +1,85 @@
-import axios, {AxiosRequestConfig} from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import {
   IAxiosAjaxUtils,
   IAxiosAjaxResponse,
 } from '@trackingPortal/api/utils/IAxiosAjaxUtils';
 
 export class AxiosAjaxUtils implements IAxiosAjaxUtils {
+  private axiosInstance: AxiosInstance;
+  private tokenProvider: (() => Promise<string | null>) | null = null;
   private accessToken: string | null = null;
+
+  constructor() {
+    this.axiosInstance = axios.create({
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 15000, // 15s timeout for stability
+    });
+
+    this.setupInterceptors();
+  }
+
+  private setupInterceptors() {
+    // 1. Proactive Token Interceptor
+    this.axiosInstance.interceptors.request.use(
+      async (config) => {
+        try {
+          if (this.tokenProvider) {
+            const token = await this.tokenProvider();
+            if (token) {
+              config.headers.Authorization = `Bearer ${token}`;
+            }
+          } else if (this.accessToken) {
+            config.headers.Authorization = `Bearer ${this.accessToken}`;
+          }
+        } catch (error) {
+          // If token retrieval fails, still try the request, it will likely fail with 401
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // 2. Response Interceptor for 401 Handling
+    this.axiosInstance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        // If it's a 401 and we haven't retried yet
+        if (
+          error.response?.status === 401 && 
+          !originalRequest._retry && 
+          this.tokenProvider
+        ) {
+          originalRequest._retry = true;
+          
+          try {
+            // This will trigger a refresh if needed, using the mutex in AuthProvider
+            const token = await this.tokenProvider();
+            if (token) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              return this.axiosInstance(originalRequest);
+            }
+          } catch (refreshError) {
+            // Refresh failed, logout is usually handled by the provider's getValidToken internal catch
+            return Promise.reject(refreshError);
+          }
+        }
+
+        // Handle network errors or other failures
+        return Promise.reject(error);
+      }
+    );
+  }
 
   public setAccessToken(token: string) {
     this.accessToken = token;
   }
 
-  private buildHeaders(headers?: object): object {
-    const defaultHeaders: object = {
-      'Content-Type': 'application/json',
-      ...(this.accessToken && {Authorization: `Bearer ${this.accessToken}`}),
-    };
-    return {...defaultHeaders, ...headers};
+  public setTokenProvider(provider: () => Promise<string | null>) {
+    this.tokenProvider = provider;
   }
 
   private createResponse<T>(data: T, status: number): IAxiosAjaxResponse<T> {
@@ -40,25 +103,13 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
     params?: object,
     headers?: object,
   ): Promise<IAxiosAjaxResponse<T>> {
-    const config: AxiosRequestConfig = {
-      headers: this.buildHeaders(headers),
-      params,
-    };
     try {
-      const response = await axios.get<T>(url.toString(), config);
-      console.log(`[GET] ${url}`, {
+      const response = await this.axiosInstance.get<T>(url.toString(), {
         params,
-        headers: config.headers,
-        status: response.status,
-        response: response.data,
+        headers,
       });
       return this.createResponse(response.data, response.status);
     } catch (error) {
-      console.error(`[GET ERROR] ${url}`, {
-        params,
-        headers: config.headers,
-        error,
-      });
       return this.createErrorResponse(error);
     }
   }
@@ -68,24 +119,12 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
     data: object,
     headers?: object,
   ): Promise<IAxiosAjaxResponse<T>> {
-    const config: AxiosRequestConfig = {
-      headers: this.buildHeaders(headers),
-    };
     try {
-      const response = await axios.post<T>(url.toString(), data, config);
-      console.log(`[POST] ${url}`, {
-        data,
-        headers: config.headers,
-        status: response.status,
-        response: response.data,
+      const response = await this.axiosInstance.post<T>(url.toString(), data, {
+        headers,
       });
       return this.createResponse(response.data, response.status);
     } catch (error) {
-      console.error(`[POST ERROR] ${url}`, {
-        data,
-        headers: config.headers,
-        error,
-      });
       return this.createErrorResponse(error);
     }
   }
@@ -95,24 +134,12 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
     data: object,
     headers?: object,
   ): Promise<IAxiosAjaxResponse<T>> {
-    const config: AxiosRequestConfig = {
-      headers: this.buildHeaders(headers),
-    };
     try {
-      const response = await axios.put<T>(url.toString(), data, config);
-      console.log(`[PUT] ${url}`, {
-        data,
-        headers: config.headers,
-        status: response.status,
-        response: response.data,
+      const response = await this.axiosInstance.put<T>(url.toString(), data, {
+        headers,
       });
       return this.createResponse(response.data, response.status);
     } catch (error) {
-      console.error(`[PUT ERROR] ${url}`, {
-        data,
-        headers: config.headers,
-        error,
-      });
       return this.createErrorResponse(error);
     }
   }
@@ -122,25 +149,13 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
     params?: object,
     headers?: object,
   ): Promise<IAxiosAjaxResponse<T>> {
-    const config: AxiosRequestConfig = {
-      headers: this.buildHeaders(headers),
-      params,
-    };
     try {
-      const response = await axios.delete<T>(url.toString(), config);
-      console.log(`[DELETE] ${url}`, {
+      const response = await this.axiosInstance.delete<T>(url.toString(), {
         params,
-        headers: config.headers,
-        status: response.status,
-        response: response.data,
+        headers,
       });
       return this.createResponse(response.data, response.status);
     } catch (error) {
-      console.error(`[DELETE ERROR] ${url}`, {
-        params,
-        headers: config.headers,
-        error,
-      });
       return this.createErrorResponse(error);
     }
   }

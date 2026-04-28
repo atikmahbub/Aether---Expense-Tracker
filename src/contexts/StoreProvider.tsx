@@ -57,7 +57,7 @@ const defaultUser: NewUserModel = {
 };
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
-  const { token, user: auth0User } = useAuth();
+  const { getValidToken, token, user: auth0User } = useAuth();
 
   const [currentUser, setCurrentUser] = useState<NewUserModel>(defaultUser);
   const [currency, setCurrency] =
@@ -72,8 +72,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [isCategoryHydrated, setIsCategoryHydrated] = useState(false);
 
   useEffect(() => {
+    apiGateway.ajaxUtils.setTokenProvider(getValidToken);
+  }, [getValidToken]);
+
+  useEffect(() => {
     if (token) {
-      apiGateway.ajaxUtils.setAccessToken(token);
       addUserToDb();
     }
   }, [auth0User, token]);

@@ -7,6 +7,7 @@ export interface IAxiosAjaxResponse<T> {
 
 export interface IAxiosAjaxUtils {
   setAccessToken: (token: string) => void;
+  setTokenProvider: (provider: () => Promise<string | null>) => void;
   get: <T>(url: URL, params?: object, headers?: object) => Promise<IAxiosAjaxResponse<T>>;
   post: <T>(
     url: URL,
