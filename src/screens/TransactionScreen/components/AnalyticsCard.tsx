@@ -36,6 +36,7 @@ interface AnalyticsCardProps {
     isLower: boolean | null;
   } | null;
   trendLoading?: boolean;
+  totalSpent?: number;
 }
 
 const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -49,6 +50,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   mode = 'expense',
   trend,
   trendLoading,
+  totalSpent,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [showHeavyUI, setShowHeavyUI] = useState(false);
@@ -78,10 +80,11 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   );
 
   const budgetSummary = useMemo(() => {
-    if (!analytics || typeof monthlyLimit !== 'number') {
+    if (typeof monthlyLimit !== 'number' || monthlyLimit <= 0) {
       return null;
     }
-    const delta = monthlyLimit - (analytics.totalTransaction || 0);
+    const spent = Math.abs(totalSpent ?? analytics?.totalTransaction ?? 0);
+    const delta = monthlyLimit - spent;
     const formatted = formatAmount(Math.abs(delta));
     return {
       text:
@@ -90,7 +93,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           : `You exceeded by ${formatted}`,
       isOver: delta < 0,
     };
-  }, [analytics, monthlyLimit, formatAmount]);
+  }, [analytics, monthlyLimit, formatAmount, totalSpent]);
 
   const segments = useMemo(() => {
     if (!analytics?.categoryBreakdown?.length || !showHeavyUI) {
