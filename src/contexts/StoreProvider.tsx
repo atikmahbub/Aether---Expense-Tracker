@@ -103,7 +103,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setCategoryLoading(true);
 
     try {
-      const response = await apiGateway.transactionService.getCategories();
+      const response = await apiGateway.categoryService.getExpenseCategories(currentUser.userId);
 
       const normalized = response
         .map((c) => ({
@@ -132,7 +132,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchIncomeCategories = async (userId: UserId) => {
     setIncomeCategoryLoading(true);
     try {
-      const response = await apiGateway.transactionService.getIncomeCategories(userId);
+      const response = await apiGateway.categoryService.getIncomeCategories(userId);
       const normalized = response.map((c) => ({
         ...c,
         icon: normalizeCategoryIcon(c.icon),

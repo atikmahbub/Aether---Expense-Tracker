@@ -4,3 +4,4 @@ export * from "@trackingPortal/api/interfaces/IApiGateway";
 export * from "@trackingPortal/api/interfaces/IMonthlyLimitService";
 export * from "@trackingPortal/api/interfaces/ILoanService";
 export * from "@trackingPortal/api/interfaces/IInvestService";
+export * from "@trackingPortal/api/interfaces/ICategoryService";

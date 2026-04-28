@@ -119,14 +119,17 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
 
   public async delete<T>(
     url: URL,
+    params?: object,
     headers?: object,
   ): Promise<IAxiosAjaxResponse<T>> {
     const config: AxiosRequestConfig = {
       headers: this.buildHeaders(headers),
+      params,
     };
     try {
       const response = await axios.delete<T>(url.toString(), config);
       console.log(`[DELETE] ${url}`, {
+        params,
         headers: config.headers,
         status: response.status,
         response: response.data,
@@ -134,6 +137,7 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
       return this.createResponse(response.data, response.status);
     } catch (error) {
       console.error(`[DELETE ERROR] ${url}`, {
+        params,
         headers: config.headers,
         error,
       });

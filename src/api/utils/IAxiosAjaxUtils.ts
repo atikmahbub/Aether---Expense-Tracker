@@ -7,7 +7,7 @@ export interface IAxiosAjaxResponse<T> {
 
 export interface IAxiosAjaxUtils {
   setAccessToken: (token: string) => void;
-  get: <T>(url: URL, headers?: object) => Promise<IAxiosAjaxResponse<T>>;
+  get: <T>(url: URL, params?: object, headers?: object) => Promise<IAxiosAjaxResponse<T>>;
   post: <T>(
     url: URL,
     data: object,
@@ -18,5 +18,5 @@ export interface IAxiosAjaxUtils {
     data: object,
     headers?: object
   ) => Promise<IAxiosAjaxResponse<T>>;
-  delete: <T>(url: URL, headers?: object) => Promise<IAxiosAjaxResponse<T>>;
+  delete: <T>(url: URL, params?: object, headers?: object) => Promise<IAxiosAjaxResponse<T>>;
 }

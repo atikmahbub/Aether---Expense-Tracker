@@ -12,16 +12,24 @@ interface ILoadingButtonProps {
   onPress: (event: GestureResponderEvent) => void;
   loading: boolean;
   label: string;
+  style?: any;
+  textStyle?: any;
 }
 
 const LoadingButton: React.FC<ILoadingButtonProps> = ({
   onPress,
   label,
   loading,
+  style,
+  textStyle,
 }) => {
   return (
-    <TouchableOpacity style={styles.buttonContainer} onPress={onPress}>
-      <Text style={styles.buttonText}>{label}</Text>
+    <TouchableOpacity 
+      style={[styles.buttonContainer, style]} 
+      onPress={onPress}
+      disabled={loading}
+    >
+      <Text style={[styles.buttonText, textStyle]}>{label}</Text>
       {loading && (
         <ActivityIndicator
           size="small"

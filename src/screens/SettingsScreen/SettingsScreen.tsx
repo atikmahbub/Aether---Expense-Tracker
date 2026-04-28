@@ -8,6 +8,7 @@ import {
   InteractionManager,
   Linking,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import React, {useCallback, useState} from 'react';
 import {Text} from 'react-native-paper';
 import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
@@ -21,6 +22,7 @@ import Toast from 'react-native-toast-message';
 export default function SettingsScreen() {
   const {logout, loading} = useAuth();
   const {currency, setCurrencyPreference} = useStoreContext();
+  const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
 
   const openCurrencyModal = useCallback(() => {
@@ -64,6 +66,32 @@ export default function SettingsScreen() {
                 style={
                   styles.detailValue
                 }>{`${currency.symbol} ${currency.code}`}</Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name='chevron-right'
+            size={22}
+            color='#4f555c'
+          />
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          style={styles.selectorRow}
+          activeOpacity={0.85}
+          onPress={() => router.push('/categories')}>
+          <View style={styles.selectorRowContent}>
+            <View style={styles.iconCircle}>
+              <MaterialCommunityIcons
+                name='tag-multiple-outline'
+                size={20}
+                color={colors.text}
+              />
+            </View>
+            <View style={styles.detailTextCol}>
+              <Text style={styles.detailLabel}>MANAGEMENT</Text>
+              <Text style={styles.detailValue}>Categories</Text>
             </View>
           </View>
           <MaterialCommunityIcons
@@ -208,6 +236,12 @@ const styles = StyleSheet.create({
   },
   detailTextCol: {
     flex: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginVertical: 16,
+    marginLeft: 64,
   },
   selectorRow: {
     flexDirection: 'row',

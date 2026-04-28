@@ -1,10 +1,9 @@
-import {
-  TransactionService,
-  InvestService,
-  LoanService,
-  MonthlyLimitService,
-  UserService,
-} from "@trackingPortal/api/implementations";
+import { TransactionService } from "./TransactionService";
+import { InvestService } from "./InvestService";
+import { LoanService } from "./LoanService";
+import { MonthlyLimitService } from "./MonthlyLimitService";
+import { UserService } from "./UserService";
+import { CategoryService } from "./CategoryService";
 import { IApiGateWay } from "@trackingPortal/api/interfaces";
 import { URLString } from "@trackingPortal/api/primitives";
 import { TrackingWalletConfig } from "@trackingPortal/api/TrackingWalletConfig";
@@ -20,6 +19,7 @@ export class ApiGateway implements IApiGateWay {
   public monthlyLimitService: MonthlyLimitService;
   public loanServices: LoanService;
   public investService: InvestService;
+  public categoryService: CategoryService;
 
   constructor() {
     this.config = new TrackingWalletConfig(
@@ -35,5 +35,6 @@ export class ApiGateway implements IApiGateWay {
     );
     this.loanServices = new LoanService(this.config, this.ajaxUtils);
     this.investService = new InvestService(this.config, this.ajaxUtils);
+    this.categoryService = new CategoryService(this.config, this.ajaxUtils);
   }
 }
