@@ -268,11 +268,7 @@ export default function TransactionScreen() {
 
   useEffect(() => {
     if (activeUserId && !user.default && isCategoryHydrated) {
-      const rafId = requestAnimationFrame(() => {
-        setCombinedLoading(true);
-        loadData({ force: true });
-      });
-      return () => cancelAnimationFrame(rafId);
+      loadData({ force: true });
     }
   }, [activeUserId, user.default, isCategoryHydrated, filterMonth, loadData]);
 

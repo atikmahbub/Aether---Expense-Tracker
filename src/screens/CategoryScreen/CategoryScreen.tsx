@@ -8,6 +8,7 @@ import CategoryItem from '@trackingPortal/screens/CategoryScreen/CategoryItem';
 import CategoryModal from '@trackingPortal/screens/CategoryScreen/CategoryModal';
 import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/models';
 import { useNavigation } from 'expo-router';
+import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
 
 const CategoryScreen = () => {
   const navigation = useNavigation();
@@ -69,20 +70,12 @@ const CategoryScreen = () => {
         <View style={{ width: 32 }} />
       </View>
 
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, selectedType === 'expense' && styles.activeTab]}
-          onPress={() => setSelectedType('expense')}
-        >
-          <Text style={[styles.tabText, selectedType === 'expense' && styles.activeTabText]}>Expense</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, selectedType === 'income' && styles.activeTab]}
-          onPress={() => setSelectedType('income')}
-        >
-          <Text style={[styles.tabText, selectedType === 'income' && styles.activeTabText]}>Income</Text>
-        </TouchableOpacity>
-      </View>
+      <TransactionSegmentedControl
+        options={['expense', 'income']}
+        selectedOption={selectedType}
+        onOptionPress={(option) => setSelectedType(option as CategoryType)}
+        containerStyle={styles.segmentedControl}
+      />
 
       {loading && categories.length === 0 ? (
         <View style={styles.centerContainer}>
@@ -153,30 +146,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+  segmentedControl: {
     marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 4,
     marginBottom: 20,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  activeTab: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  activeTabText: {
-    color: '#000',
   },
   listContent: {
     paddingHorizontal: 20,

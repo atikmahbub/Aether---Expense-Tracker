@@ -86,10 +86,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   }, [token]);
 
   useEffect(() => {
-    if (!currentUser.default && !isCategoryHydrated) {
+    if (!currentUser.default && currentUser.userId !== 'admin') {
       refreshCategories({ force: true });
     }
-  }, [currentUser.default, isCategoryHydrated]);
+  }, [currentUser.userId, currentUser.default]);
 
   useEffect(() => {
     if (!currentUser.default && currentUser.userId && currentUser.userId !== 'admin') {

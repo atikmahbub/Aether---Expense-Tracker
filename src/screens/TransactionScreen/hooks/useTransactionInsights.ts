@@ -6,7 +6,7 @@ import { UnixTimeStampString } from "@trackingPortal/api/primitives";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import dayjs, { Dayjs } from "dayjs";
 import { getMonthTimestamp } from "@trackingPortal/utils/date";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const useTransactionInsights = ({
   userId,
@@ -19,6 +19,7 @@ export const useTransactionInsights = ({
     apiGateway,
     categories,
     categoryLoading,
+    isCategoryHydrated,
     incomeCategories,
     incomeCategoryLoading,
     refreshCategories,
@@ -30,6 +31,13 @@ export const useTransactionInsights = ({
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   const cache = useRef<Record<string, TransactionAnalyticsModel>>({});
+
+  useEffect(() => {
+    // Reset analytics when userId or month changes to avoid showing stale data
+    setExpenseAnalytics(null);
+    setIncomeAnalytics(null);
+    cache.current = {};
+  }, [userId, month]);
 
   const refreshAnalytics = useCallback(
     async ({ force }: { force?: boolean } = {}) => {
@@ -69,6 +77,14 @@ export const useTransactionInsights = ({
     },
     [apiGateway, userId, month],
   );
+
+  useEffect(() => {
+    // Only fetch if we have a valid non-default user and categories are ready
+    // We also check for userId !== 'admin' as an extra safety measure
+    if (userId && userId !== 'admin' && isCategoryHydrated) {
+      refreshAnalytics();
+    }
+  }, [userId, month, isCategoryHydrated, refreshAnalytics]);
 
   const categoryLookup = useMemo(() => {
     const lookup: Record<string, ExpenseCategoryModel> = {};

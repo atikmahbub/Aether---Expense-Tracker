@@ -251,7 +251,12 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
                     </Text>
                   </View>
                 ) : (
-                  !loading && renderEmpty('No breakdown yet')
+                  !loading && segments.length === 0 && analytics.categoryBreakdown?.length > 0 ? (
+                    <View style={styles.emptyState}>
+                      <ActivityIndicator color={colors.primary} size="small" style={{ marginBottom: 8 }} />
+                      <Text style={styles.emptyText}>Syncing categories...</Text>
+                    </View>
+                  ) : !loading && renderEmpty('No breakdown yet')
                 )}
               </View>
 
