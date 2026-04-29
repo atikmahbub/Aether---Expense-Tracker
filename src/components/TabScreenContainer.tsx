@@ -48,7 +48,7 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
             styles.content,
             {
               backgroundColor: theme.colors.background,
-              paddingBottom: insets.bottom + 90, // Account for floating tab bar (68 height + 10 margin + safety)
+              paddingBottom: Platform.OS === 'ios' ? insets.bottom + 90 : 100, // Reduced for Android to avoid gap
             },
           ]}
         >
