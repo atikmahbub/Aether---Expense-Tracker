@@ -1,4 +1,5 @@
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, {
   FC,
   SetStateAction,
@@ -245,7 +246,10 @@ const InvestList: FC<IInvestList> = ({
       <View style={styles.listCard}>
         <View style={styles.headerRow}>
           <View style={styles.headerTextBlock}>
-            <Text style={styles.title}>Investment History</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <MaterialCommunityIcons name="chart-timeline-variant" size={20} color={colors.primary} />
+              <Text style={styles.title}>Investment History</Text>
+            </View>
             <Text style={styles.subtitle}>
               Monitor allocations, returns, and close out wins.
             </Text>
@@ -255,6 +259,7 @@ const InvestList: FC<IInvestList> = ({
             onSelect={value => {
               setStatus(value);
             }}
+            buttonStyle={styles.statusButton}
             buttonLabel={
               filterInvestByStatusMenu.find(item => item.value === status)
                 ?.label || 'Status'
@@ -287,40 +292,49 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   listCard: {
-    marginTop: 12,
-    marginHorizontal: 4,
+    marginTop: 0,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 16,
+    marginBottom: 20,
   },
   headerTextBlock: {
     flex: 1,
-    paddingRight: 12,
   },
   title: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'Manrope',
+    letterSpacing: -0.5,
   },
   subtitle: {
     color: colors.subText,
     fontSize: 13,
-    marginTop: 4,
+    fontFamily: 'Manrope',
     lineHeight: 18,
     maxWidth: 240,
   },
   tableContainer: {
-    marginTop: 12,
+    marginTop: 0,
   },
   collapsibleContent: {
     gap: 16,
     paddingBottom: 20,
   },
   menuContainer: {
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  statusButton: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   actionRow: {
     flexDirection: 'row',

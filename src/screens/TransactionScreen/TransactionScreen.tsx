@@ -327,11 +327,15 @@ export default function TransactionScreen() {
     const isIncrease = value > 0;
     const isDecrease = value < 0;
 
+    // For expenses, increase is bad (red), decrease is good (green)
+    // For income, increase is good (green), decrease is bad (red)
+    const isBetter = typeFilter === 'expense' ? isDecrease : isIncrease;
+
     return {
       percent: Math.abs(value),
       isLower: value < 0,
       label: value === 0 ? "0% vs last month" : `${isIncrease ? "↑" : "↓"} ${Math.abs(value)}% vs last month`,
-      color: value === 0 ? colors.subText : (isIncrease ? '#4ADE80' : '#F87171'),
+      color: value === 0 ? colors.subText : (isBetter ? colors.success : colors.error),
       icon: isIncrease ? 'arrow-top-right' : (isDecrease ? 'arrow-bottom-right' : 'minus'),
     };
   }, [summary, loadingSummary, typeFilter]);
@@ -482,7 +486,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   listContent: {
-    paddingTop: 10,
+    paddingTop: 20,
   },
   topToggleRow: {
     paddingHorizontal: 20,

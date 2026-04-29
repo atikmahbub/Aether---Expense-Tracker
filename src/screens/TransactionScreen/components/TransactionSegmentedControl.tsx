@@ -46,8 +46,9 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   useEffect(() => {
     if (dimensions.width > 0) {
       translateX.value = withSpring(selectedIndex * segmentWidth, {
-        damping: 25,
-        stiffness: 180,
+        damping: 20,
+        stiffness: 400,
+        mass: 0.8,
       });
     }
   }, [selectedIndex, segmentWidth, dimensions.width]);
@@ -116,11 +117,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 44,
-    backgroundColor: 'rgba(15, 20, 24, 0.7)',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 22,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: colors.glassBorder,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -129,16 +130,10 @@ const styles = StyleSheet.create({
     top: 4,
     bottom: 4,
     left: 4,
-    backgroundColor: 'rgba(0, 255, 200, 0.08)', 
+    backgroundColor: colors.surface, 
     borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 255, 200, 0.4)',
-    // Enhanced Glow effect
-    shadowColor: 'rgba(0, 255, 200, 0.5)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   segment: {
     flex: 1,
@@ -149,14 +144,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: 0.2,
   },
   activeLabel: {
-    color: '#00ffc8',
+    color: colors.primary,
   },
   inactiveLabel: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: colors.subText,
   },
 });
 

@@ -16,6 +16,7 @@ import React, {
 } from 'react';
 import {Button, Text} from 'react-native-paper';
 import dayjs, {Dayjs} from 'dayjs';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import DatePicker from 'react-native-date-picker';
 import DataTable from '@trackingPortal/components/DataTable';
@@ -341,12 +342,13 @@ const TransactionList: FC<ITransactionList> = ({
     <View style={styles.mainContainer}>
       <View style={styles.listCard}>
         <View style={styles.timelineRow}>
-          <Text style={styles.title}>Timeline</Text>
-
-
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <MaterialCommunityIcons name="calendar-month-outline" size={20} color={colors.primary} />
+            <Text style={styles.title}>Timeline</Text>
+          </View>
 
           <Button
-            mode="contained-tonal"
+            mode="text"
             icon="chevron-down"
             contentStyle={{flexDirection: 'row-reverse'}}
             uppercase={false}
@@ -441,52 +443,59 @@ export default React.memo(TransactionList);
 
 const styles = StyleSheet.create({
   mainContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     flex: 1,
   },
   listCard: {
-    marginTop: 12,
+    marginTop: 0,
   },
   chipsScroll: {
     flexGrow: 0,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   timelineRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   chipsRow: {
     flexDirection: 'row',
-    gap: 12,
-    paddingRight: 16,
+    gap: 8,
+    paddingRight: 20,
   },
   chip: {
     borderColor: colors.glassBorder,
-    borderRadius: 999,
+    borderRadius: 14,
+    height: 42,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
   },
   chipActive: {
     borderColor: colors.primary,
-    backgroundColor: 'rgba(161, 250, 255, 0.08)',
+    backgroundColor: 'rgba(94, 234, 212, 0.1)',
   },
   chipLabel: {
     color: colors.subText,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1.2,
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: 'Manrope',
+    letterSpacing: 0.5,
   },
   chipLabelActive: {
     color: colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: 'Manrope',
+    letterSpacing: 0.5,
   },
   title: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'Manrope',
+    letterSpacing: -0.5,
   },
   viewAllText: {
     color: colors.primary,
@@ -496,15 +505,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   monthButton: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    paddingHorizontal: 4,
   },
-
   monthButtonLabel: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.4,
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'Manrope',
   },
   tableContainer: {
     marginTop: 12,

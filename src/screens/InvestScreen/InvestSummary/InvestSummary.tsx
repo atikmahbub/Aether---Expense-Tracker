@@ -1,13 +1,13 @@
 import {View, StyleSheet} from 'react-native';
 import React from 'react';
 import {Text} from 'react-native-paper';
-import {GlassCard} from '@trackingPortal/components';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {InvestModel} from '@trackingPortal/api/models';
 import {EInvestStatus} from '@trackingPortal/api/enums';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {colors} from '@trackingPortal/themes/colors';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { CommonCard, StatCard } from '@trackingPortal/components';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface ISummary {
   investList: InvestModel[];
@@ -24,10 +24,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
     0,
   );
 
-  const totalActiveItem = isActive ? totalItems : 0;
   const totalActiveAmount = isActive ? totalAmountInvested : 0;
-
-  const totalCompletedItem = !isActive ? totalItems : 0;
   const totalCompletedAmount = !isActive ? totalAmountInvested : 0;
 
   const totalProfit = !isActive
@@ -41,15 +38,6 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
 
   const averageReturn =
     !isActive && totalItems > 0 ? totalProfit / totalItems : 0;
-
-  const profitPercentLabel = formatNumber(
-    !isActive ? totalProfit : 0,
-    {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-      suffix: '%',
-    },
-  );
 
   const averageReturnLabel = formatNumber(
     !isActive ? averageReturn : 0,
@@ -71,49 +59,39 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
 
   return (
     <View style={styles.mainContainer}>
-      <Text style={styles.headingLabel}>INVESTMENT SNAPSHOT</Text>
-
-      <View style={styles.heroRow}>
-        <View style={styles.totalValueColumn}>
-          <Text
-            style={styles.totalValueText}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}>
-            {formatCurrency(
-              isActive ? totalActiveAmount : totalCompletedAmount,
-              currency,
-            )}
-          </Text>
+      <CommonCard style={styles.heroCard}>
+        <View style={styles.headingRow}>
+          <MaterialCommunityIcons name="chart-pie" size={14} color={colors.primary} />
+          <Text style={styles.headingLabel}>INVESTMENT SNAPSHOT</Text>
         </View>
-      </View>
-
-
+        <View style={styles.heroRow}>
+          <View style={styles.totalValueColumn}>
+            <Text
+              style={styles.totalValueText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}>
+              {formatCurrency(
+                isActive ? totalActiveAmount : totalCompletedAmount,
+                currency,
+              )}
+            </Text>
+          </View>
+        </View>
+      </CommonCard>
 
       <View style={styles.metricsRow}>
-        <GlassCard style={styles.metricSquareCard} padding={16}>
-          <View style={styles.metricIconWrapChart}>
-            <MaterialCommunityIcons
-              name="chart-line-variant"
-              size={18}
-              color="#8cafff"
-            />
-          </View>
-          <Text style={styles.metricLabelCard}>Annualized Return</Text>
-          <Text style={styles.metricLabelValue}>{averageReturnLabel}</Text>
-        </GlassCard>
+        <StatCard 
+          icon="chart-line-variant" 
+          label="Annualized Return" 
+          value={averageReturnLabel} 
+        />
 
-        <GlassCard style={styles.metricSquareCard} padding={16}>
-          <View style={styles.metricIconWrapWallet}>
-            <MaterialCommunityIcons
-              name="wallet-outline"
-              size={18}
-              color="#fca311"
-            />
-          </View>
-          <Text style={styles.metricLabelCard}>Asset Classes</Text>
-          <Text style={styles.metricLabelValue}>{assetClassCountLabel}</Text>
-        </GlassCard>
+        <StatCard 
+          icon="wallet-outline" 
+          label="Asset Classes" 
+          value={assetClassCountLabel} 
+        />
       </View>
     </View>
   );
@@ -124,43 +102,33 @@ export default InvestSummary;
 const styles = StyleSheet.create({
   mainContainer: {
     paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingTop: 20,
+    marginBottom: 20,
+  },
+  heroCard: {
+    marginBottom: 20,
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
   },
   headingLabel: {
-    color: '#8cafff',
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    fontWeight: '800',
-    marginBottom: 8,
+    color: colors.subText,
+    fontSize: 11,
+    letterSpacing: 1,
+    fontWeight: '600',
   },
   heroRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
   },
   totalValueColumn: {
     flex: 1,
     minWidth: 0,
-  },
-  verticalBadge: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 2,
-    paddingVertical: 10,
-    borderRadius: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-  },
-  verticalBadgeText: {
-    color: '#000',
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-    transform: [{rotate: '-90deg'}],
-    width: 60,
-    textAlign: 'center',
   },
   totalValueText: {
     color: colors.text,
@@ -172,30 +140,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     includeFontPadding: false,
   },
-
   metricsRow: {
     flexDirection: 'row',
-    gap: 16,
-  },
-  metricSquareCard: {
-    flex: 1,
-  },
-  metricIconWrapChart: {
-    marginBottom: 12,
-  },
-  metricIconWrapWallet: {
-    marginBottom: 12,
-  },
-  metricLabelCard: {
-    color: '#4f555c',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  metricLabelValue: {
-    color: '#bdc1c6',
-    fontSize: 22,
-    fontWeight: '400',
-    fontFamily: 'Manrope',
+    gap: 12,
   },
 });

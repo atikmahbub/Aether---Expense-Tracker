@@ -15,15 +15,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 const TABS: { name: string; label: string; icon: IconName }[] = [
-  { name: "transactions", label: "TRANSACTIONS", icon: "swap-horizontal" },
-  { name: "loan", label: "LOANS", icon: "bank-outline" },
-  { name: "investment", label: "INVEST", icon: "chart-line-variant" },
-  { name: "settings", label: "SETTINGS", icon: "cog-outline" },
+  { name: "transactions", label: "Transactions", icon: "home-outline" },
+  { name: "loan", label: "Loans", icon: "bank-outline" },
+  { name: "investment", label: "Invest", icon: "chart-bar" },
+  { name: "settings", label: "Settings", icon: "account-outline" },
 ];
 
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -45,29 +46,28 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const findRoute = (name: string) =>
     state.routes.find((r: any) => r.name === name);
 
-  // PULSE ANIMATION for center button
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.03,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, []);
+  // GLOW COMPONENT FOR ANDROID/IOS
+  const PlusButtonGlow = () => (
+    <View style={styles.glowContainer}>
+      <Svg height="100" width="100" viewBox="0 0 100 100">
+        <Defs>
+          <RadialGradient
+            id="grad"
+            cx="50%"
+            cy="50%"
+            rx="50%"
+            ry="50%"
+            fx="50%"
+            fy="50%"
+          >
+            <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.4" />
+            <Stop offset="100%" stopColor={colors.primary} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Circle cx="50" cy="50" r="45" fill="url(#grad)" />
+      </Svg>
+    </View>
+  );
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 10 }]}>
@@ -99,7 +99,8 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
       {/* CENTER BUTTON */}
       {state.routes[state.index].name !== "settings" && (
-        <Animated.View style={[styles.centerButton, { transform: [{ scale: pulseAnim }] }]}>
+        <View style={styles.centerButton}>
+          <PlusButtonGlow />
           <TouchableOpacity
             activeOpacity={0.9}
             style={styles.touchableArea}
@@ -109,7 +110,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               <MaterialCommunityIcons name="plus" size={32} color="#000" />
             </View>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       )}
     </View>
   );
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "rgba(161, 250, 255, 0.05)",
+    borderTopColor: colors.glassBorder,
   },
   container: {
     flexDirection: "row",
@@ -212,9 +213,9 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 35,
     borderWidth: 1,
-    borderColor: "rgba(161, 250, 255, 0.15)",
+    borderColor: colors.glassBorder,
     overflow: "hidden",
-    backgroundColor: "rgba(15, 20, 24, 0.7)",
+    backgroundColor: colors.surface,
   },
   side: {
     flexDirection: "row",
@@ -235,36 +236,32 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   activeIconContainer: {
-    backgroundColor: "rgba(161, 250, 255, 0.12)",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+    backgroundColor: 'transparent',
   },
   activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
-    marginTop: 2,
+    display: 'none',
   },
   label: {
-    fontSize: 9,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "500",
     marginTop: 2,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   centerButton: {
     position: "absolute",
     top: -15,
     alignSelf: "center",
     zIndex: 10,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowContainer: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1,
   },
   centerButtonInner: {
     width: 60,
@@ -280,8 +277,8 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   androidContainer: {
-    backgroundColor: "rgba(15, 20, 24, 0.95)",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(161, 250, 255, 0.15)",
+    borderColor: colors.glassBorder,
   },
 });

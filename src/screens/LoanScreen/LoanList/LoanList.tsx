@@ -1,4 +1,5 @@
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, {FC, Fragment, useCallback, useState} from 'react';
 import {Text} from 'react-native-paper';
 
@@ -147,7 +148,10 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
     <View style={styles.mainContainer}>
       <View style={styles.listCard}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Loan History</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <MaterialCommunityIcons name="history" size={20} color={colors.primary} />
+            <Text style={styles.title}>Loan History</Text>
+          </View>
         </View>
         <View style={styles.tableContainer}>
           <DataTable
@@ -184,19 +188,20 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   listCard: {
-    marginTop: 12,
-    marginHorizontal: 4,
+    marginTop: 0,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 16,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'Manrope',
+    letterSpacing: -0.5,
   },
   viewAllText: {
     color: colors.primary,

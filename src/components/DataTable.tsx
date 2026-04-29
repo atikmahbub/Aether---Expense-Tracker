@@ -153,7 +153,7 @@ const Row = React.memo(
                   <MaterialCommunityIcons
                     name={item.IconName}
                     size={22}
-                    color={item.IconColor || colors.primary}
+                    color={colors.primary}
                   />
                 </View>
               ) : (
@@ -193,20 +193,16 @@ const Row = React.memo(
                       ? item.Type === "Given"
                         ? styles.typeBadgeGiven
                         : styles.typeBadgeTaken
-                      : item.CategoryColor
-                      ? { backgroundColor: tintHex(item.CategoryColor, 0.12) }
-                      : undefined,
+                      : { backgroundColor: 'rgba(255,255,255,0.05)' },
                   ]}
                 >
                   <Text
                     style={[
                       styles.categoryText,
-                      isLoanRow && item.Type === "Given" && { color: "#b6f700" },
-                      isLoanRow && item.Type === "Taken" && { color: "#ff8e8b" },
-                      item.IsIncome && { color: "#4ADE80", opacity: 0.8 },
-                      !isLoanRow &&
-                        !item.IsIncome &&
-                        item.CategoryColor && { color: item.CategoryColor },
+                      isLoanRow && item.Type === "Given" && { color: colors.primary },
+                      isLoanRow && item.Type === "Taken" && { color: colors.error },
+                      item.IsIncome && { color: colors.success, opacity: 0.8 },
+                      !isLoanRow && !item.IsIncome && { color: colors.subText },
                     ]}
                   >
                     {isLoanRow

@@ -36,7 +36,7 @@ const CustomAppBar: React.FC = () => {
       <View style={styles.textBlock}>
         <Text style={styles.dateLabel}>{todayLabel}</Text>
         <Text style={styles.appNameText}>
-          {greeting}, {userName}
+          {greeting}, {userName} 👋
         </Text>
       </View>
       <TouchableOpacity
@@ -79,8 +79,8 @@ const styles = StyleSheet.create({
     paddingLeft: 2,
   },
   appNameText: {
-    color: colors.primary,
-    fontSize: 20,
+    color: colors.text,
+    fontSize: 22,
     fontFamily: 'Manrope',
     fontWeight: '700',
     letterSpacing: -0.5,
@@ -95,32 +95,17 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
   },
   avatarWrapper: {
-    position: 'relative',
-    width: AVATAR_SIZE + 12,
-    height: AVATAR_SIZE + 12,
-    borderRadius: (AVATAR_SIZE + 12) / 2,
+    width: AVATAR_SIZE + 6,
+    height: AVATAR_SIZE + 6,
+    borderRadius: (AVATAR_SIZE + 6) / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 4,
-    borderWidth: 1.5,
-    borderColor: colors.glassBorder,
-    backgroundColor: colors.surface,
-    shadowColor: colors.overlay,
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: 4},
-    elevation: 4,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    padding: 2,
   },
   avatarGlow: {
-    position: 'absolute',
-    top: -6,
-    bottom: -6,
-    left: -6,
-    right: -6,
-    borderRadius: (AVATAR_SIZE + 12) / 2,
-    backgroundColor: colors.surfaceAlt,
-    opacity: 0.6,
-    pointerEvents: 'none',
+    display: 'none',
   },
   avatarImage: {
     zIndex: 1,

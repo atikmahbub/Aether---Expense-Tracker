@@ -14,10 +14,11 @@ import {
   TransactionAnalyticsModel,
   ExpenseCategoryModel,
 } from '@trackingPortal/api/models';
-import SegmentedProgressBar from '@trackingPortal/screens/TransactionScreen/components/SegmentedProgressBar';
+import Svg, { Path, LinearGradient, Stop, Defs, Circle, Line, Text as SvgText } from 'react-native-svg';
 import {colors} from '@trackingPortal/themes/colors';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {CurrencyPreference} from '@trackingPortal/constants/currency';
+import { CommonCard } from '@trackingPortal/components/CommonCard';
 
 interface AnalyticsCardProps {
   analytics: TransactionAnalyticsModel | null;
@@ -63,16 +64,11 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
     
-    // 🔥 DEFER HEAVY UI (Segmented progress, list)
     const rafId = requestAnimationFrame(() => {
       setShowHeavyUI(true);
     });
     return () => cancelAnimationFrame(rafId);
   }, []);
-
-  useEffect(() => {
-    setExpanded(false);
-  }, [analytics?.categoryBreakdown]);
 
   const formatAmount = useCallback(
     (value: number) => formatCurrency(value, currency),
@@ -85,32 +81,10 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     }
     const spent = Math.abs(totalSpent ?? analytics?.totalTransaction ?? 0);
     const delta = monthlyLimit - spent;
-    const formatted = formatAmount(Math.abs(delta));
     return {
-      text:
-        delta >= 0
-          ? `${formatted} left for this month`
-          : `You exceeded by ${formatted}`,
       isOver: delta < 0,
     };
-  }, [analytics, monthlyLimit, formatAmount, totalSpent]);
-
-  const segments = useMemo(() => {
-    if (!analytics?.categoryBreakdown?.length || !showHeavyUI) {
-      return [];
-    }
-    return analytics.categoryBreakdown
-      .map(item => {
-        const fallback = categories[item.categoryId];
-        if (!fallback) return null; // Safe lookup
-        return {
-          id: item.categoryId,
-          percentage: item.percentage,
-          color: fallback.color || colors.primary,
-        };
-      })
-      .filter((s): s is {id: string; percentage: number; color: string} => !!s);
-  }, [analytics?.categoryBreakdown, categories, showHeavyUI]);
+  }, [analytics, monthlyLimit, totalSpent]);
 
   const sortedCategories = useMemo(() => {
     if (!analytics?.categoryBreakdown?.length) {
@@ -121,329 +95,242 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     );
   }, [analytics?.categoryBreakdown]);
 
-  const visibleCategories = useMemo(() => {
-    if (!sortedCategories.length || !showHeavyUI) {
-      return [];
-    }
-    return expanded ? sortedCategories : sortedCategories.slice(0, 3);
-  }, [expanded, sortedCategories, showHeavyUI]);
-
   const handleToggle = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(prev => !prev);
   }, []);
 
-  const renderTopCategory = () => {
-    if (!analytics?.topCategory || !showHeavyUI) {
-      return null;
-    }
-    const palette = categories[analytics.topCategory.categoryId];
-    // Don't render if category info isn't there yet
-    if (!palette) return null;
+  const renderGraph = () => {
+    const isOverLimit = budgetSummary?.isOver ?? false;
+    const graphColor = isOverLimit ? colors.error : colors.primary;
+    
+    const spentVal = Math.abs(totalSpent ?? analytics?.totalTransaction ?? 0);
+    const baseMax = monthlyLimit && monthlyLimit > 0 ? monthlyLimit : spentVal * 1.5;
+    const maxVal = Math.max(spentVal, baseMax) || 100;
+    const midVal = maxVal / 2;
+
+    const formatCompact = (val: number) => {
+      if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+      if (val >= 1000) return (val / 1000).toFixed(0) + 'K';
+      return val.toFixed(0);
+    };
+
+    const cappedSpent = Math.min(spentVal, maxVal);
+    const endY = 90 - (cappedSpent / maxVal) * 80;
+    const pathD = `M 0 90 C 80 110, 180 ${endY - 30}, 260 ${endY}`;
+    const fillD = `${pathD} L 260 100 L 0 100 Z`;
 
     return (
-      <View
-        style={[
-          styles.topCategoryCard,
-          palette && {borderColor: palette.color},
-        ]}>
-        <View>
-          <Text style={styles.topCategoryLabel}>
-            {mode === 'expense' ? 'Top category' : 'Top income source'}
-          </Text>
-          <Text style={styles.topCategoryName}>
-            {analytics.topCategory.categoryName}
-          </Text>
+      <View style={{ height: 140, width: '100%', marginTop: 16 }}>
+        <Svg width="100%" height="100%" viewBox="0 0 300 100">
+          <Defs>
+            <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={graphColor} stopOpacity="0.2" />
+              <Stop offset="1" stopColor={graphColor} stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
+          <Line x1="0" y1="10" x2="260" y2="10" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="50" x2="260" y2="50" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="90" x2="260" y2="90" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+          
+          <SvgText x="270" y="14" fill={colors.subText} fontSize="10">{formatCompact(maxVal)}</SvgText>
+          <SvgText x="270" y="54" fill={colors.subText} fontSize="10">{formatCompact(midVal)}</SvgText>
+          <SvgText x="270" y="94" fill={colors.subText} fontSize="10">0</SvgText>
+
+          <Path d={pathD} fill="none" stroke={graphColor} strokeWidth="2" />
+          <Path d={fillD} fill="url(#grad)" />
+          <Circle cx="260" cy={endY} r="4" fill={graphColor} stroke={colors.surface} strokeWidth="2" />
+        </Svg>
+      </View>
+    );
+  };
+
+  const renderTopCategoryPreview = () => {
+    if (!analytics?.topCategory || !showHeavyUI) return null;
+    return (
+      <View style={styles.previewRow}>
+        <View style={styles.previewLeft}>
+          <Text style={styles.previewLabel}>{mode === 'expense' ? 'Top Expense' : 'Top Income'}</Text>
+          <Text style={styles.previewValue}>{analytics.topCategory.categoryName}</Text>
         </View>
-        <View>
-          <Text style={styles.topCategoryAmount}>
-            {formatAmount(analytics.topCategory.totalAmount)}
-          </Text>
-          <Text style={styles.topCategorySub}>so far</Text>
+        <View style={styles.previewRight}>
+          <Text style={styles.previewAmount}>{formatAmount(analytics.topCategory.totalAmount)}</Text>
         </View>
       </View>
     );
   };
 
-  const renderEmpty = (label: string) => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyText}>{label}</Text>
-    </View>
-  );
-
-  const renderSkeleton = () => (
-    <View style={styles.skeletonContainer}>
-      <ActivityIndicator color={colors.primary} size="small" />
-      <Text style={styles.skeletonText}>Calculating insights...</Text>
-    </View>
-  );
-
-  // 🔥 ABSOLUTE SAFETY CHECK
-  if (loading && !analytics) {
-    return (
-      <View style={styles.card}>
-         <Text style={styles.title}>
-           {mode === 'expense' ? 'Spending Analytics' : 'Income Analytics'}
-         </Text>
-         {renderSkeleton()}
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>
-          {mode === 'expense' ? 'Spending Analytics' : 'Income Analytics'}
-        </Text>
-        {trend && !trendLoading && (
-          <View style={styles.trendContainer}>
-            <View style={[styles.trendPill, {backgroundColor: trend.color + '15', borderColor: trend.color + '30'}]}>
-              <MaterialCommunityIcons name={trend.icon} size={14} color={trend.color} />
-              <Text style={[styles.trendPillText, {color: trend.color}]}>
-                {formatNumber(trend.percent, { maximumFractionDigits: 0 })}%
-              </Text>
-            </View>
-            <Text style={styles.trendSubLabel}>vs last month</Text>
+    <CommonCard style={styles.container} padding={20}>
+      <TouchableOpacity 
+        activeOpacity={0.9} 
+        onPress={handleToggle}
+        style={styles.headerArea}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>
+              {mode === 'expense' ? 'SPENDING ANALYTICS' : 'INCOME ANALYTICS'}
+            </Text>
           </View>
-        )}
-        {error && onRetry ? (
-          <TouchableOpacity onPress={onRetry}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
 
-      {budgetSummary ? (
-        <View
-          style={[
-            styles.budgetPill,
-            budgetSummary.isOver && styles.budgetPillOver,
-          ]}>
-          <Text
-            style={[
-              styles.budgetText,
-              budgetSummary.isOver && styles.budgetTextOver,
-            ]}>
-            {budgetSummary.text}
-          </Text>
-        </View>
-      ) : null}
-
-      {!analytics && !error && !loading ? renderEmpty('No data yet') : null}
-
-      {analytics ? (
-        <View>
-          {loading && (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator color={colors.primary} size="small" />
+          <View style={styles.headerRight}>
+            <View style={styles.trendContainer}>
+              {trend && !trendLoading && (
+                <View style={[styles.trendPill, {backgroundColor: trend.color + '20'}]}>
+                  <MaterialCommunityIcons name={trend.icon} size={12} color={trend.color} />
+                  <Text style={[styles.trendPillText, {color: trend.color}]}>
+                    {formatNumber(trend.percent, { maximumFractionDigits: 0 })}%
+                  </Text>
+                </View>
+              )}
             </View>
-          )}
+            <MaterialCommunityIcons 
+              name={expanded ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color={colors.subText} 
+              style={{ marginLeft: 4 }} 
+            />
+          </View>
+        </View>
+
+        {!expanded && renderTopCategoryPreview()}
+      </TouchableOpacity>
+
+      {analytics && expanded && (
+        <View style={styles.expandedContent}>
+          {renderGraph()}
           
-          {showHeavyUI ? (
-            <>
-              <View>
-                {segments.length ? (
-                  <View style={styles.progressBlock}>
-                    <SegmentedProgressBar segments={segments} height={14} />
-                    <Text style={styles.progressHint}>
-                      {mode === 'expense' ? 'Share of spend by category' : 'Share of income by source'}
+          <View style={styles.breakdownHeader}>
+             <Text style={styles.breakdownTitle}>CATEGORY BREAKDOWN</Text>
+          </View>
+
+          <View style={styles.listContainer}>
+            {sortedCategories.map(item => {
+              const palette = categories[item.categoryId];
+              if (!palette) return null;
+              
+              return (
+                <View key={item.categoryId} style={styles.listRow}>
+                  <View style={[styles.bullet, {backgroundColor: palette.color || colors.primary}]} />
+                  <View style={styles.listLabelColumn}>
+                    <Text style={styles.categoryName}>{item.categoryName}</Text>
+                    <Text style={styles.categorySecondary}>
+                      {formatNumber(item.percentage, { maximumFractionDigits: 1, suffix: '%' })}
                     </Text>
                   </View>
-                ) : (
-                  !loading && segments.length === 0 && analytics.categoryBreakdown?.length > 0 ? (
-                    <View style={styles.emptyState}>
-                      <ActivityIndicator color={colors.primary} size="small" style={{ marginBottom: 8 }} />
-                      <Text style={styles.emptyText}>Syncing categories...</Text>
-                    </View>
-                  ) : !loading && renderEmpty('No breakdown yet')
-                )}
-              </View>
-
-              {renderTopCategory()}
-
-              {visibleCategories.length ? (
-                <View style={styles.listContainer}>
-                  {visibleCategories.map(item => {
-                    const palette = categories[item.categoryId];
-                    if (!palette) return null; // Safe category lookup
-                    
-                    const color = palette.color || colors.primary;
-                    return (
-                      <View key={item.categoryId} style={styles.listRow}>
-                        <View style={[styles.bullet, {backgroundColor: color}]} />
-                        <View style={styles.listLabelColumn}>
-                          <Text style={styles.categoryName}>
-                            {item.categoryName}
-                          </Text>
-                          <Text style={styles.categorySecondary}>
-                            {formatNumber(item.percentage, {
-                              minimumFractionDigits: 1,
-                              maximumFractionDigits: 1,
-                              suffix: '%',
-                            })}
-                          </Text>
-                        </View>
-                        <Text style={styles.categoryAmount}>
-                          {formatAmount(item.totalAmount)}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                  {sortedCategories.length > 3 ? (
-                    <TouchableOpacity
-                      onPress={handleToggle}
-                      style={styles.toggleButton}>
-                      <Text style={styles.toggleText}>
-                        {expanded ? 'Show Less' : 'Show All \u2192'}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
+                  <Text style={styles.categoryAmount}>{formatAmount(item.totalAmount)}</Text>
                 </View>
-              ) : null}
-            </>
-          ) : renderSkeleton()}
+              );
+            })}
+          </View>
         </View>
-      ) : null}
-    </View>
+      )}
+
+      {loading && (
+        <View style={styles.loadingRow}>
+          <ActivityIndicator color={colors.primary} size="small" />
+        </View>
+      )}
+
+      {!analytics && !loading && (
+        <Text style={styles.emptyText}>No data for this period</Text>
+      )}
+    </CommonCard>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 28,
-    padding: 22,
+  container: {
     marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
+    marginBottom: 20,
+  },
+  headerArea: {
+    width: '100%',
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  budgetPill: {
-    marginBottom: 16,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  budgetPillOver: {
-    borderColor: colors.warning,
-    backgroundColor: 'rgba(255, 170, 0, 0.08)',
-  },
-  budgetText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  budgetTextOver: {
-    color: colors.warning,
-  },
-  retryText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  loadingRow: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  progressBlock: {
-    marginBottom: 20,
-    gap: 6,
-  },
-  progressHint: {
     color: colors.subText,
-    fontSize: 12,
-    fontWeight: '400',
-  },
-  topCategoryCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    backgroundColor: colors.surfaceAlt,
-    marginBottom: 20,
-  },
-  topCategoryLabel: {
-    color: colors.subText,
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '600',
     letterSpacing: 1,
-    textTransform: 'uppercase',
   },
-  topCategoryAmount: {
-    color: '#E2E8F0',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 4,
+  trendContainer: {
+    alignItems: 'flex-end',
   },
   trendPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   trendPillText: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+    fontSize: 11,
+    fontWeight: '700',
   },
-  trendContainer: {
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.glassBorder,
+  },
+  previewLeft: {
+    flex: 1,
+  },
+  previewRight: {
     alignItems: 'flex-end',
-    gap: 2,
   },
-  trendSubLabel: {
+  previewLabel: {
     color: colors.subText,
     fontSize: 10,
     fontWeight: '600',
-    opacity: 0.6,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
-  topCategoryName: {
+  previewValue: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 4,
+    fontSize: 16,
+    fontWeight: '600',
   },
-  topCategoryAmount: {
+  previewAmount: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
-    textAlign: 'right',
   },
-  topCategorySub: {
+  expandedContent: {
+    marginTop: 8,
+  },
+  breakdownHeader: {
+    marginTop: 24,
+    marginBottom: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.glassBorder,
+  },
+  breakdownTitle: {
     color: colors.subText,
-    fontSize: 12,
-    textAlign: 'right',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   listContainer: {
     gap: 16,
-  },
-  toggleButton: {
-    paddingVertical: 4,
-    alignSelf: 'flex-end',
-  },
-  toggleText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
   },
   listRow: {
     flexDirection: 'row',
@@ -451,21 +338,21 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bullet: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   listLabelColumn: {
     flex: 1,
   },
   categoryName: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   categorySecondary: {
     color: colors.subText,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
   },
   categoryAmount: {
@@ -473,27 +360,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  emptyState: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
+  loadingRow: {
+    padding: 20,
+    alignItems: 'center',
   },
   emptyText: {
     color: colors.subText,
     textAlign: 'center',
-  },
-  skeletonContainer: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  skeletonText: {
-    color: colors.subText,
+    marginTop: 20,
     fontSize: 12,
-    fontWeight: '500',
   },
 });
 

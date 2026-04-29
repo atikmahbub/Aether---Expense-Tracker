@@ -1,11 +1,11 @@
 import {View, StyleSheet} from 'react-native';
 import React from 'react';
 import {Text} from 'react-native-paper';
-import {GlassCard} from '@trackingPortal/components';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {formatCurrency} from '@trackingPortal/utils/utils';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {colors} from '@trackingPortal/themes/colors';
+import { CommonCard, StatCard } from '@trackingPortal/components';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface ISummary {
   totalGiven: number;
@@ -20,42 +20,37 @@ const LoanSummary: React.FC<ISummary> = ({
   const netPosition = totalGiven - totalBorrowed;
   return (
     <View style={styles.mainContainer}>
-      <Text style={styles.headingLabel}>NET POSITION</Text>
-      
-      <View style={styles.heroRow}>
-        <View style={styles.totalValueColumn}>
-          <Text
-            style={styles.totalValueText}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}>
-            {formatCurrency(Math.abs(netPosition), currency)}
-          </Text>
+      <CommonCard style={styles.heroCard}>
+        <View style={styles.headingRow}>
+          <MaterialCommunityIcons name="scale-balance" size={14} color={colors.primary} />
+          <Text style={styles.headingLabel}>NET POSITION</Text>
         </View>
-      </View>
+        <View style={styles.heroRow}>
+          <View style={styles.totalValueColumn}>
+            <Text
+              style={styles.totalValueText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}>
+              {formatCurrency(Math.abs(netPosition), currency)}
+            </Text>
+          </View>
+        </View>
+      </CommonCard>
       
-
 
       <View style={styles.metricsRow}>
-        <GlassCard style={styles.metricSquareCard} padding={16}>
-          <View style={styles.iconBoxGiven}>
-            <MaterialCommunityIcons name="arrow-top-right" size={16} color="#a1faff" />
-          </View>
-          <Text style={styles.metricLabelCard}>Total Given</Text>
-          <Text style={styles.metricLabelValue}>
-            {formatCurrency(totalGiven, currency)}
-          </Text>
-        </GlassCard>
+        <StatCard 
+          icon="arrow-top-right" 
+          label="Total Given" 
+          value={formatCurrency(totalGiven, currency)} 
+        />
         
-        <GlassCard style={styles.metricSquareCard} padding={16}>
-          <View style={styles.iconBoxTaken}>
-            <MaterialCommunityIcons name="arrow-bottom-left" size={16} color="#ff8e8b" />
-          </View>
-          <Text style={styles.metricLabelCard}>Total Borrowed</Text>
-          <Text style={styles.metricLabelValue}>
-            {formatCurrency(totalBorrowed, currency)}
-          </Text>
-        </GlassCard>
+        <StatCard 
+          icon="arrow-bottom-left" 
+          label="Total Borrowed" 
+          value={formatCurrency(totalBorrowed, currency)} 
+        />
       </View>
     </View>
   );
@@ -66,21 +61,29 @@ export default LoanSummary;
 const styles = StyleSheet.create({
   mainContainer: {
     paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingTop: 20,
+    marginBottom: 20,
+  },
+  heroCard: {
+    marginBottom: 20,
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
   },
   headingLabel: {
-    color: colors.primary,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    fontWeight: '800',
-    marginBottom: 8,
+    color: colors.subText,
+    fontSize: 11,
+    letterSpacing: 1,
+    fontWeight: '600',
   },
   heroRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
   },
   totalValueColumn: {
     flex: 1,
@@ -96,42 +99,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     includeFontPadding: false,
   },
-
   metricsRow: {
     flexDirection: 'row',
-    gap: 16,
-  },
-  metricSquareCard: {
-    flex: 1,
-  },
-  iconBoxGiven: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(161, 250, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  iconBoxTaken: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 142, 139, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  metricLabelCard: {
-    color: '#4f555c',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  metricLabelValue: {
-    color: '#bdc1c6',
-    fontSize: 22,
-    fontWeight: '400',
-    fontFamily: 'Manrope',
+    gap: 12,
   },
 });

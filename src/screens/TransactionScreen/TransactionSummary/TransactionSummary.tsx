@@ -1,6 +1,5 @@
 import {View, StyleSheet, TouchableOpacity, InteractionManager} from 'react-native';
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Text} from 'react-native-paper';
 import {FormikTextInput, CircularProgress} from '@trackingPortal/components';
 import FormModal from '@trackingPortal/components/FormModal';
@@ -14,6 +13,8 @@ import Toast from 'react-native-toast-message';
 import {Month, Year, UnixTimeStampString} from '@trackingPortal/api/primitives';
 import {withHaptic} from '@trackingPortal/utils/haptic';
 import {colors} from '@trackingPortal/themes/colors';
+import { CommonCard, StatCard } from '@trackingPortal/components';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface ISummary {
   totalValue: number;
@@ -124,93 +125,74 @@ const TransactionSummary: React.FC<ISummary> = ({
 
   return (
     <View style={styles.mainContainer}>
-      <Text style={styles.headingLabel}>
-        {type === 'expense' ? 'MONTHLY SPENDING' : 'MONTHLY INCOME'}
-      </Text>
-
-      <View style={styles.heroRow}>
-        <View style={styles.totalValueColumn}>
-            <Text
-              style={styles.totalValueText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.7}>
-              {isLoading ? "…" : formatCurrency(totalValue, currency)}
-            </Text>
-            <Text style={styles.earnedText}>
-              {formatCurrency(monthlyIncome, currency, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}{' '}
-              {type === 'expense' ? 'earned this month' : 'spent this month'}
-            </Text>
-
+      <CommonCard style={styles.heroCard}>
+        <View style={styles.headingRow}>
+          <MaterialCommunityIcons 
+            name={type === 'expense' ? "wallet-outline" : "bank-outline"} 
+            size={14} 
+            color={colors.primary} 
+          />
+          <Text style={styles.headingLabel}>
+            {type === 'expense' ? 'MONTHLY SPENDING' : 'MONTHLY INCOME'}
+          </Text>
         </View>
-        {hasLimit ? (
-          <View style={styles.progressWrapper}>
-            <CircularProgress
-              progress={clampedProgress}
-              progressColor={progressColor}
-              size={60}
-              strokeWidth={5}
-              trackColor="rgba(255,255,255,0.08)"
-              label={progressLabel}
-            />
+
+        <View style={styles.heroRow}>
+          <View style={styles.totalValueColumn}>
+              <Text
+                style={styles.totalValueText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}>
+                {isLoading ? "…" : formatCurrency(totalValue, currency)}
+              </Text>
+              <Text style={[styles.earnedText, { color: type === 'expense' ? colors.success : colors.error, opacity: 1 }]}>
+                {formatCurrency(monthlyIncome, currency, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}{' '}
+                {type === 'expense' ? 'earned this month' : 'spent this month'}
+              </Text>
+
           </View>
-        ) : null}
-      </View>
-
-
+          {hasLimit ? (
+            <View style={styles.progressWrapper}>
+              <CircularProgress
+                progress={clampedProgress}
+                progressColor={progressColor}
+                size={80}
+                strokeWidth={6}
+                trackColor="rgba(255,255,255,0.08)"
+                label={progressLabel}
+              />
+            </View>
+          ) : null}
+        </View>
+      </CommonCard>
 
       {type === 'expense' && (
         <View style={styles.metricsRow}>
-          <View style={styles.metricSquareCard}>
-            <MaterialCommunityIcons
-              name="target"
-              size={18}
-              color={colors.primary}
-              style={styles.metricIcon}
-            />
-            <Text style={styles.metricLabelCard}>Target Limit</Text>
-            <View style={styles.targetValueRow}>
-              <Text
-                style={styles.metricLabelValue}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.75}>
-                {limitValue
-                  ? formatCurrency(limitValue, currency, {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })
-                  : 'No Limit'}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.editLink}
-              onPress={() => setIsLimitModalVisible(true)}>
-              <Text style={styles.editLinkText}>
-                {limitValue ? 'Adjust' : 'Set Limit'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <StatCard 
+            icon="target" 
+            label="Target Limit" 
+            onPress={openLimitModal}
+            value={limitValue
+              ? formatCurrency(limitValue, currency, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })
+              : 'No Limit'}
+          />
 
-          <View style={styles.metricSquareCard}>
-            <MaterialCommunityIcons
-              name="chart-line"
-              size={18}
-              color="#4ADE80"
-              style={styles.metricIcon}
-            />
-            <Text style={styles.metricLabelCard}>Daily Avg</Text>
-            <Text style={styles.metricLabelValue}>
-              {formatCurrency(
-                totalValue / Math.max(dayjs().date(), 1),
-                currency,
-                {minimumFractionDigits: 0, maximumFractionDigits: 0},
-              )}
-            </Text>
-          </View>
+          <StatCard 
+            icon="chart-line" 
+            label="Daily Avg" 
+            value={formatCurrency(
+              totalValue / Math.max(dayjs().date(), 1),
+              currency,
+              {minimumFractionDigits: 0, maximumFractionDigits: 0},
+            )}
+          />
         </View>
       )}
 
@@ -256,23 +238,34 @@ const TransactionSummary: React.FC<ISummary> = ({
 const styles = StyleSheet.create({
   mainContainer: {
     paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingTop: 20,
+    marginBottom: 20,
+  },
+  heroCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    marginBottom: 20,
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 16,
   },
   headingLabel: {
-    color: colors.primary,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    fontWeight: '800',
-    marginBottom: 8,
+    color: colors.subText,
+    fontSize: 11,
+    letterSpacing: 1,
+    fontWeight: '600',
   },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 16,
-    marginBottom: 8,
   },
   totalValueColumn: {
     flex: 1,
@@ -315,23 +308,33 @@ const styles = StyleSheet.create({
   },
   metricsRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   metricSquareCard: {
     flex: 1,
-    borderRadius: 24,
-    backgroundColor: '#16191d',
+    borderRadius: 20,
+    backgroundColor: colors.surface,
     paddingVertical: 16,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
-  metricIcon: {
+  metricHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
+    gap: 8,
+  },
+  metricIconWrapper: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    padding: 10,
+    borderRadius: 10,
   },
   metricLabelCard: {
-    color: '#4f555c',
-    fontSize: 12,
+    color: colors.subText,
+    fontSize: 11,
     fontWeight: '600',
-    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   targetValueRow: {
     flexDirection: 'row',
@@ -339,28 +342,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   metricLabelValue: {
-    color: '#bdc1c6',
+    color: colors.text,
     fontSize: 22,
-    fontWeight: '400',
+    fontWeight: '600',
     fontFamily: 'Manrope',
     flex: 1,
     minWidth: 0,
   },
   editLink: {
-    marginTop: 10,
+    marginTop: 12,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(161, 250, 255, 0.08)',
+    backgroundColor: 'rgba(45, 212, 191, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(161, 250, 255, 0.15)',
+    borderColor: 'rgba(45, 212, 191, 0.2)',
   },
   editLinkText: {
     color: colors.primary,
     fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontWeight: '600',
   },
   limitForm: {
     gap: 12,
