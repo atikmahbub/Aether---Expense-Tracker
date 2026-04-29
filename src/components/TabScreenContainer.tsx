@@ -37,24 +37,39 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
       <CustomAppBar />
 
       {/* 🔥 KEY FIX: Keyboard + Bottom Safe Area */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={80} // adjust if needed
-      >
+      {Platform.OS === 'ios' ? (
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior="padding"
+          keyboardVerticalOffset={80}
+        >
+          <Animated.View
+            entering={FadeInDown.duration(280).easing(Easing.out(Easing.quad))}
+            style={[
+              styles.content,
+              {
+                backgroundColor: theme.colors.background,
+                paddingBottom: insets.bottom + 90,
+              },
+            ]}
+          >
+            {children}
+          </Animated.View>
+        </KeyboardAvoidingView>
+      ) : (
         <Animated.View
           entering={FadeInDown.duration(280).easing(Easing.out(Easing.quad))}
           style={[
             styles.content,
             {
               backgroundColor: theme.colors.background,
-              paddingBottom: Platform.OS === 'ios' ? insets.bottom + 90 : 100, // Reduced for Android to avoid gap
+              paddingBottom: 100, // Reduced for Android to avoid gap
             },
           ]}
         >
           {children}
         </Animated.View>
-      </KeyboardAvoidingView>
+      )}
     </View>
   );
 };

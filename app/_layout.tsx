@@ -188,15 +188,20 @@ export default function RootLayout() {
             <StoreProvider>
               <NetworkProvider>
                 <OfflineProvider>
-                  <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={{ flex: 1 }}
-                  >
-                    {/* ✅ IMPORTANT: Router must be here */}
-                    <NavigationBoundary />
-                    {/* 🌐 GLOBAL: Floating offline banner */}
-                    <OfflineBanner />
-                  </KeyboardAvoidingView>
+                  {Platform.OS === 'ios' ? (
+                    <KeyboardAvoidingView
+                      behavior="padding"
+                      style={{ flex: 1 }}
+                    >
+                      <NavigationBoundary />
+                      <OfflineBanner />
+                    </KeyboardAvoidingView>
+                  ) : (
+                    <>
+                      <NavigationBoundary />
+                      <OfflineBanner />
+                    </>
+                  )}
                 </OfflineProvider>
               </NetworkProvider>
             </StoreProvider>
