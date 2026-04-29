@@ -47,7 +47,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   // GLOW COMPONENT FOR ANDROID/IOS
   const PlusButtonGlow = () => (
     <View style={styles.glowContainer}>
-      <Svg height="80" width="80" viewBox="0 0 80 80">
+      <Svg height="100" width="100" viewBox="0 0 100 100">
         <Defs>
           <RadialGradient
             id="grad"
@@ -58,11 +58,12 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             fx="50%"
             fy="50%"
           >
-            <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.2" />
+            <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.4" />
+            <Stop offset="60%" stopColor={colors.primary} stopOpacity="0.1" />
             <Stop offset="100%" stopColor={colors.primary} stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Circle cx="40" cy="40" r="35" fill="url(#grad)" />
+        <Circle cx="50" cy="50" r="45" fill="url(#grad)" />
       </Svg>
     </View>
   );
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   label: {
-    fontSize: 9,
+    fontSize: 10.5,
     marginTop: 2,
     fontFamily: 'Manrope',
     letterSpacing: 0.2,
@@ -248,8 +249,8 @@ const styles = StyleSheet.create({
   },
   glowContainer: {
     position: 'absolute',
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: -1,

@@ -63,14 +63,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   iconWrapper: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: colors.iconBg,
     width: 32,
     height: 32,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: colors.glassBorder,
   },
   label: {
     color: colors.muted,

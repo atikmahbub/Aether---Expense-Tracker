@@ -50,20 +50,16 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   activeContainer: {
     borderColor: 'transparent',
-    shadowOpacity: 0.45,
-    shadowOffset: {width: 0, height: 10},
-    shadowRadius: 18,
-    elevation: 6,
   },
   iconWrapper: {
     width: 30,
@@ -73,9 +69,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'Manrope',
     letterSpacing: 0.2,
   },
   activeLabel: {

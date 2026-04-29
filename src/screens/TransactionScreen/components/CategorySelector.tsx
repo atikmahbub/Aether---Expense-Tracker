@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
+    backgroundColor: colors.surface,
   },
   placeholder: {
     color: colors.subText,
@@ -122,6 +123,8 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: 12,
     marginTop: 6,
+    fontFamily: 'Manrope',
+    fontWeight: '600',
   },
 });
 

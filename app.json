@@ -8,10 +8,10 @@
     "scheme": "aether",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0a0f13",
+    "backgroundColor": "#0E1117",
 
     "splash": {
-      "backgroundColor": "#0a0f13",
+      "backgroundColor": "#0E1117",
       "resizeMode": "contain",
       "image": "./assets/splash.png"
     },
@@ -33,7 +33,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#0a0f13"
+        "backgroundColor": "#0E1117"
       }
     },
 

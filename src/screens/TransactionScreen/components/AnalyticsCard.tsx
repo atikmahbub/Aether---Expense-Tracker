@@ -121,9 +121,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     return (
       <View style={{ height: 140, width: '100%', marginTop: 16 }}>
         <Svg width="100%" height="100%" viewBox="0 0 300 100">
-          <Line x1="0" y1="10" x2="260" y2="10" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="50" x2="260" y2="50" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="90" x2="260" y2="90" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="10" x2="260" y2="10" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="50" x2="260" y2="50" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="90" x2="260" y2="90" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
           
           <SvgText x="270" y="14" fill={colors.muted} fontSize="10">{formatCompact(maxVal)}</SvgText>
           <SvgText x="270" y="54" fill={colors.muted} fontSize="10">{formatCompact(midVal)}</SvgText>
