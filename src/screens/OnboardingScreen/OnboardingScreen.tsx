@@ -9,10 +9,10 @@ import {
   ViewToken,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { OnboardingSlide } from '@trackingPortal/components';
 import { colors } from '@trackingPortal/themes/colors';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const SLIDES = [
   {
@@ -116,7 +116,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
               key={slide.id}
               style={[
                 styles.progressDot,
-                index <= currentIndex && styles.progressDotActive,
+                index === currentIndex ? styles.progressDotActive : 
+                index < currentIndex ? styles.progressDotCompleted : null,
               ]}
             />
           ))}
@@ -156,10 +157,14 @@ const styles = StyleSheet.create({
     maxWidth: 72,
     height: 4,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   progressDotActive: {
     backgroundColor: colors.primary,
+    width: ((width - 160) / SLIDES.length) * 1.3,
+  },
+  progressDotCompleted: {
+    backgroundColor: 'rgba(0, 229, 180, 0.4)',
   },
   primaryButton: {
     borderRadius: 999,
