@@ -1,14 +1,16 @@
-import {View, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, Image, TouchableOpacity, ScrollView} from 'react-native';
 import React from 'react';
 import {Text} from 'react-native-paper';
 import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
-import {AnimatedLoader, GlassCard} from '@trackingPortal/components';
+import {AnimatedLoader} from '@trackingPortal/components';
 import {colors} from '@trackingPortal/themes/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PROGRESS_STEPS = [0, 1, 2];
 
 export default function LoginScreen() {
-  const {login, loginWithPasskey, loading} = useAuth();
+  const {login, loading} = useAuth();
+  const insets = useSafeAreaInsets();
 
   if (loading) {
     return <AnimatedLoader />;
@@ -16,7 +18,13 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.brandLockup}>
           <View style={styles.brandBadge}>
             <Image
@@ -58,7 +66,7 @@ export default function LoginScreen() {
           <Text style={styles.primaryButtonText}>Log in</Text>
           <Text style={styles.primaryButtonIcon}>→</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -67,16 +75,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  content: {
-    width: '100%',
     paddingHorizontal: 32,
-    paddingVertical: 24,
-    alignItems: 'center',
-    gap: 24,
+    gap: 32,
   },
   brandLockup: {
     alignItems: 'center',
