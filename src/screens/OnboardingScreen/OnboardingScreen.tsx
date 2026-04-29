@@ -8,6 +8,7 @@ import {
   View,
   ViewToken,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OnboardingSlide } from '@trackingPortal/components';
 import { colors } from '@trackingPortal/themes/colors';
@@ -24,13 +25,13 @@ const SLIDES = [
     id: 'slide-2',
     title: 'Understand your spending',
     subtitle: 'Smart insights & category breakdown',
-    icon: <MaterialCommunityIcons name="chart-pie" size={80} color={colors.secondary} />,
+    icon: <MaterialCommunityIcons name="chart-pie" size={80} color={colors.primary} />,
   },
   {
     id: 'slide-3',
     title: 'Add income or expense in seconds',
     subtitle: 'Start building your financial habit today',
-    icon: <MaterialCommunityIcons name="plus-circle-outline" size={80} color={colors.tertiary} />,
+    icon: <MaterialCommunityIcons name="plus-circle-outline" size={80} color={colors.primary} />,
   },
   {
     id: 'slide-4',
@@ -53,6 +54,7 @@ const {width} = Dimensions.get('window');
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
   const listRef = useRef<FlatList<Slide>>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const insets = useSafeAreaInsets();
 
   const handleAdvance = useCallback(async () => {
     const isLast = currentIndex === SLIDES.length - 1;
@@ -107,7 +109,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
         style={styles.slider}
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
         <View style={styles.progressRail}>
           {SLIDES.map((slide, index) => (
             <View
@@ -137,12 +139,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   slider: {
-    flexGrow: 1,
+    flex: 1,
   },
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
     gap: 20,
+    paddingTop: 10,
   },
   progressRail: {
     flexDirection: 'row',
@@ -157,7 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
   progressDotActive: {
-    backgroundColor: colors.tertiary,
+    backgroundColor: colors.primary,
   },
   primaryButton: {
     borderRadius: 999,
@@ -179,3 +181,4 @@ const styles = StyleSheet.create({
 });
 
 export default OnboardingScreen;
+
