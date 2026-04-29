@@ -54,11 +54,10 @@ const FormModal: React.FC<IFormModal> = ({
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        <SafeAreaView style={styles.safeArea}>
-          <KeyboardAvoidingView
-            behavior="padding"
-            style={styles.keyboardAvoidingView}>
-            <View style={styles.modalContent}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}>
+          <View style={styles.modalContent}>
               <View style={styles.indicatorWrapper}>
                 <View style={styles.indicator} />
               </View>
@@ -91,9 +90,8 @@ const FormModal: React.FC<IFormModal> = ({
                   }}
                 />
               </View>
-            </View>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

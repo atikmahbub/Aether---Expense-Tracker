@@ -20,7 +20,7 @@ const LoanSummary: React.FC<ISummary> = ({
   const netPosition = totalGiven - totalBorrowed;
   return (
     <View style={styles.mainContainer}>
-      <CommonCard style={styles.heroCard}>
+      <CommonCard style={styles.heroCard} padding={24}>
         <View style={styles.headingRow}>
           <MaterialCommunityIcons name="scale-balance" size={14} color={colors.primary} />
           <Text style={styles.headingLabel}>NET POSITION</Text>
@@ -74,10 +74,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headingLabel: {
-    color: colors.subText,
-    fontSize: 11,
+    color: colors.muted,
+    fontSize: 10,
     letterSpacing: 1,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   heroRow: {
     flexDirection: 'row',

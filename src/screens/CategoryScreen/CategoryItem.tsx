@@ -21,7 +21,7 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
     
     return (
       <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
-        <MaterialCommunityIcons name="trash-can-outline" size={24} color="#ff4d4d" />
+        <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.error} />
       </TouchableOpacity>
     );
   };
@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#16191d',
+    backgroundColor: colors.cardBg,
     padding: 16,
-    borderRadius: 24,
+    borderRadius: 20,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: colors.glassBorder,
   },
   leftContent: {
     flexDirection: 'row',
@@ -84,14 +84,16 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
+    fontFamily: 'Manrope',
   },
   systemBadge: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.3)',
+    color: colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    fontWeight: '700',
     marginTop: 2,
   },
   rightContent: {
@@ -105,15 +107,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   deleteAction: {
-    backgroundColor: 'rgba(255, 77, 77, 0.1)',
+    backgroundColor: colors.errorSoft,
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    borderRadius: 24,
+    borderRadius: 20,
     marginBottom: 12,
     marginLeft: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 77, 77, 0.2)',
+    borderColor: 'rgba(248, 113, 113, 0.2)',
   },
 });
 

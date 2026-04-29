@@ -7,8 +7,6 @@ import * as Haptics from "expo-haptics";
 import React, { ComponentProps, useCallback, useEffect, useRef } from "react";
 import {
   Animated,
-  Easing,
-  InteractionManager,
   Platform,
   StyleSheet,
   Text,
@@ -49,7 +47,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   // GLOW COMPONENT FOR ANDROID/IOS
   const PlusButtonGlow = () => (
     <View style={styles.glowContainer}>
-      <Svg height="100" width="100" viewBox="0 0 100 100">
+      <Svg height="80" width="80" viewBox="0 0 80 80">
         <Defs>
           <RadialGradient
             id="grad"
@@ -60,11 +58,11 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             fx="50%"
             fy="50%"
           >
-            <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.4" />
+            <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.2" />
             <Stop offset="100%" stopColor={colors.primary} stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Circle cx="50" cy="50" r="45" fill="url(#grad)" />
+        <Circle cx="40" cy="40" r="35" fill="url(#grad)" />
       </Svg>
     </View>
   );
@@ -72,7 +70,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 10 }]}>
       {Platform.OS === "ios" ? (
-        <BlurView intensity={30} tint="dark" style={styles.container}>
+        <BlurView intensity={20} tint="dark" style={styles.container}>
           <View style={styles.side}>
             {renderTabByName("transactions")}
             {renderTabByName("loan")}
@@ -102,7 +100,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         <View style={styles.centerButton}>
           <PlusButtonGlow />
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.8}
             style={styles.touchableArea}
             onPress={handlePlusPress}
           >
@@ -145,14 +143,14 @@ const TabButton = React.memo(function TabButton({
   isFocused: boolean;
   onPress: () => void;
 }) {
-  const scale = useRef(new Animated.Value(isFocused ? 1.05 : 1)).current;
+  const scale = useRef(new Animated.Value(isFocused ? 1 : 1)).current;
 
   useEffect(() => {
     Animated.spring(scale, {
       toValue: isFocused ? 1.05 : 1,
       useNativeDriver: true,
-      friction: 8,
-      tension: 100,
+      friction: 12,
+      tension: 40,
     }).start();
   }, [isFocused]);
 
@@ -173,19 +171,17 @@ const TabButton = React.memo(function TabButton({
       >
         <MaterialCommunityIcons
           name={tab.icon}
-          size={22}
-          color={isFocused ? colors.primary : colors.subText}
+          size={20}
+          color={isFocused ? colors.primary : colors.muted}
         />
       </Animated.View>
-
-      <View style={[styles.activeDot, { opacity: isFocused ? 1 : 0 }]} />
 
       <Text
         style={[
           styles.label,
           {
-            color: isFocused ? colors.primary : colors.subText,
-            opacity: isFocused ? 1 : 0.7,
+            color: isFocused ? colors.primary : colors.muted,
+            fontWeight: isFocused ? "700" : "500",
           },
         ]}
       >
@@ -201,21 +197,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: colors.background,
     alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
   },
   container: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    height: 70,
+    height: 64,
     width: "100%",
-    borderRadius: 35,
+    borderRadius: 32,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     overflow: "hidden",
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBg,
   },
   side: {
     flexDirection: "row",
@@ -232,24 +226,21 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   iconContainer: {
-    padding: 8,
+    padding: 6,
     borderRadius: 20,
   },
   activeIconContainer: {
     backgroundColor: 'transparent',
   },
-  activeDot: {
-    display: 'none',
-  },
   label: {
-    fontSize: 10,
-    fontWeight: "500",
+    fontSize: 9,
     marginTop: 2,
-    letterSpacing: 0.3,
+    fontFamily: 'Manrope',
+    letterSpacing: 0.2,
   },
   centerButton: {
     position: "absolute",
-    top: -15,
+    top: -12,
     alignSelf: "center",
     zIndex: 10,
     alignItems: 'center',
@@ -257,16 +248,16 @@ const styles = StyleSheet.create({
   },
   glowContainer: {
     position: 'absolute',
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: -1,
   },
   centerButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
@@ -274,7 +265,7 @@ const styles = StyleSheet.create({
     borderColor: colors.background,
   },
   touchableArea: {
-    borderRadius: 30,
+    borderRadius: 28,
   },
   androidContainer: {
     backgroundColor: colors.surface,

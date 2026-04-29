@@ -124,7 +124,7 @@ const CategoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0c10',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -145,6 +145,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: colors.text,
+    fontFamily: 'Manrope',
+    letterSpacing: -0.5,
   },
   segmentedControl: {
     marginHorizontal: 20,

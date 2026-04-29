@@ -8,37 +8,43 @@ interface StatCardProps {
   icon: string;
   label: string;
   value: string;
+  subtitle?: string;
   style?: any;
   onPress?: () => void;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ icon, label, value, style, onPress }) => {
+export const StatCard: React.FC<StatCardProps> = ({ 
+  icon, 
+  label, 
+  value, 
+  subtitle,
+  style, 
+  onPress 
+}) => {
   return (
-    <CommonCard style={[styles.container, style]} padding={16} onPress={onPress}>
+    <CommonCard style={[styles.container, style]} padding={20} onPress={onPress}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.iconWrapper}>
-            <MaterialCommunityIcons name={icon as any} size={18} color={colors.primary} />
-          </View>
-          <Text style={styles.label} numberOfLines={1} ellipsizeMode="tail">
-            {label.toUpperCase()}
-          </Text>
+        <View style={styles.iconWrapper}>
+          <MaterialCommunityIcons name={icon as any} size={18} color={colors.primary} />
         </View>
-        {onPress && (
-          <MaterialCommunityIcons 
-            name="pencil-outline" 
-            size={14} 
-            color={colors.subText} 
-            style={{ opacity: 0.6 }}
-          />
-        )}
+        <Text style={styles.label} numberOfLines={1}>
+          {label.toUpperCase()}
+        </Text>
       </View>
+      
       <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
+      
+      {subtitle && (
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      )}
+
       {onPress && (
         <Text style={styles.actionHint}>
-          {value.toLowerCase().includes('no limit') ? 'Tap to set' : 'Tap to adjust'}
+          {label.toLowerCase().includes('limit') ? 'Adjust limit →' : 'Set goal →'}
         </Text>
       )}
     </CommonCard>
@@ -53,39 +59,44 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
+    gap: 8,
+    marginBottom: 16,
   },
   iconWrapper: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    width: 32,
+    height: 32,
     borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   label: {
-    color: colors.subText,
+    color: colors.muted,
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    fontWeight: '700',
+    letterSpacing: 1,
     flex: 1,
   },
   value: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     fontFamily: 'Manrope',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    color: colors.subText,
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '500',
   },
   actionHint: {
     color: colors.primary,
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 4,
-    opacity: 0.8,
-    letterSpacing: 0.3,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 12,
+    opacity: 0.9,
   },
 });

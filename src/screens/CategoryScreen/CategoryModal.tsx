@@ -159,7 +159,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: colors.text,
+    fontFamily: 'Manrope',
     marginBottom: 24,
+    letterSpacing: -0.5,
   },
   form: {
     gap: 24,
@@ -168,9 +170,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   label: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.4)',
+    color: colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -219,8 +221,9 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#000',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
+    fontFamily: 'Manrope',
   },
 });
 

@@ -30,15 +30,9 @@ export const CommonCard: React.FC<CommonCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
+    backgroundColor: colors.cardBg,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    // Minimal shadow for depth
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
   },
 });

@@ -1,14 +1,12 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {Animated, Easing, View, Text, StyleSheet} from 'react-native';
-import Svg, {Circle, Defs, LinearGradient, Stop} from 'react-native-svg';
+import Svg, {Circle} from 'react-native-svg';
 import {colors} from '@trackingPortal/themes/colors';
 
 interface CircularProgressProps {
-  progress: number; // value between 0 and 1
+  progress: number; // value can be > 1
   size?: number;
   strokeWidth?: number;
-  trackColor?: string;
-  progressColor?: string;
   label?: string;
 }
 
@@ -17,26 +15,19 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const CircularProgress: React.FC<CircularProgressProps> = ({
   progress,
   size = 56,
-  strokeWidth = 5,
-  trackColor = colors.surfaceAlt,
-  progressColor = colors.accent,
+  strokeWidth = 4,
   label,
 }) => {
-  const clamped = useMemo(
-    () => Math.max(0, Math.min(progress, 1)),
-    [progress],
-  );
+  const isExceeded = progress > 1;
+  const clamped = useMemo(() => Math.max(0, Math.min(progress, 1)), [progress]);
+  
+  const progressColor = isExceeded ? colors.error : colors.primary;
+  const trackColor = 'rgba(255, 255, 255, 0.04)';
 
-  const animatedProgress = useRef(new Animated.Value(0)).current; // Start from 0 for animation
+  const animatedProgress = useRef(new Animated.Value(0)).current;
 
-  const radius = useMemo(
-    () => (size - strokeWidth) / 2,
-    [size, strokeWidth],
-  );
-  const circumference = useMemo(
-    () => 2 * Math.PI * radius,
-    [radius],
-  );
+  const radius = useMemo(() => (size - strokeWidth) / 2, [size, strokeWidth]);
+  const circumference = useMemo(() => 2 * Math.PI * radius, [radius]);
   const strokeDashoffset = animatedProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [circumference, 0],
@@ -45,7 +36,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   useEffect(() => {
     Animated.timing(animatedProgress, {
       toValue: clamped,
-      duration: 1000, // Slightly longer for premium feel
+      duration: 1200,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -54,12 +45,6 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   return (
     <View style={[styles.container, {width: size, height: size}]}>
       <Svg width={size} height={size}>
-        <Defs>
-          <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor={progressColor} stopOpacity="1" />
-            <Stop offset="100%" stopColor={progressColor} stopOpacity="0.7" />
-          </LinearGradient>
-        </Defs>
         <Circle
           stroke={trackColor}
           fill="transparent"
@@ -69,7 +54,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeWidth={strokeWidth}
         />
         <AnimatedCircle
-          stroke="url(#progressGradient)"
+          stroke={progressColor}
           fill="transparent"
           cx={size / 2}
           cy={size / 2}
@@ -79,24 +64,14 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          style={{
-            shadowColor: progressColor,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.25,
-            shadowRadius: 10,
-          }}
         />
       </Svg>
-      <View
-        style={[
-          styles.labelContainer,
-          {
-            width: size - strokeWidth * 2 - 8,
-            height: size - strokeWidth * 2 - 8,
-            borderRadius: (size - strokeWidth * 2 - 8) / 2,
-          },
-        ]}>
-        {label ? <Text style={styles.label}>{label}</Text> : null}
+      <View style={styles.labelContainer}>
+        {label ? (
+          <Text style={[styles.label, { color: isExceeded ? colors.error : colors.text }]}>
+            {label}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -113,10 +88,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: 'Manrope',
   },
 });
 

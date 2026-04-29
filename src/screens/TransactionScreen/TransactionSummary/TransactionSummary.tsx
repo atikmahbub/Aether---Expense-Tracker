@@ -1,5 +1,5 @@
-import {View, StyleSheet, TouchableOpacity, InteractionManager} from 'react-native';
-import React, {useState, useMemo, useEffect, useCallback} from 'react';
+import {View, StyleSheet, InteractionManager} from 'react-native';
+import React, {useState, useMemo, useCallback} from 'react';
 import {Text} from 'react-native-paper';
 import {FormikTextInput, CircularProgress} from '@trackingPortal/components';
 import FormModal from '@trackingPortal/components/FormModal';
@@ -10,7 +10,7 @@ import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {Formik, FormikHelpers} from 'formik';
 import {EMonthlyLimitFields} from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants';
 import Toast from 'react-native-toast-message';
-import {Month, Year, UnixTimeStampString} from '@trackingPortal/api/primitives';
+import {Month, Year} from '@trackingPortal/api/primitives';
 import {withHaptic} from '@trackingPortal/utils/haptic';
 import {colors} from '@trackingPortal/themes/colors';
 import { CommonCard, StatCard } from '@trackingPortal/components';
@@ -44,16 +44,9 @@ const TransactionSummary: React.FC<ISummary> = ({
   const limitValue = monthLimit?.limit ?? 0;
   const hasLimit = type === 'expense' && limitValue > 0;
 
-
-
-
-
   const progressRatio = hasLimit ? totalValue / limitValue : 0;
-  const clampedProgress = hasLimit
-    ? Math.max(0, Math.min(progressRatio, 1))
-    : 0;
-  const progressColor =
-    !hasLimit || progressRatio <= 1 ? colors.accent : colors.error;
+  const clampedProgress = hasLimit ? progressRatio : 0;
+  
   const progressLabel = hasLimit
     ? formatNumber(Math.min(progressRatio * 100, 999), {
         maximumFractionDigits: 0,
@@ -125,7 +118,7 @@ const TransactionSummary: React.FC<ISummary> = ({
 
   return (
     <View style={styles.mainContainer}>
-      <CommonCard style={styles.heroCard}>
+      <CommonCard style={styles.heroCard} padding={24}>
         <View style={styles.headingRow}>
           <MaterialCommunityIcons 
             name={type === 'expense' ? "wallet-outline" : "bank-outline"} 
@@ -146,23 +139,20 @@ const TransactionSummary: React.FC<ISummary> = ({
                 minimumFontScale={0.7}>
                 {isLoading ? "…" : formatCurrency(totalValue, currency)}
               </Text>
-              <Text style={[styles.earnedText, { color: type === 'expense' ? colors.success : colors.error, opacity: 1 }]}>
+              <Text style={styles.earnedText}>
                 {formatCurrency(monthlyIncome, currency, {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 0,
                 })}{' '}
                 {type === 'expense' ? 'earned this month' : 'spent this month'}
               </Text>
-
           </View>
           {hasLimit ? (
             <View style={styles.progressWrapper}>
               <CircularProgress
                 progress={clampedProgress}
-                progressColor={progressColor}
                 size={80}
                 strokeWidth={6}
-                trackColor="rgba(255,255,255,0.08)"
                 label={progressLabel}
               />
             </View>
@@ -242,11 +232,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
     marginBottom: 20,
   },
   headingRow: {
@@ -256,10 +241,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headingLabel: {
-    color: colors.subText,
-    fontSize: 11,
+    color: colors.muted,
+    fontSize: 10,
     letterSpacing: 1,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   heroRow: {
     flexDirection: 'row',
@@ -280,89 +265,19 @@ const styles = StyleSheet.create({
     lineHeight: 60,
     flexShrink: 1,
     includeFontPadding: false,
-    marginBottom: 2,
   },
   earnedText: {
-    color: '#4ADE80',
-    fontSize: 13,
-    fontWeight: '600',
-    opacity: 0.6,
-    marginTop: 2,
-  },
-  trendText: {
+    color: colors.subText,
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 6,
   },
   progressWrapper: {
     alignItems: 'center',
-    gap: 6,
-  },
-  progressCaption: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  progressSubLabel: {
-    color: colors.subText,
-    fontSize: 11,
   },
   metricsRow: {
     flexDirection: 'row',
     gap: 12,
-  },
-  metricSquareCard: {
-    flex: 1,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  metricHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  metricIconWrapper: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 10,
-    borderRadius: 10,
-  },
-  metricLabelCard: {
-    color: colors.subText,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  targetValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  metricLabelValue: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '600',
-    fontFamily: 'Manrope',
-    flex: 1,
-    minWidth: 0,
-  },
-  editLink: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(45, 212, 191, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(45, 212, 191, 0.2)',
-  },
-  editLinkText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '600',
   },
   limitForm: {
     gap: 12,

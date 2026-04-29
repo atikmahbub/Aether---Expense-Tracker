@@ -14,7 +14,7 @@ import {
   TransactionAnalyticsModel,
   ExpenseCategoryModel,
 } from '@trackingPortal/api/models';
-import Svg, { Path, LinearGradient, Stop, Defs, Circle, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Defs, Circle, Line, Text as SvgText } from 'react-native-svg';
 import {colors} from '@trackingPortal/themes/colors';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {CurrencyPreference} from '@trackingPortal/constants/currency';
@@ -80,9 +80,8 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       return null;
     }
     const spent = Math.abs(totalSpent ?? analytics?.totalTransaction ?? 0);
-    const delta = monthlyLimit - spent;
     return {
-      isOver: delta < 0,
+      isOver: spent > monthlyLimit,
     };
   }, [analytics, monthlyLimit, totalSpent]);
 
@@ -118,28 +117,20 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     const cappedSpent = Math.min(spentVal, maxVal);
     const endY = 90 - (cappedSpent / maxVal) * 80;
     const pathD = `M 0 90 C 80 110, 180 ${endY - 30}, 260 ${endY}`;
-    const fillD = `${pathD} L 260 100 L 0 100 Z`;
 
     return (
       <View style={{ height: 140, width: '100%', marginTop: 16 }}>
         <Svg width="100%" height="100%" viewBox="0 0 300 100">
-          <Defs>
-            <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={graphColor} stopOpacity="0.2" />
-              <Stop offset="1" stopColor={graphColor} stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-          <Line x1="0" y1="10" x2="260" y2="10" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="50" x2="260" y2="50" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="90" x2="260" y2="90" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="10" x2="260" y2="10" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="50" x2="260" y2="50" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="90" x2="260" y2="90" stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
           
-          <SvgText x="270" y="14" fill={colors.subText} fontSize="10">{formatCompact(maxVal)}</SvgText>
-          <SvgText x="270" y="54" fill={colors.subText} fontSize="10">{formatCompact(midVal)}</SvgText>
-          <SvgText x="270" y="94" fill={colors.subText} fontSize="10">0</SvgText>
+          <SvgText x="270" y="14" fill={colors.muted} fontSize="10">{formatCompact(maxVal)}</SvgText>
+          <SvgText x="270" y="54" fill={colors.muted} fontSize="10">{formatCompact(midVal)}</SvgText>
+          <SvgText x="270" y="94" fill={colors.muted} fontSize="10">0</SvgText>
 
-          <Path d={pathD} fill="none" stroke={graphColor} strokeWidth="2" />
-          <Path d={fillD} fill="url(#grad)" />
-          <Circle cx="260" cy={endY} r="4" fill={graphColor} stroke={colors.surface} strokeWidth="2" />
+          <Path d={pathD} fill="none" stroke={graphColor} strokeWidth="2.5" />
+          <Circle cx="260" cy={endY} r="3" fill={graphColor} />
         </Svg>
       </View>
     );
@@ -147,11 +138,19 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
   const renderTopCategoryPreview = () => {
     if (!analytics?.topCategory || !showHeavyUI) return null;
+    const category = categories[analytics.topCategory.categoryId];
+    const catColor = category?.color || colors.primary;
+
     return (
       <View style={styles.previewRow}>
         <View style={styles.previewLeft}>
-          <Text style={styles.previewLabel}>{mode === 'expense' ? 'Top Expense' : 'Top Income'}</Text>
+          <Text style={styles.previewLabel}>{mode === 'expense' ? 'TOP EXPENSE' : 'TOP INCOME'}</Text>
           <Text style={styles.previewValue}>{analytics.topCategory.categoryName}</Text>
+          
+          {/* Subtle category bar hint */}
+          <View style={styles.miniBarTrack}>
+             <View style={[styles.miniBarFill, { width: `${analytics.topCategory.percentage}%`, backgroundColor: catColor }]} />
+          </View>
         </View>
         <View style={styles.previewRight}>
           <Text style={styles.previewAmount}>{formatAmount(analytics.topCategory.totalAmount)}</Text>
@@ -161,11 +160,8 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   };
 
   return (
-    <CommonCard style={styles.container} padding={20}>
-      <TouchableOpacity 
-        activeOpacity={0.9} 
-        onPress={handleToggle}
-        style={styles.headerArea}>
+    <CommonCard style={styles.container} padding={20} onPress={handleToggle}>
+      <View style={styles.headerArea}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>
@@ -176,9 +172,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           <View style={styles.headerRight}>
             <View style={styles.trendContainer}>
               {trend && !trendLoading && (
-                <View style={[styles.trendPill, {backgroundColor: trend.color + '20'}]}>
+                <View style={[styles.trendPill, {backgroundColor: 'rgba(255,255,255,0.03)'}]}>
                   <MaterialCommunityIcons name={trend.icon} size={12} color={trend.color} />
-                  <Text style={[styles.trendPillText, {color: trend.color}]}>
+                  <Text style={[styles.trendPillText, {color: colors.text}]}>
                     {formatNumber(trend.percent, { maximumFractionDigits: 0 })}%
                   </Text>
                 </View>
@@ -186,15 +182,15 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
             </View>
             <MaterialCommunityIcons 
               name={expanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={colors.subText} 
+              size={18} 
+              color={colors.muted} 
               style={{ marginLeft: 4 }} 
             />
           </View>
         </View>
 
         {!expanded && renderTopCategoryPreview()}
-      </TouchableOpacity>
+      </View>
 
       {analytics && expanded && (
         <View style={styles.expandedContent}>
@@ -261,9 +257,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    color: colors.subText,
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
     letterSpacing: 1,
   },
   trendContainer: {
@@ -275,20 +271,18 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   trendPillText: {
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: 'Manrope',
   },
   previewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
+    alignItems: 'flex-start',
+    marginTop: 20,
   },
   previewLeft: {
     flex: 1,
@@ -297,21 +291,35 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   previewLabel: {
-    color: colors.subText,
+    color: colors.muted,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   previewValue: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Manrope',
+  },
+  miniBarTrack: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 2,
+    marginTop: 10,
+    width: '80%',
+    overflow: 'hidden',
+  },
+  miniBarFill: {
+    height: '100%',
+    borderRadius: 2,
   },
   previewAmount: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'Manrope',
   },
   expandedContent: {
     marginTop: 8,
@@ -319,15 +327,15 @@ const styles = StyleSheet.create({
   breakdownHeader: {
     marginTop: 24,
     marginBottom: 16,
-    paddingTop: 16,
+    paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: colors.glassBorder,
   },
   breakdownTitle: {
-    color: colors.subText,
+    color: colors.muted,
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   listContainer: {
     gap: 16,
@@ -338,9 +346,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   listLabelColumn: {
     flex: 1,
@@ -358,14 +366,15 @@ const styles = StyleSheet.create({
   categoryAmount: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'Manrope',
   },
   loadingRow: {
     padding: 20,
     alignItems: 'center',
   },
   emptyText: {
-    color: colors.subText,
+    color: colors.muted,
     textAlign: 'center',
     marginTop: 20,
     fontSize: 12,
