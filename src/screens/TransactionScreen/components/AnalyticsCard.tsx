@@ -14,7 +14,7 @@ import {
   TransactionAnalyticsModel,
   ExpenseCategoryModel,
 } from '@trackingPortal/api/models';
-import Svg, { Path, Defs, Circle, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Defs, Circle, Line, Text as SvgText, LinearGradient, Stop } from 'react-native-svg';
 import {colors} from '@trackingPortal/themes/colors';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {CurrencyPreference} from '@trackingPortal/constants/currency';
@@ -115,22 +115,42 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     };
 
     const cappedSpent = Math.min(spentVal, maxVal);
-    const endY = 90 - (cappedSpent / maxVal) * 80;
-    const pathD = `M 0 90 C 80 110, 180 ${endY - 30}, 260 ${endY}`;
+    const bottomY = 54;
+    const endY = 50 - (cappedSpent / maxVal) * 40; 
+    
+    // Smooth bezier curve
+    const pathD = `M 0 50 C 80 60, 180 ${endY - 15}, 260 ${endY}`;
+    // Area path for the fill
+    const areaD = `${pathD} L 260 ${bottomY} L 0 ${bottomY} Z`;
 
     return (
-      <View style={{ height: 140, width: '100%', marginTop: 16 }}>
-        <Svg width="100%" height="100%" viewBox="0 0 300 100">
-          <Line x1="0" y1="10" x2="260" y2="10" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="50" x2="260" y2="50" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="90" x2="260" y2="90" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
-          
-          <SvgText x="270" y="14" fill={colors.muted} fontSize="10">{formatCompact(maxVal)}</SvgText>
-          <SvgText x="270" y="54" fill={colors.muted} fontSize="10">{formatCompact(midVal)}</SvgText>
-          <SvgText x="270" y="94" fill={colors.muted} fontSize="10">0</SvgText>
+      <View style={styles.graphWrapper}>
+        <Svg width="100%" height="100%" viewBox="0 0 300 60">
+          <Defs>
+            <Path id="linePath" d={pathD} />
+            <LinearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor={graphColor} stopOpacity="0.15" />
+              <Stop offset="100%" stopColor={graphColor} stopOpacity="0.01" />
+            </LinearGradient>
+          </Defs>
 
+          <Line x1="0" y1="10" x2="260" y2="10" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="30" x2="260" y2="30" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
+          <Line x1="0" y1="50" x2="260" y2="50" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
+          
+          <SvgText x="270" y="14" fill={colors.muted} fontSize="8">{formatCompact(maxVal)}</SvgText>
+          <SvgText x="270" y="34" fill={colors.muted} fontSize="8">{formatCompact(midVal)}</SvgText>
+          <SvgText x="270" y="54" fill={colors.muted} fontSize="8">0</SvgText>
+
+          {/* Area Fill */}
+          <Path d={areaD} fill="url(#fillGrad)" />
+          
+          {/* Main Line */}
           <Path d={pathD} fill="none" stroke={graphColor} strokeWidth="2.5" />
+          
+          {/* Active Dot */}
           <Circle cx="260" cy={endY} r="3" fill={graphColor} />
+          <Circle cx="260" cy={endY} r="6" stroke={graphColor} strokeWidth="1.5" strokeOpacity="0.2" fill="none" />
         </Svg>
       </View>
     );
@@ -141,19 +161,27 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     const category = categories[analytics.topCategory.categoryId];
     const catColor = category?.color || colors.primary;
 
+    // Fix: percentage is in breakdown, not topCategory
+    const topCatData = analytics.categoryBreakdown.find(
+      c => c.categoryId === analytics.topCategory?.categoryId
+    );
+    const percentage = topCatData?.percentage || 0;
+
     return (
-      <View style={styles.previewRow}>
-        <View style={styles.previewLeft}>
+      <View style={styles.previewContainer}>
+        <View style={styles.previewHeader}>
           <Text style={styles.previewLabel}>{mode === 'expense' ? 'TOP EXPENSE' : 'TOP INCOME'}</Text>
-          <Text style={styles.previewValue}>{analytics.topCategory.categoryName}</Text>
-          
-          {/* Subtle category bar hint */}
-          <View style={styles.miniBarTrack}>
-             <View style={[styles.miniBarFill, { width: `${analytics.topCategory.percentage}%`, backgroundColor: catColor }]} />
-          </View>
-        </View>
-        <View style={styles.previewRight}>
           <Text style={styles.previewAmount}>{formatAmount(analytics.topCategory.totalAmount)}</Text>
+        </View>
+        
+        <View style={styles.previewMain}>
+          <View style={styles.previewValueRow}>
+            <Text style={styles.previewValue}>{analytics.topCategory.categoryName}</Text>
+            <Text style={styles.percentageText}>{formatNumber(percentage, { maximumFractionDigits: 0 })}%</Text>
+          </View>
+          <View style={styles.miniBarTrack}>
+             <View style={[styles.miniBarFill, { width: `${percentage}%`, backgroundColor: catColor }]} />
+          </View>
         </View>
       </View>
     );
@@ -189,13 +217,12 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           </View>
         </View>
 
-        {!expanded && renderTopCategoryPreview()}
+        {analytics && renderGraph()}
+        {analytics && renderTopCategoryPreview()}
       </View>
 
       {analytics && expanded && (
         <View style={styles.expandedContent}>
-          {renderGraph()}
-          
           <View style={styles.breakdownHeader}>
              <Text style={styles.breakdownTitle}>CATEGORY BREAKDOWN</Text>
           </View>
@@ -239,6 +266,8 @@ const styles = StyleSheet.create({
   container: {
     marginHorizontal: 20,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)', // Subtle border
   },
   headerArea: {
     width: '100%',
@@ -247,6 +276,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   headerLeft: {
     flex: 1,
@@ -278,58 +308,76 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Manrope',
   },
-  previewRow: {
+  graphWrapper: {
+    height: 60, // Ultra-narrow height
+    width: '100%',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  previewContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.04)', // Subtle separator
+  },
+  previewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: 20,
-  },
-  previewLeft: {
-    flex: 1,
-  },
-  previewRight: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   previewLabel: {
     color: colors.muted,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.5,
-    marginBottom: 6,
+  },
+  previewAmount: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Manrope',
+  },
+  previewMain: {
+    gap: 8,
+  },
+  previewValueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
   },
   previewValue: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     fontFamily: 'Manrope',
   },
+  percentageText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Manrope',
+  },
   miniBarTrack: {
-    height: 4,
+    height: 6,
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 2,
-    marginTop: 10,
-    width: '80%',
+    borderRadius: 3,
+    width: '100%',
     overflow: 'hidden',
   },
   miniBarFill: {
     height: '100%',
-    borderRadius: 2,
-  },
-  previewAmount: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
+    borderRadius: 3,
   },
   expandedContent: {
-    marginTop: 8,
+    marginTop: 12,
   },
   breakdownHeader: {
-    marginTop: 24,
+    marginTop: 20,
     marginBottom: 16,
-    paddingTop: 20,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   breakdownTitle: {
     color: colors.muted,
