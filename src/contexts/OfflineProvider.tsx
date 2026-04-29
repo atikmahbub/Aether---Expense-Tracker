@@ -67,7 +67,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <OfflineContext.Provider
       value={{
-        isOnline: isOnline && isInternetReachable,
+        isOnline: isOnline, // Use basic connectivity to avoid false offline banners
         pendingCount,
         syncInProgress,
         syncNow,
