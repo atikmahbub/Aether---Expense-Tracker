@@ -424,6 +424,7 @@ const TransactionList: FC<ITransactionList> = ({
                         ]}>
                         {formatNumber(yr, {
                           useGrouping: false,
+                          minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
                         })}
                       </Text>

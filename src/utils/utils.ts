@@ -68,7 +68,7 @@ export const convertToKilo = (value: number): string | number => {
       maximumFractionDigits: result < 10 ? 1 : 0,
     })}K`;
   }
-  return formatWithEnglishDigits(value, {maximumFractionDigits: 0});
+  return formatWithEnglishDigits(value, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 };
 
 export const convertKiloToNumber = (number: string | number): number => {

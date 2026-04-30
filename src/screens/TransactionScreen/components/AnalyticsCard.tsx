@@ -177,7 +177,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
         <View style={styles.previewMain}>
           <View style={styles.previewValueRow}>
             <Text style={styles.previewValue}>{analytics.topCategory.categoryName}</Text>
-            <Text style={styles.percentageText}>{formatNumber(percentage, { maximumFractionDigits: 0 })}%</Text>
+            <Text style={styles.percentageText}>{formatNumber(percentage, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</Text>
           </View>
           <View style={styles.miniBarTrack}>
              <View style={[styles.miniBarFill, { width: `${percentage}%`, backgroundColor: catColor }]} />
@@ -203,7 +203,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
                 <View style={[styles.trendPill, {backgroundColor: 'rgba(255,255,255,0.03)'}]}>
                   <MaterialCommunityIcons name={trend.icon} size={12} color={trend.color} />
                   <Text style={[styles.trendPillText, {color: colors.text}]}>
-                    {formatNumber(trend.percent, { maximumFractionDigits: 0 })}%
+                    {formatNumber(trend.percent, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
                   </Text>
                 </View>
               )}
@@ -238,7 +238,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
                   <View style={styles.listLabelColumn}>
                     <Text style={styles.categoryName}>{item.categoryName}</Text>
                     <Text style={styles.categorySecondary}>
-                      {formatNumber(item.percentage, { maximumFractionDigits: 1, suffix: '%' })}
+                      {formatNumber(item.percentage, { minimumFractionDigits: 0, maximumFractionDigits: 1, suffix: '%' })}
                     </Text>
                   </View>
                   <Text style={styles.categoryAmount}>{formatAmount(item.totalAmount)}</Text>

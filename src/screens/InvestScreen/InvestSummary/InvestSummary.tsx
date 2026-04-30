@@ -52,6 +52,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
     Math.max(1, Math.min(investList.length, 9)),
     {
       minimumIntegerDigits: 2,
+      minimumFractionDigits: 0,
       maximumFractionDigits: 0,
       useGrouping: false,
     },
