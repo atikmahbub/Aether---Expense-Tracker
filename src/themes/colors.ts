@@ -1,9 +1,9 @@
 export const colors = {
   // 🔴 Neutral Dark Base (FIXED — no blue tint)
-  background: '#0A0A0B',
-  cardBg: '#111113',
-  surface: '#18181B',
-  surfaceAlt: '#1F1F23',
+  background: '#09090A',
+  cardBg: '#161618',
+  surface: '#1E1E21',
+  surfaceAlt: '#26262B',
   deepest: '#050505',
 
   // Icon/Utility Backgrounds
@@ -23,7 +23,7 @@ export const colors = {
   muted: '#71717A',
 
   // 🧊 Borders (more subtle = more premium)
-  glassBorder: 'rgba(255,255,255,0.04)',
+  glassBorder: 'rgba(255,255,255,0.08)',
   dashedLine: '#2A2A2F',
   chartFloor: '#141417',
 

@@ -493,18 +493,18 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   listContent: {
-    paddingTop: 20,
+    paddingTop: 12,
   },
   topToggleRow: {
-    paddingHorizontal: 20,
-    marginBottom: 0,
+    paddingHorizontal: 16,
+    marginBottom: 8,
     alignItems: 'flex-end',
   },
   segmentedToggle: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceAlt,
-    borderRadius: 10,
-    padding: 3,
+    borderRadius: 8,
+    padding: 2,
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },

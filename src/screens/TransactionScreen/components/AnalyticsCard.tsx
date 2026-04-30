@@ -331,10 +331,10 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)', // Subtle border
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   headerArea: {
     width: '100%',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   headerLeft: {
     flex: 1,
@@ -351,13 +351,13 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   title: {
     color: colors.muted,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   trendContainer: {
     alignItems: 'flex-end',
@@ -365,48 +365,48 @@ const styles = StyleSheet.create({
   trendPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   trendPillText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     fontFamily: 'Manrope',
   },
   graphWrapper: {
-    height: 100, // Increased to fit labels and padding
+    height: 80, // Reduced height for compactness
     width: '100%',
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 2,
   },
   previewContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.04)', // Subtle separator
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
   },
   previewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   previewLabel: {
     color: colors.muted,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   previewAmount: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     fontFamily: 'Manrope',
   },
   previewMain: {
-    gap: 8,
+    gap: 6,
   },
   previewValueRow: {
     flexDirection: 'row',
@@ -415,84 +415,84 @@ const styles = StyleSheet.create({
   },
   previewValue: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     fontFamily: 'Manrope',
   },
   percentageText: {
     color: colors.primary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     fontFamily: 'Manrope',
   },
   miniBarTrack: {
-    height: 6,
+    height: 4, // Slimmer progress bar
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 3,
+    borderRadius: 2,
     width: '100%',
     overflow: 'hidden',
   },
   miniBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
   expandedContent: {
-    marginTop: 12,
+    marginTop: 8,
   },
   breakdownHeader: {
-    marginTop: 16,
-    marginBottom: 12,
-    paddingTop: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   breakdownTitle: {
     color: colors.muted,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   listContainer: {
-    gap: 16,
+    gap: 12,
   },
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
   listLabelColumn: {
     flex: 1,
   },
   categoryName: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   categorySecondary: {
     color: colors.subText,
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 10,
+    marginTop: 1,
   },
   categoryAmount: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     fontFamily: 'Manrope',
   },
   loadingRow: {
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
   },
   emptyText: {
     color: colors.muted,
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 12,
+    marginTop: 16,
+    fontSize: 11,
   },
 });
 
