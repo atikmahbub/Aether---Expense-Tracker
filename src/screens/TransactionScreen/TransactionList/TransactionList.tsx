@@ -11,9 +11,13 @@ import React, {
   Fragment,
   SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
+import {Dimensions} from 'react-native';
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
 import {Button, Text} from 'react-native-paper';
 import dayjs, {Dayjs} from 'dayjs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -97,6 +101,7 @@ const TransactionList: FC<ITransactionList> = ({
 }) => {
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const {currentUser: user, apiGateway, currency} = useStoreContext();
   const {isOnline} = useNetwork();
@@ -121,6 +126,29 @@ const TransactionList: FC<ITransactionList> = ({
     },
     [setFilteredMonth],
   );
+
+  const scrollToActiveMonth = useCallback((monthIndex: number, animated = true) => {
+    if (!scrollRef.current) return;
+    
+    // Fixed chip width + gap
+    const CHIP_WIDTH = 75;
+    const GAP = 8;
+    const itemCenter = monthIndex * (CHIP_WIDTH + GAP) + CHIP_WIDTH / 2;
+    const scrollX = itemCenter - SCREEN_WIDTH / 2 + 20; // 20 is paddingHorizontal
+    
+    scrollRef.current.scrollTo({
+      x: Math.max(0, scrollX),
+      animated,
+    });
+  }, []);
+
+  useEffect(() => {
+    // Small delay to ensure layout is ready
+    const timer = setTimeout(() => {
+      scrollToActiveMonth(filteredMonth.month());
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [filteredMonth, scrollToActiveMonth]);
 
   const openYearPicker = useCallback(() => {
     setOpenPicker(true);
@@ -359,6 +387,7 @@ const TransactionList: FC<ITransactionList> = ({
           </Button>
         </View>
         <ScrollView
+          ref={scrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsRow}
@@ -370,6 +399,8 @@ const TransactionList: FC<ITransactionList> = ({
                 <Button
                   key={idx}
                   mode="outlined"
+                  compact
+                  contentStyle={{ paddingHorizontal: 0, height: 40 }}
                   style={[styles.chip, isActive && styles.chipActive]}
                   labelStyle={
                     isActive ? styles.chipLabelActive : styles.chipLabel
@@ -472,6 +503,7 @@ const styles = StyleSheet.create({
     height: 42,
     backgroundColor: colors.surface,
     borderWidth: 1,
+    width: 75, // Fixed width for scroll centering
   },
   chipActive: {
     borderColor: colors.primary,

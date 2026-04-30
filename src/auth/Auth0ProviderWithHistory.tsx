@@ -107,29 +107,50 @@ export const Auth0ProviderWithHistory = ({
 
   /* ================= REFRESH LOGIC ================= */
 
-  const refreshAccessToken = async (storedRefreshToken: string): Promise<string | null> => {
+  const refreshAccessToken = useCallback(async (storedRefreshToken: string): Promise<string | null> => {
     if (refreshPromise.current) return refreshPromise.current;
 
     refreshPromise.current = (async () => {
-      if (!discovery?.tokenEndpoint) return null;
+      if (!discovery?.tokenEndpoint) {
+        console.warn("⚠️ Auth discovery not ready for refresh");
+        return null;
+      }
 
       try {
+        console.log("🔄 Attempting to refresh access token...");
         const tokenResponse = await AuthSession.refreshAsync(
           {
             clientId: AUTH0_CLIENT_ID,
             refreshToken: storedRefreshToken,
+            scopes: ["openid", "profile", "email", "offline_access"],
+            extraParams: {
+              ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
+            },
           },
           { tokenEndpoint: discovery.tokenEndpoint }
         );
 
         if (tokenResponse.accessToken) {
-          await authStorage.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken);
+          console.log("✅ Token refreshed successfully");
+          await authStorage.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken || storedRefreshToken);
           setToken(tokenResponse.accessToken);
           return tokenResponse.accessToken;
         }
-      } catch (e) {
+        
+        console.warn("⚠️ Refresh response missing access token");
+      } catch (e: any) {
         console.error("❌ Token refresh failed:", e);
-        await logout();
+        // Detailed error for debugging
+        if (e.response) {
+          console.error("Auth0 error details:", e.response.data);
+        }
+        
+        // If it's a "permanent" failure (invalid grant), we must logout
+        const errorDesc = e.message || "";
+        if (errorDesc.includes("invalid_grant") || errorDesc.includes("expired")) {
+          console.warn("⚠️ Refresh token invalid or expired. Logging out.");
+          await logout();
+        }
       } finally {
         refreshPromise.current = null;
       }
@@ -137,7 +158,7 @@ export const Auth0ProviderWithHistory = ({
     })();
 
     return refreshPromise.current;
-  };
+  }, [discovery, logout]);
 
   const getValidToken = useCallback(async (): Promise<string | null> => {
     // 1. Proactive check state
@@ -157,7 +178,7 @@ export const Auth0ProviderWithHistory = ({
     }
 
     return null;
-  }, [token, discovery, logout]);
+  }, [token, discovery, logout, refreshAccessToken]);
 
   const syncProfile = useCallback(async (tokenToUse: string) => {
     try {

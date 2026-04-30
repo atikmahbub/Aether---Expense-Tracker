@@ -181,8 +181,8 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaProvider style={{ backgroundColor: colors.background }}>
         <PaperProvider theme={darkTheme}>
           <Auth0ProviderWithHistory>
             <StoreProvider>
@@ -191,7 +191,7 @@ export default function RootLayout() {
                   {Platform.OS === 'ios' ? (
                     <KeyboardAvoidingView
                       behavior="padding"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, backgroundColor: colors.background }}
                     >
                       <NavigationBoundary />
                       <OfflineBanner />

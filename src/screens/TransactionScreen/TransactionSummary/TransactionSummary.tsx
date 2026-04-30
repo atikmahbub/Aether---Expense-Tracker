@@ -57,6 +57,11 @@ const TransactionSummary: React.FC<ISummary> = ({
       })
     : '--';
 
+  const incomeValue = type === 'expense' ? monthlyIncome : totalValue;
+  const expenseValue = type === 'expense' ? totalValue : monthlyIncome;
+  const netBalance = incomeValue === 0 ? 0 : (incomeValue - expenseValue);
+  const isPositiveBalance = netBalance >= 0;
+
   const closeLimitModal = () => {
     setIsLimitModalVisible(false);
   };
@@ -170,13 +175,31 @@ const TransactionSummary: React.FC<ISummary> = ({
                 minimumFontScale={0.7}>
                 {isLoading ? "…" : formatCurrency(totalValue, currency)}
               </Text>
-              <Text style={styles.earnedText}>
-                {formatCurrency(monthlyIncome, currency, {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                })}{' '}
-                {type === 'expense' ? 'earned this month' : 'spent this month'}
-              </Text>
+              <View style={styles.summaryFooter}>
+                <Text style={styles.earnedText}>
+                  {formatCurrency(monthlyIncome, currency, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}{' '}
+                  {type === 'expense' ? 'earned' : 'spent'}
+                </Text>
+                
+                <View style={styles.dot} />
+                
+                <View style={styles.netContainer}>
+                  <Text style={styles.netLabel}>NET: </Text>
+                  <Text style={[
+                    styles.netValue, 
+                    { color: netBalance === 0 ? colors.muted : (isPositiveBalance ? colors.primary : colors.error) }
+                  ]}>
+                    {formatCurrency(Math.abs(netBalance), currency, {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
+                    {netBalance !== 0 && (isPositiveBalance ? ' ↑' : ' ↓')}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -199,11 +222,15 @@ const TransactionSummary: React.FC<ISummary> = ({
           <StatCard 
             icon="chart-line" 
             label="Daily Avg" 
-            value={formatCurrency(
-              totalValue / Math.max(dayjs().date(), 1),
-              currency,
-              {minimumFractionDigits: 0, maximumFractionDigits: 0},
-            )}
+            value={(() => {
+              const divisor = Math.max(filterMonth.daysInMonth(), 1);
+              
+              return formatCurrency(
+                totalValue / divisor,
+                currency,
+                {minimumFractionDigits: 0, maximumFractionDigits: 0},
+              );
+            })()}
           />
         </View>
       )}
@@ -295,8 +322,35 @@ const styles = StyleSheet.create({
   earnedText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
+    fontWeight: '600',
+    fontFamily: 'Manrope',
+  },
+  summaryFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  dot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.glassBorder,
+  },
+  netContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  netLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  netValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: 'Manrope',
   },
   percentageContainer: {
     paddingHorizontal: 8,

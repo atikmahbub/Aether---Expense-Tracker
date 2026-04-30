@@ -338,7 +338,7 @@ export default function TransactionScreen() {
       percent: Math.abs(value),
       isLower: value < 0,
       label: value === 0 ? "0% vs last month" : `${isIncrease ? "↑" : "↓"} ${Math.abs(value)}% vs last month`,
-      color: value === 0 ? colors.subText : (isBetter ? colors.success : colors.error),
+      color: value === 0 ? colors.subText : (isBetter ? colors.primary : colors.error),
       icon: isIncrease ? 'arrow-top-right' : (isDecrease ? 'arrow-bottom-right' : 'minus'),
     };
   }, [summary, loadingSummary, typeFilter]);
@@ -490,7 +490,7 @@ export default function TransactionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: colors.background,
   },
   listContent: {
     paddingTop: 12,
