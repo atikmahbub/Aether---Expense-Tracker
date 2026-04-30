@@ -27,7 +27,7 @@ const CustomAppBar: React.FC = () => {
 
   const greeting = React.useMemo(() => getGreeting(), []);
   const userName = React.useMemo(
-    () => user?.name?.split(' ')[0] ?? 'Admin',
+    () => (user?.name as string)?.split(' ')[0] ?? 'Admin',
     [user],
   );
   const userPicture = React.useMemo(() => (user?.picture as string) ?? '', [user]);
