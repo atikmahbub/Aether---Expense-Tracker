@@ -4,14 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
+  Dimensions,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Modal,
-  ScrollView,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import LoadingButton from '@trackingPortal/components/LoadingButton';
 import {colors} from '@trackingPortal/themes/colors';
 
@@ -26,7 +25,7 @@ interface IFormModal {
   children: React.ReactNode;
 }
 
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 const FormModal: React.FC<IFormModal> = ({
   isVisible,
@@ -48,106 +47,48 @@ const FormModal: React.FC<IFormModal> = ({
   return (
     <Modal
       transparent
-      animationType="slide"
+      animationType="fade"
       visible={isVisible}
       onRequestClose={handleClose}
-      statusBarTranslucent>
-      <View style={styles.modalRoot}>
-        <TouchableWithoutFeedback onPress={handleClose}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
-        
-        {Platform.OS === 'ios' ? (
+      statusBarTranslucent
+    >
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.modalOverlay}>
           <KeyboardAvoidingView
-            behavior="padding"
-            style={{ flex: 1, justifyContent: 'flex-end' }}
-            pointerEvents="box-none"
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardView}
           >
-            <View style={styles.modalContent}>
-                <View style={styles.indicatorWrapper}>
-                  <View style={styles.indicator} />
-                </View>
-                <View>
+            <TouchableWithoutFeedback onPress={dismissKeyboard}>
+              <View style={styles.floatingCard}>
+                <View style={styles.header}>
                   <Text style={styles.title}>{title}</Text>
                   {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
                 </View>
-                
-                <KeyboardAwareScrollView
-                  enableOnAndroid={true}
-                  keyboardShouldPersistTaps="handled"
-                  extraScrollHeight={0}
-                  enableAutomaticScroll={true}
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                  contentContainerStyle={styles.scrollView}
-                >
+
+                <View style={styles.formContainer}>
                   {children}
-                  
-                  <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => {
-                        dismissKeyboard();
-                        onClose();
-                      }}>
-                      <Text style={styles.buttonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <LoadingButton
-                      label={saveLabel || 'Save'}
-                      loading={!!loading}
-                      onPress={() => {
-                        dismissKeyboard();
-                        onSave();
-                      }}
-                    />
-                  </View>
-                </KeyboardAwareScrollView>
-            </View>
+                </View>
+                
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleClose}>
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <LoadingButton
+                    label={saveLabel || 'Save'}
+                    loading={!!loading}
+                    onPress={() => {
+                      dismissKeyboard();
+                      onSave();
+                    }}
+                  />
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
           </KeyboardAvoidingView>
-        ) : (
-          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-            <View style={styles.modalContent}>
-                <View style={styles.indicatorWrapper}>
-                  <View style={styles.indicator} />
-                </View>
-                <View>
-                  <Text style={styles.title}>{title}</Text>
-                  {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-                </View>
-                
-                <KeyboardAwareScrollView
-                  enableOnAndroid={true}
-                  keyboardShouldPersistTaps="handled"
-                  extraScrollHeight={40}
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                  contentContainerStyle={styles.scrollView}
-                >
-                  {children}
-                  
-                  <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => {
-                        dismissKeyboard();
-                        onClose();
-                      }}>
-                      <Text style={styles.buttonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <LoadingButton
-                      label={saveLabel || 'Save'}
-                      loading={!!loading}
-                      onPress={() => {
-                        dismissKeyboard();
-                        onSave();
-                      }}
-                    />
-                  </View>
-                </KeyboardAwareScrollView>
-            </View>
-          </View>
-        )}
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -155,80 +96,64 @@ const FormModal: React.FC<IFormModal> = ({
 export default FormModal;
 
 const styles = StyleSheet.create({
-  modalRoot: {
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
-  },
-  safeArea: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  indicatorWrapper: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
-  indicator: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
+  keyboardView: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalContent: {
-    backgroundColor: colors.overlay,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  floatingCard: {
+    width: SCREEN_WIDTH * 0.9,
+    backgroundColor: colors.surface,
+    borderRadius: 24,
+    padding: 24,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.25,
-    shadowRadius: 30,
-    shadowOffset: {width: 0, height: -12},
-    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  header: {
+    marginBottom: 20,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
     letterSpacing: 0.4,
-    marginBottom: 16,
   },
   subtitle: {
     fontSize: 13,
     color: colors.subText,
-    marginTop: 4,
-    marginBottom: 16,
+    marginTop: 6,
   },
-  scrollView: {
-    paddingBottom: 120,
+  formContainer: {
+    marginBottom: 24,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 18,
+    alignItems: 'center',
     gap: 12,
   },
   cancelButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 999,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   buttonText: {
     color: colors.subText,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    fontSize: 15,
   },
 });

@@ -17,13 +17,25 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
   mode = 'outlined',
   multiline = false,
   minRows = 3,
+  autoFocus,
   ...props
 }) => {
   const [field, meta] = useField(name);
+  const inputRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      const timer = setTimeout(() => {
+        inputRef.current.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus]);
 
   return (
     <View style={styles.container}>
       <TextInput
+        ref={inputRef}
         mode={mode}
         label={label}
         value={field.value}

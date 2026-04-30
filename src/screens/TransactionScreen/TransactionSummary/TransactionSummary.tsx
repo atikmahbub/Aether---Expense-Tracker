@@ -237,6 +237,7 @@ const TransactionSummary: React.FC<ISummary> = ({
                   label="Monthly limit"
                   keyboardType="numeric"
                   value={values[EMonthlyLimitFields.LIMIT] || ''}
+                  autoFocus={true}
                 />
               </View>
             </FormModal>
