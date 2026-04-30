@@ -10,11 +10,13 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import dayjs from 'dayjs';
 import {
   TransactionAnalyticsModel,
   ExpenseCategoryModel,
+  TransactionModel,
 } from '@trackingPortal/api/models';
-import Svg, { Path, Defs, Circle, Line, Text as SvgText, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Defs, Circle, Line, Text as SvgText, LinearGradient, Stop, G } from 'react-native-svg';
 import {colors} from '@trackingPortal/themes/colors';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {CurrencyPreference} from '@trackingPortal/constants/currency';
@@ -38,6 +40,7 @@ interface AnalyticsCardProps {
   } | null;
   trendLoading?: boolean;
   totalSpent?: number;
+  transactions?: TransactionModel[];
 }
 
 const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
@@ -52,9 +55,43 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   trend,
   trendLoading,
   totalSpent,
+  transactions = [],
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [showHeavyUI, setShowHeavyUI] = useState(false);
+
+  // Calculate daily data points for the graph with smoothing
+  const { points, dailyTotals, maxDayVal } = useMemo(() => {
+    const daysInMonth = 31;
+    let totals = new Array(daysInMonth).fill(0);
+    
+    transactions.forEach(t => {
+      const d = dayjs(t.date);
+      if (d.isValid()) {
+        const day = d.date();
+        if (day >= 1 && day <= daysInMonth) {
+          totals[day - 1] += Math.abs(t.amount);
+        }
+      }
+    });
+
+    const rawTotals = [...totals];
+    // Apply 5-day weighted average for even smoother "Insight" curves
+    const smoothedTotals = totals.map((val, i) => {
+      const prev2 = totals[Math.max(0, i - 2)];
+      const prev1 = totals[Math.max(0, i - 1)];
+      const next1 = totals[Math.min(daysInMonth - 1, i + 1)];
+      const next2 = totals[Math.min(daysInMonth - 1, i + 2)];
+      return (prev2 * 0.5 + prev1 * 0.8 + val + next1 * 0.8 + next2 * 0.5) / 3.6;
+    });
+
+    const mVal = Math.max(...smoothedTotals, 10);
+    return {
+      points: smoothedTotals.map(v => (v / mVal) * 0.7),
+      dailyTotals: rawTotals,
+      maxDayVal: Math.max(...rawTotals, 10)
+    };
+  }, [transactions]);
 
   useEffect(() => {
     if (
@@ -101,56 +138,87 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
   const renderGraph = () => {
     const isOverLimit = budgetSummary?.isOver ?? false;
-    const graphColor = isOverLimit ? colors.error : colors.primary;
+    const graphColor = isOverLimit ? 'rgba(248, 113, 113, 0.85)' : colors.primary;
     
-    const spentVal = Math.abs(totalSpent ?? analytics?.totalTransaction ?? 0);
-    const baseMax = monthlyLimit && monthlyLimit > 0 ? monthlyLimit : spentVal * 1.5;
-    const maxVal = Math.max(spentVal, baseMax) || 100;
-    const midVal = maxVal / 2;
-
     const formatCompact = (val: number) => {
-      if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
-      if (val >= 1000) return (val / 1000).toFixed(0) + 'K';
+      if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
       return val.toFixed(0);
     };
 
-    const cappedSpent = Math.min(spentVal, maxVal);
-    const bottomY = 54;
-    const endY = 50 - (cappedSpent / maxVal) * 40; 
-    
-    // Smooth bezier curve
-    const pathD = `M 0 50 C 80 60, 180 ${endY - 15}, 260 ${endY}`;
-    // Area path for the fill
-    const areaD = `${pathD} L 260 ${bottomY} L 0 ${bottomY} Z`;
+    const width = 260;
+    const height = 50;
+    const stepX = width / (points.length - 1);
+
+    const getControlPoints = (p0: [number, number], p1: [number, number], p2: [number, number], p3: [number, number]) => {
+      const t = 0.4;
+      const cp1x = p1[0] + (p2[0] - p0[0]) * t;
+      const cp1y = p1[1] + (p2[1] - p0[1]) * t;
+      const cp2x = p2[0] - (p3[0] - p1[0]) * t;
+      const cp2y = p2[1] - (p3[1] - p1[1]) * t;
+      return [cp1x, cp1y, cp2x, cp2y];
+    };
+
+    const generateSplinePath = (data: number[]) => {
+      const coords: [number, number][] = data.map((p, i) => [i * stepX, height - (p * height)]);
+      let d = `M ${coords[0][0]} ${coords[0][1]}`;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const p0 = coords[Math.max(i - 1, 0)];
+        const p1 = coords[i];
+        const p2 = coords[i + 1];
+        const p3 = coords[Math.min(i + 2, coords.length - 1)];
+        const [cp1x, cp1y, cp2x, cp2y] = getControlPoints(p0, p1, p2, p3);
+        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
+      }
+      return d;
+    };
+
+    const mainPath = generateSplinePath(points);
+    const mainArea = `${mainPath} L ${width} ${height + 10} L 0 ${height + 10} Z`;
+
+    const maxVal = Math.max(...points);
+    const peakIndex = points.indexOf(maxVal);
+    const peakX = peakIndex * stepX;
+    const peakY = height - (maxVal * height);
+    const rawPeakValue = dailyTotals[peakIndex];
+
+    const dateLabels = [1, 10, 20, 31];
 
     return (
       <View style={styles.graphWrapper}>
-        <Svg width="100%" height="100%" viewBox="0 0 300 60">
+        <Svg width="100%" height="100%" viewBox="0 -20 300 85">
           <Defs>
-            <Path id="linePath" d={pathD} />
-            <LinearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={graphColor} stopOpacity="0.15" />
-              <Stop offset="100%" stopColor={graphColor} stopOpacity="0.01" />
+            <LinearGradient id="mainFill" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor={graphColor} stopOpacity="0.25" />
+              <Stop offset="100%" stopColor={graphColor} stopOpacity="0" />
             </LinearGradient>
           </Defs>
 
-          <Line x1="0" y1="10" x2="260" y2="10" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="30" x2="260" y2="30" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
-          <Line x1="0" y1="50" x2="260" y2="50" stroke={colors.glassBorder} strokeWidth="1" strokeDasharray="4 4" />
-          
-          <SvgText x="270" y="14" fill={colors.muted} fontSize="8">{formatCompact(maxVal)}</SvgText>
-          <SvgText x="270" y="34" fill={colors.muted} fontSize="8">{formatCompact(midVal)}</SvgText>
-          <SvgText x="270" y="54" fill={colors.muted} fontSize="8">0</SvgText>
+          <G y={15}>
+            {[10, 30, 50].map(y => (
+              <Line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
+            ))}
+            
+            <SvgText x={width + 10} y="14" fill={colors.muted} fontSize="8">{formatCompact(maxDayVal)}</SvgText>
+            <SvgText x={width + 10} y="54" fill={colors.muted} fontSize="8">0</SvgText>
 
-          {/* Area Fill */}
-          <Path d={areaD} fill="url(#fillGrad)" />
-          
-          {/* Main Line */}
-          <Path d={pathD} fill="none" stroke={graphColor} strokeWidth="2.5" />
-          
-          {/* Active Dot */}
-          <Circle cx="260" cy={endY} r="3" fill={graphColor} />
-          <Circle cx="260" cy={endY} r="6" stroke={graphColor} strokeWidth="1.5" strokeOpacity="0.2" fill="none" />
+            {dateLabels.map(d => (
+              <SvgText key={d} x={(d - 1) * stepX} y={68} fill={colors.muted} fontSize="8" textAnchor="middle">{d}</SvgText>
+            ))}
+
+            <Path d={mainArea} fill="url(#mainFill)" />
+            <Path d={mainPath} fill="none" stroke={graphColor} strokeWidth="2.5" />
+            
+            {rawPeakValue > 0 && (
+              <>
+                <Circle cx={peakX} cy={peakY} r="6" fill={graphColor} opacity={0.15} />
+                <Circle cx={peakX} cy={peakY} r="2.5" fill="#fff" />
+                <Circle cx={peakX} cy={peakY} r="2.5" stroke={graphColor} strokeWidth="1.5" fill="none" />
+                <SvgText x={peakX} y={peakY - 12} fill={graphColor} fontSize="9" fontWeight="900" textAnchor="middle">
+                  {formatCompact(rawPeakValue)}
+                </SvgText>
+              </>
+            )}
+          </G>
         </Svg>
       </View>
     );
@@ -159,9 +227,8 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   const renderTopCategoryPreview = () => {
     if (!analytics?.topCategory || !showHeavyUI) return null;
     const category = categories[analytics.topCategory.categoryId];
-    const catColor = category?.color || colors.primary;
+    const catColor = budgetSummary?.isOver ? 'rgba(248, 113, 113, 0.85)' : (category?.color || colors.primary);
 
-    // Fix: percentage is in breakdown, not topCategory
     const topCatData = analytics.categoryBreakdown.find(
       c => c.categoryId === analytics.topCategory?.categoryId
     );
@@ -188,7 +255,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   };
 
   return (
-    <CommonCard style={styles.container} padding={20} onPress={handleToggle}>
+    <CommonCard style={styles.container} padding={16} onPress={handleToggle}>
       <View style={styles.headerArea}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
@@ -309,14 +376,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope',
   },
   graphWrapper: {
-    height: 60, // Ultra-narrow height
+    height: 100, // Increased to fit labels and padding
     width: '100%',
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 8,
+    marginBottom: 4,
   },
   previewContainer: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.04)', // Subtle separator
   },
@@ -373,9 +440,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   breakdownHeader: {
-    marginTop: 20,
-    marginBottom: 16,
-    paddingTop: 16,
+    marginTop: 16,
+    marginBottom: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },

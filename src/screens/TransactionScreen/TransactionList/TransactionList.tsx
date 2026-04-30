@@ -453,13 +453,13 @@ const styles = StyleSheet.create({
   },
   chipsScroll: {
     flexGrow: 0,
-    marginBottom: 24,
+    marginBottom: 12,
   },
   timelineRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope',
   },
   tableContainer: {
-    marginTop: 12,
+    marginTop: 4,
   },
   collapsibleContent: {
     gap: 16,

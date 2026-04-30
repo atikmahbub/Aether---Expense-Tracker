@@ -355,7 +355,7 @@ export default DataTable;
 const styles = StyleSheet.create({
   mainContainer: {
     width: '100%',
-    marginTop: 16,
+    marginTop: 4,
   },
   header: {
     display: 'none',

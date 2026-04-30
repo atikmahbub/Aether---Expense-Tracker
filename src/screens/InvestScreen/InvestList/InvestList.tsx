@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   headerTextBlock: {
     flex: 1,

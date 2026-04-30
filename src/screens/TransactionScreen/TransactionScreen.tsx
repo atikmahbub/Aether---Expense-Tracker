@@ -372,6 +372,7 @@ export default function TransactionScreen() {
         trend={activeTrend}
         trendLoading={loadingSummary}
         totalSpent={totalDisplayValue ?? 0}
+        transactions={filteredTransactions}
       />
     </View>
   ), [typeFilter, totalDisplayValue, crossTabTotal, activeTrend, loadingSummary, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
