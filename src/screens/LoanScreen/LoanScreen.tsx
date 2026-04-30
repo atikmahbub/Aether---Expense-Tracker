@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useIsFocused } from "@react-navigation/native";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export default function LoanScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
@@ -187,25 +188,23 @@ export default function LoanScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={loans}
-        keyExtractor={(item, index) => `${item.id || index}`}
-        ListHeaderComponent={headerComponent}
-        ListFooterComponent={footerComponent}
+      <KeyboardAwareScrollView
+        enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
+        extraScrollHeight={40}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        renderItem={() => null}
+        style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 120 }
+          { paddingBottom: insets.bottom + 120, flexGrow: 1 }
         ]}
-        initialNumToRender={5}
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        removeClippedSubviews={Platform.OS === 'android'}
-      />
+      >
+        {headerComponent}
+        {footerComponent}
+      </KeyboardAwareScrollView>
       {(openCreationModal || isCreationPreloaded) && (
         <LoanCreation
           getUserLoans={getUserLoans}

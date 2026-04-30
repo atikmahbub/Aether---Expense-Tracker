@@ -1,6 +1,7 @@
 import React from 'react';
-import {StyleSheet, View, Platform, TouchableOpacity, Dimensions, KeyboardAvoidingView, ScrollView, Keyboard, Pressable} from 'react-native';
+import {StyleSheet, View, Platform, TouchableOpacity, Dimensions, Pressable, KeyboardAvoidingView} from 'react-native';
 import Modal from 'react-native-modal';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import {colors} from '@trackingPortal/themes/colors';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -46,26 +47,60 @@ const BaseBottomSheet = React.memo(
           statusBarTranslucent
           deviceHeight={SCREEN_HEIGHT}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.keyboardView}
-          >
-            <View style={styles.contentWrapper}>
-              <View style={styles.indicatorWrapper}>
-                <View style={styles.indicator} />
+          {Platform.OS === 'ios' ? (
+            <KeyboardAvoidingView
+              behavior="padding"
+              style={{ flex: 1, justifyContent: 'flex-end' }}
+              pointerEvents="box-none"
+            >
+              <View style={styles.contentWrapper}>
+                <View style={styles.indicatorWrapper}>
+                  <View style={styles.indicator} />
+                </View>
+                <KeyboardAwareScrollView
+                  enableOnAndroid={true}
+                  keyboardShouldPersistTaps="handled"
+                  extraScrollHeight={0}
+                  enableAutomaticScroll={true}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  <Pressable 
+                    onPress={() => {}} 
+                    style={{flex: 1}} 
+                    accessible={false}
+                  >
+                    {children}
+                  </Pressable>
+                </KeyboardAwareScrollView>
               </View>
-              <ScrollView 
-                bounces={false} 
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.scrollContent}
-              >
-                <Pressable onPress={Keyboard.dismiss} style={{flex: 1}} accessible={false}>
-                  {children}
-                </Pressable>
-              </ScrollView>
+            </KeyboardAvoidingView>
+          ) : (
+            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+              <View style={styles.contentWrapper}>
+                <View style={styles.indicatorWrapper}>
+                  <View style={styles.indicator} />
+                </View>
+                <KeyboardAwareScrollView
+                  enableOnAndroid={true}
+                  keyboardShouldPersistTaps="handled"
+                  extraScrollHeight={40}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  <Pressable 
+                    onPress={() => {}} 
+                    style={{flex: 1}} 
+                    accessible={false}
+                  >
+                    {children}
+                  </Pressable>
+                </KeyboardAwareScrollView>
+              </View>
             </View>
-          </KeyboardAvoidingView>
+          )}
         </Modal>
       );
     },
@@ -107,7 +142,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 80,
+    paddingBottom: 120,
     flexGrow: 1,
   },
 });

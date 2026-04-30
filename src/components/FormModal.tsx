@@ -26,6 +26,8 @@ interface IFormModal {
   children: React.ReactNode;
 }
 
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 const FormModal: React.FC<IFormModal> = ({
   isVisible,
   title,
@@ -54,44 +56,97 @@ const FormModal: React.FC<IFormModal> = ({
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoidingView}>
-          <View style={styles.modalContent}>
-              <View style={styles.indicatorWrapper}>
-                <View style={styles.indicator} />
-              </View>
-              <View>
-                <Text style={styles.title}>{title}</Text>
-                {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-              </View>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                bounces={false}
-                contentContainerStyle={styles.scrollView}>
-                {children}
-              </ScrollView>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => {
-                    dismissKeyboard();
-                    onClose();
-                  }}>
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-                <LoadingButton
-                  label={saveLabel || 'Save'}
-                  loading={!!loading}
-                  onPress={() => {
-                    dismissKeyboard();
-                    onSave();
-                  }}
-                />
-              </View>
+        
+        {Platform.OS === 'ios' ? (
+          <KeyboardAvoidingView
+            behavior="padding"
+            style={{ flex: 1, justifyContent: 'flex-end' }}
+            pointerEvents="box-none"
+          >
+            <View style={styles.modalContent}>
+                <View style={styles.indicatorWrapper}>
+                  <View style={styles.indicator} />
+                </View>
+                <View>
+                  <Text style={styles.title}>{title}</Text>
+                  {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+                </View>
+                
+                <KeyboardAwareScrollView
+                  enableOnAndroid={true}
+                  keyboardShouldPersistTaps="handled"
+                  extraScrollHeight={0}
+                  enableAutomaticScroll={true}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  contentContainerStyle={styles.scrollView}
+                >
+                  {children}
+                  
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        dismissKeyboard();
+                        onClose();
+                      }}>
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <LoadingButton
+                      label={saveLabel || 'Save'}
+                      loading={!!loading}
+                      onPress={() => {
+                        dismissKeyboard();
+                        onSave();
+                      }}
+                    />
+                  </View>
+                </KeyboardAwareScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        ) : (
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <View style={styles.modalContent}>
+                <View style={styles.indicatorWrapper}>
+                  <View style={styles.indicator} />
+                </View>
+                <View>
+                  <Text style={styles.title}>{title}</Text>
+                  {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+                </View>
+                
+                <KeyboardAwareScrollView
+                  enableOnAndroid={true}
+                  keyboardShouldPersistTaps="handled"
+                  extraScrollHeight={40}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  contentContainerStyle={styles.scrollView}
+                >
+                  {children}
+                  
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        dismissKeyboard();
+                        onClose();
+                      }}>
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <LoadingButton
+                      label={saveLabel || 'Save'}
+                      loading={!!loading}
+                      onPress={() => {
+                        dismissKeyboard();
+                        onSave();
+                      }}
+                    />
+                  </View>
+                </KeyboardAwareScrollView>
+            </View>
           </View>
-        </KeyboardAvoidingView>
+        )}
       </View>
     </Modal>
   );
@@ -155,7 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scrollView: {
-    paddingBottom: 8,
+    paddingBottom: 120,
   },
   buttonContainer: {
     flexDirection: 'row',

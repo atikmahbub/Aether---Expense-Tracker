@@ -23,8 +23,11 @@ import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated as RNAnimated, InteractionManager, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+
+const AnimatedKeyboardAwareScrollView = RNAnimated.createAnimatedComponent(KeyboardAwareScrollView);
 
 export default function TransactionScreen() {
   const {
@@ -405,7 +408,9 @@ export default function TransactionScreen() {
 
   return (
     <View style={styles.container}>
-      <RNAnimated.ScrollView
+      <AnimatedKeyboardAwareScrollView
+        enableOnAndroid={true}
+        extraScrollHeight={40}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
@@ -426,9 +431,10 @@ export default function TransactionScreen() {
             },
           }
         )}
+        style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 120, flexGrow: 1 },
         ]}
         refreshControl={
           <RefreshControl
@@ -455,7 +461,7 @@ export default function TransactionScreen() {
           {headerComponent}
         </RNAnimated.View>
         {footerComponent}
-      </RNAnimated.ScrollView>
+      </AnimatedKeyboardAwareScrollView>
 
       {(openCreationForm || isCreationPreloaded) && (
         <TransactionCreation
