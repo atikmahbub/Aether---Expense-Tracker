@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toggleOptionSelected: {
-    backgroundColor: '#8cafff',
+    backgroundColor: colors.primary,
   },
   toggleTitle: {
     fontSize: 14,

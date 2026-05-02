@@ -74,72 +74,92 @@ const ProfileScreen: React.FC = () => {
   const firstName = displayName.split(' ')[0] || 'there';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <View style={styles.heroGlow} />
-        <View style={styles.avatarWrapper}>
-          <Image source={{uri: avatarSource}} style={styles.avatar} />
+    <View style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={[styles.content, { paddingTop: 60 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.hero}>
+          <View style={styles.heroGlow} />
+          <View style={styles.avatarWrapper}>
+            <Image source={{uri: avatarSource}} style={styles.avatar} />
+          </View>
+          <Text style={styles.greeting}>Hey, {firstName}</Text>
+          <Text style={styles.caption}>
+            Manage your sanctuary and security settings.
+          </Text>
         </View>
-        <Text style={styles.greeting}>Hey, {firstName} 👋</Text>
-        <Text style={styles.caption}>
-          Welcome back to your financial sanctuary.
-        </Text>
-      </View>
 
-      <Text style={styles.sectionHeader}>ACCOUNT DETAILS</Text>
-      <View style={styles.detailCard}>
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
+        <View style={styles.cardGroup}>
+          <Text style={styles.sectionHeader}>Account Information</Text>
+          <View style={styles.detailCard}>
+            <View style={styles.detailRow}>
+              <View style={[styles.detailIcon, {backgroundColor: 'rgba(34, 197, 94, 0.1)'}]}>
+                <MaterialCommunityIcons
+                  name="account-outline"
+                  size={22}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.detailTextCol}>
+                <Text style={styles.detailLabel}>FULL NAME</Text>
+                <Text style={styles.detailValue}>{displayName}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.detailRow}>
+              <View style={[styles.detailIcon, {backgroundColor: 'rgba(34, 197, 94, 0.1)'}]}>
+                <MaterialCommunityIcons
+                  name="email-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.detailTextCol}>
+                <Text style={styles.detailLabel}>EMAIL ADDRESS</Text>
+                <Text style={styles.detailValue}>{displayEmail}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.cardGroup}>
+          <Text style={[styles.sectionHeader, {color: colors.error}]}>Security</Text>
+          <TouchableOpacity
+            style={[styles.actionRow, styles.dangerRow]}
+            activeOpacity={0.8}
+            onPress={handleInitialDeleteTap}>
+             <View style={[styles.detailIcon, {backgroundColor: 'rgba(248, 113, 113, 0.1)'}]}>
+              <MaterialCommunityIcons
+                name="delete-outline"
+                size={20}
+                color={colors.error}
+              />
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={[styles.actionLabel, {color: colors.error}]}>Delete Account</Text>
+              <Text style={styles.dangerHint}>This action cannot be undone</Text>
+            </View>
             <MaterialCommunityIcons
-              name="account-outline"
+              name="chevron-right"
               size={20}
-              color={colors.text}
+              color={colors.error}
+              style={{opacity: 0.5}}
             />
-          </View>
-          <View style={styles.detailTextCol}>
-            <Text style={styles.detailLabel}>FULL NAME</Text>
-            <Text style={styles.detailValue}>{displayName}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.detailRow}>
-          <View style={styles.detailIcon}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={20}
-              color={colors.text}
-            />
-          </View>
-          <View style={styles.detailTextCol}>
-            <Text style={styles.detailLabel}>EMAIL ADDRESS</Text>
-            <Text style={styles.detailValue}>{displayEmail}</Text>
-          </View>
-        </View>
-      </View>
-
-      <Text style={[styles.sectionHeader, styles.dangerZoneHeader]}>DANGER ZONE</Text>
-      <TouchableOpacity
-        style={styles.dangerSimpleRow}
-        activeOpacity={0.8}
-        onPress={handleInitialDeleteTap}>
-        <View style={styles.dangerSimpleTextCol}>
-          <Text style={styles.dangerSimpleLabel}>Delete Account</Text>
-          <Text style={styles.dangerSimpleHint}>This action cannot be undone</Text>
-        </View>
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={24}
-          color="#4f555c"
-        />
-      </TouchableOpacity>
+        <Text style={styles.versionTag}>Aether Finance v1.0.4</Text>
+      </ScrollView>
 
       <Modal
         visible={deleteModalVisible}
         animationType="fade"
         transparent
         onRequestClose={() => !isDeleting && setDeleteModalVisible(false)}>
+        {/* ... Modal content remains same for functionality ... */}
         <TouchableWithoutFeedback
           onPress={() => {
             if (!isDeleting) {
@@ -201,7 +221,7 @@ const ProfileScreen: React.FC = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -211,36 +231,39 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 32,
-    alignItems: 'center',
-    gap: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    gap: 32,
   },
   hero: {
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
     width: '100%',
     position: 'relative',
+    marginBottom: 8,
   },
   heroGlow: {
     position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(161, 250, 255, 0.08)',
-    top: -30,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(34, 197, 94, 0.05)',
+    top: -50,
   },
   avatarWrapper: {
-    width: AVATAR_SIZE + 16,
-    height: AVATAR_SIZE + 16,
-    borderRadius: (AVATAR_SIZE + 16) / 2,
-    padding: 6,
+    width: AVATAR_SIZE + 12,
+    height: AVATAR_SIZE + 12,
+    borderRadius: (AVATAR_SIZE + 12) / 2,
+    padding: 4,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    shadowOffset: {width: 0, height: 10},
   },
   avatar: {
     width: AVATAR_SIZE,
@@ -250,34 +273,38 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
     textAlign: 'center',
   },
   caption: {
     color: colors.subText,
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.8,
+  },
+  cardGroup: {
+    width: '100%',
+    gap: 12,
   },
   sectionHeader: {
-    width: '100%',
-    color: '#a0aab5',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
+    paddingLeft: 4,
   },
   detailCard: {
     width: '100%',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 28,
-    padding: 24,
-    gap: 18,
-    shadowColor: colors.overlay,
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    shadowOffset: {width: 0, height: 16},
+    backgroundColor: colors.cardBg,
+    borderRadius: 24,
+    padding: 20,
+    gap: 20,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   detailRow: {
     flexDirection: 'row',
@@ -285,10 +312,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   detailIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -296,60 +322,59 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    color: '#8a929a',
-    fontSize: 11,
+    color: colors.muted,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 1.3,
+    letterSpacing: 1,
     marginBottom: 4,
   },
   detailValue: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'left',
+    fontSize: 16,
+    fontWeight: '600',
   },
   divider: {
     height: 1,
     backgroundColor: colors.glassBorder,
-    opacity: 0.4,
   },
-  dangerZoneHeader: {
-    width: '100%',
-    color: '#8a929a',
-    marginTop: 40,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  dangerSimpleRow: {
+  actionRow: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginBottom: 20,
+    backgroundColor: colors.cardBg,
+    borderRadius: 20,
+    padding: 16,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
-  dangerSimpleTextCol: {
-    gap: 4,
-  },
-  dangerSimpleLabel: {
-    color: '#ff8e8b',
-    fontSize: 15,
+  actionLabel: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 16,
     fontWeight: '600',
-    opacity: 0.8,
   },
-  dangerSimpleHint: {
-    color: '#8a929a',
+  dangerRow: {
+    borderColor: 'rgba(248, 113, 113, 0.15)',
+  },
+  dangerHint: {
+    color: colors.muted,
     fontSize: 12,
+    marginTop: 2,
+  },
+  versionTag: {
+    textAlign: 'center',
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 8,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
   modalSheet: {
-    backgroundColor: colors.overlay,
+    backgroundColor: colors.cardBg,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
@@ -364,7 +389,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     marginBottom: 16,
   },
@@ -410,10 +435,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   deleteButton: {
-    backgroundColor: '#ff8e8b',
+    backgroundColor: colors.error,
   },
   deleteButtonText: {
-    color: '#16191d',
+    color: colors.background,
     fontSize: 16,
     fontWeight: '800',
   },
