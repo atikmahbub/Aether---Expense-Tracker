@@ -258,6 +258,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
   return (
     <CommonCard style={styles.container} padding={16} onPress={handleToggle}>
+
       <View style={styles.headerArea}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
@@ -267,22 +268,21 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           </View>
 
           <View style={styles.headerRight}>
-            <View style={styles.trendContainer}>
-              {trend && !trendLoading && (
-                <View style={[styles.trendPill, {backgroundColor: 'rgba(255,255,255,0.03)'}]}>
-                  <MaterialCommunityIcons name={trend.icon} size={12} color={trend.color} />
-                  <Text style={[styles.trendPillText, {color: colors.text}]}>
-                    {formatNumber(trend.percent, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
-                  </Text>
-                </View>
-              )}
+            {trend && !trendLoading && (
+              <View style={[styles.trendPill, { backgroundColor: trend.color + '18', borderColor: trend.color + '30' }]}>
+                <MaterialCommunityIcons name={trend.icon} size={11} color={trend.color} />
+                <Text style={[styles.trendPillText, { color: trend.color }]}>
+                  {formatNumber(trend.percent, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
+                </Text>
+              </View>
+            )}
+            <View style={[styles.chevronWrap, expanded && styles.chevronWrapActive]}>
+              <MaterialCommunityIcons
+                name={expanded ? "chevron-up" : "chevron-down"}
+                size={14}
+                color={expanded ? colors.primary : colors.muted}
+              />
             </View>
-            <MaterialCommunityIcons 
-              name={expanded ? "chevron-up" : "chevron-down"} 
-              size={18} 
-              color={colors.muted} 
-              style={{ marginLeft: 4 }} 
-            />
           </View>
         </View>
 
@@ -293,24 +293,36 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       {analytics && expanded && (
         <View style={styles.expandedContent}>
           <View style={styles.breakdownHeader}>
-             <Text style={styles.breakdownTitle}>CATEGORY BREAKDOWN</Text>
+            <Text style={styles.breakdownTitle}>CATEGORY BREAKDOWN</Text>
+            <Text style={styles.breakdownCount}>{sortedCategories.length} categories</Text>
           </View>
 
           <View style={styles.listContainer}>
-            {sortedCategories.map(item => {
+            {sortedCategories.map((item) => {
               const palette = categories[item.categoryId];
               if (!palette) return null;
-              
+              const barColor = palette.color || colors.primary;
+
               return (
                 <View key={item.categoryId} style={styles.listRow}>
-                  <View style={[styles.bullet, {backgroundColor: palette.color || colors.primary}]} />
+                  <View style={[styles.bullet, { backgroundColor: barColor }]} />
                   <View style={styles.listLabelColumn}>
-                    <Text style={styles.categoryName}>{item.categoryName}</Text>
-                    <Text style={styles.categorySecondary}>
-                      {formatNumber(item.percentage, { minimumFractionDigits: 0, maximumFractionDigits: 1, suffix: '%' })}
-                    </Text>
+                    <View style={styles.categoryTopRow}>
+                      <Text style={styles.categoryName}>{item.categoryName}</Text>
+                      <Text style={styles.categoryAmount}>{formatAmount(item.totalAmount)}</Text>
+                    </View>
+                    <View style={styles.categoryBarRow}>
+                      <View style={styles.categoryBarTrack}>
+                        <View style={[styles.categoryBarFill, {
+                          width: `${item.percentage}%`,
+                          backgroundColor: barColor,
+                        }]} />
+                      </View>
+                      <Text style={styles.categorySecondary}>
+                        {formatNumber(item.percentage, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.categoryAmount}>{formatAmount(item.totalAmount)}</Text>
                 </View>
               );
             })}
@@ -357,9 +369,10 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.muted,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
+    fontFamily: 'Manrope',
   },
   trendContainer: {
     alignItems: 'flex-end',
@@ -368,9 +381,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   trendPillText: {
     fontSize: 10,
@@ -397,9 +411,10 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     color: colors.muted,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
+    fontFamily: 'Manrope',
   },
   previewAmount: {
     color: colors.text,
@@ -443,16 +458,20 @@ const styles = StyleSheet.create({
   },
   breakdownHeader: {
     marginTop: 12,
-    marginBottom: 8,
-    paddingTop: 8,
+    marginBottom: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   breakdownTitle: {
     color: colors.muted,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
+    fontFamily: 'Manrope',
   },
   listContainer: {
     gap: 12,
@@ -463,9 +482,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   bullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   listLabelColumn: {
     flex: 1,
@@ -495,6 +514,50 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     fontSize: 11,
+  },
+  chevronWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  chevronWrapActive: {
+    backgroundColor: 'rgba(34,197,94,0.10)',
+    borderColor: 'rgba(34,197,94,0.20)',
+  },
+  breakdownCount: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '500',
+    fontFamily: 'Manrope',
+  },
+  categoryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 5,
+  },
+  categoryBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryBarTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  categoryBarFill: {
+    height: '100%',
+    borderRadius: 2,
+    opacity: 0.85,
   },
 });
 

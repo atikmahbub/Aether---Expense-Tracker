@@ -45,20 +45,29 @@ const CustomAppBar: React.FC = () => {
   }, [router]);
 
   const glowValue = useSharedValue(0.15);
+  const glowScale = useSharedValue(1.175);
   useEffect(() => {
     glowValue.value = withRepeat(
       withSequence(
         withTiming(0.4, { duration: 2000 }),
         withTiming(0.15, { duration: 2000 })
       ),
-      -1,
+      2,
       true
     );
-  }, [glowValue]);
+    glowScale.value = withRepeat(
+      withSequence(
+        withTiming(1.8, { duration: 2000 }),
+        withTiming(1.175, { duration: 2000 })
+      ),
+      2,
+      true
+    );
+  }, [glowValue, glowScale]);
 
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glowValue.value,
-    transform: [{ scale: withTiming(glowValue.value * 2.5 + 0.8) }],
+    transform: [{ scale: glowScale.value }],
   }));
 
   const timeIcon = React.useMemo(() => {
@@ -78,8 +87,7 @@ const CustomAppBar: React.FC = () => {
           <Text style={styles.dateLabel}>{todayLabel.toUpperCase()}</Text>
         </View>
         <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>{greeting}, </Text>
-          <Text style={styles.userNameText}>{userName} 👋</Text>
+          <Text style={styles.greetingText}>{greeting}, <Text style={styles.userNameText}>{userName}</Text></Text>
         </View>
       </Animated.View>
       
@@ -137,20 +145,20 @@ const styles = StyleSheet.create({
   },
   greetingRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
   },
   greetingText: {
     color: colors.subText,
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Manrope',
-    fontWeight: '500',
+    fontWeight: '400',
+    letterSpacing: -0.3,
   },
   userNameText: {
     color: colors.text,
-    fontSize: 24, // Slightly larger for impact
+    fontSize: 20,
     fontFamily: 'Manrope',
-    fontWeight: '800',
-    letterSpacing: -0.7,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   avatarTapArea: {
     padding: 4,

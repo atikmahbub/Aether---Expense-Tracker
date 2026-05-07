@@ -127,11 +127,12 @@ const TabButton = ({ tab, isFocused, onPress }: any) => {
     <TouchableOpacity
       onPress={onPress}
       style={styles.tabButton}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
     >
+      {isFocused && <View style={styles.activePill} />}
       <MaterialCommunityIcons
         name={tab.icon}
-        size={24}
+        size={isFocused ? 23 : 22}
         color={isFocused ? colors.primary : colors.muted}
       />
       <Text style={[styles.label, { color: isFocused ? colors.primary : colors.muted }]}>
@@ -160,12 +161,12 @@ const styles = StyleSheet.create({
     }),
   },
   container: {
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: 'rgba(20, 24, 34, 0.75)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(18, 18, 20, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.07)',
+    borderTopColor: 'rgba(255, 255, 255, 0.10)',
     overflow: 'hidden',
   },
   tabContainer: {
@@ -191,6 +192,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope',
     marginTop: 4,
     letterSpacing: -0.2,
+  },
+  activePill: {
+    position: 'absolute',
+    top: 10,
+    bottom: 10,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.12)',
   },
   centerButton: {
     position: "absolute",
