@@ -23,7 +23,7 @@ import {
 
 const AVATAR_SIZE = 120;
 const DEFAULT_AVATAR =
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Aether&backgroundColor=transparent';
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Scalar&backgroundColor=transparent';
 
 const ProfileScreen: React.FC = () => {
   const {logout, user, loading} = useAuth();
@@ -68,8 +68,8 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  const displayName = user?.name ?? 'Aether Explorer';
-  const displayEmail = user?.email ?? 'hello@aether.finance';
+  const displayName = user?.name ?? 'Scalar User';
+  const displayEmail = user?.email ?? 'hello@scalar.finance';
   const avatarSource = user?.picture || user?.profilePicture || DEFAULT_AVATAR;
   const firstName = displayName.split(' ')[0] || 'there';
 
@@ -151,7 +151,7 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.versionTag}>Aether Finance v1.0.4</Text>
+        <Text style={styles.versionTag}>Scalar v1.0.4</Text>
       </ScrollView>
 
       <Modal

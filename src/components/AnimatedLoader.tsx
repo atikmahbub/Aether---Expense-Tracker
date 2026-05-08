@@ -13,7 +13,7 @@ const AppLoader = () => {
           loop
           style={styles.loader}
         />
-        <Text style={styles.loaderLabel}>Warming up Aether…</Text>
+        <Text style={styles.loaderLabel}>Warming up Scalar…</Text>
       </View>
     </View>
   );

@@ -45,7 +45,7 @@ export default function LoginScreen() {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.appName}>AETHER</Text>
+          <Text style={styles.appName}>SCALAR</Text>
           <Text style={styles.subtitle}>ELEVATED FINANCE</Text>
         </View>
 

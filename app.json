@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Aether",
+    "name": "Scalar",
     "slug": "aether",
     "owner": "atikmahbub100",
     "version": "1.0.0",
@@ -20,7 +20,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.atik.aether",
       "infoPlist": {
-        "CFBundleDisplayName": "Aether",
+        "CFBundleDisplayName": "Scalar",
         "UIStatusBarStyle": "UIStatusBarStyleLightContent",
         "UIViewControllerBasedStatusBarAppearance": false,
         "NSFaceIDUsageDescription": "Use Face ID to securely unlock your wallet."
