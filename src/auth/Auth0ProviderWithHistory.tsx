@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { isTokenExpired } from "@trackingPortal/utils/tokenUtils";
+import { decodeToken, isTokenExpired } from "@trackingPortal/utils/tokenUtils";
 import { authStorage } from "./authStorage";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -44,7 +44,10 @@ type AuthContextType = {
   token: string | null;
   user: UserProfile;
   loading: boolean;
+  isAuthenticated: boolean;
 };
+
+const AUTH_SCOPES = ["openid", "profile", "email", "offline_access"];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -72,18 +75,25 @@ export const Auth0ProviderWithHistory = ({
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile>(null);
   const [loading, setLoading] = useState(true);
-  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const refreshPromise = useRef<Promise<string | null> | null>(null);
   const appState = useRef(AppState.currentState);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const discovery = AuthSession.useAutoDiscovery(`https://${AUTH0_DOMAIN}`);
 
   /* ================= ACTIONS ================= */
 
   const logout = useCallback(async () => {
+    if (refreshTimer.current) {
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = null;
+    }
     await authStorage.clearAll();
     setToken(null);
     setUser(null);
+    setIsAuthenticated(false);
     router.replace(LOGIN_ROUTE);
   }, [router]);
 
@@ -92,7 +102,7 @@ export const Auth0ProviderWithHistory = ({
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: AUTH0_CLIENT_ID,
-      scopes: ["openid", "profile", "email", "offline_access"],
+      scopes: AUTH_SCOPES,
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
       redirectUri,
@@ -106,6 +116,31 @@ export const Auth0ProviderWithHistory = ({
   );
 
   /* ================= REFRESH LOGIC ================= */
+
+  const refreshAccessTokenRef = useRef<(storedRefreshToken: string) => Promise<string | null>>(
+    async () => null,
+  );
+
+  const scheduleProactiveRefresh = useCallback((accessToken: string) => {
+    if (refreshTimer.current) {
+      clearTimeout(refreshTimer.current);
+    }
+
+    const decoded = decodeToken(accessToken);
+    if (!decoded?.exp) return;
+
+    const refreshInMs = Math.max(
+      (decoded.exp - 300) * 1000 - Date.now(),
+      30_000,
+    );
+
+    refreshTimer.current = setTimeout(async () => {
+      const storedRefreshToken = await authStorage.getRefreshToken();
+      if (storedRefreshToken) {
+        await refreshAccessTokenRef.current(storedRefreshToken);
+      }
+    }, refreshInMs);
+  }, []);
 
   const refreshAccessToken = useCallback(async (storedRefreshToken: string): Promise<string | null> => {
     if (refreshPromise.current) return refreshPromise.current;
@@ -122,7 +157,7 @@ export const Auth0ProviderWithHistory = ({
           {
             clientId: AUTH0_CLIENT_ID,
             refreshToken: storedRefreshToken,
-            scopes: ["openid", "profile", "email", "offline_access"],
+            scopes: AUTH_SCOPES,
             extraParams: {
               ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
             },
@@ -132,22 +167,23 @@ export const Auth0ProviderWithHistory = ({
 
         if (tokenResponse.accessToken) {
           console.log("✅ Token refreshed successfully");
-          await authStorage.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken || storedRefreshToken);
+          await authStorage.saveTokens(
+            tokenResponse.accessToken,
+            tokenResponse.refreshToken || storedRefreshToken,
+          );
           setToken(tokenResponse.accessToken);
+          setIsAuthenticated(true);
+          scheduleProactiveRefresh(tokenResponse.accessToken);
           return tokenResponse.accessToken;
         }
-        
+
         console.warn("⚠️ Refresh response missing access token");
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("❌ Token refresh failed:", e);
-        // Detailed error for debugging
-        if (e.response) {
-          console.error("Auth0 error details:", e.response.data);
-        }
-        
-        // If it's a "permanent" failure (invalid grant), we must logout
-        const errorDesc = e.message || "";
-        if (errorDesc.includes("invalid_grant") || errorDesc.includes("expired")) {
+        const message =
+          e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
+
+        if (message.includes("invalid_grant")) {
           console.warn("⚠️ Refresh token invalid or expired. Logging out.");
           await logout();
         }
@@ -158,27 +194,33 @@ export const Auth0ProviderWithHistory = ({
     })();
 
     return refreshPromise.current;
-  }, [discovery, logout]);
+  }, [discovery, logout, scheduleProactiveRefresh]);
+
+  refreshAccessTokenRef.current = refreshAccessToken;
 
   const getValidToken = useCallback(async (): Promise<string | null> => {
-    // 1. Proactive check state
-    if (token && !isTokenExpired(token)) return token;
+    if (token && !isTokenExpired(token)) {
+      setIsAuthenticated(true);
+      return token;
+    }
 
-    // 2. Check storage
     const storedToken = await authStorage.getAccessToken();
     if (storedToken && !isTokenExpired(storedToken)) {
       setToken(storedToken);
+      setIsAuthenticated(true);
       return storedToken;
     }
 
-    // 3. Try refreshing
     const storedRefreshToken = await authStorage.getRefreshToken();
     if (storedRefreshToken) {
-      return await refreshAccessToken(storedRefreshToken);
+      const refreshed = await refreshAccessToken(storedRefreshToken);
+      if (refreshed) setIsAuthenticated(true);
+      return refreshed;
     }
 
+    setIsAuthenticated(false);
     return null;
-  }, [token, discovery, logout, refreshAccessToken]);
+  }, [token, refreshAccessToken]);
 
   const syncProfile = useCallback(async (tokenToUse: string) => {
     try {
@@ -201,7 +243,9 @@ export const Auth0ProviderWithHistory = ({
         // App has come to the foreground, proactively check/refresh token
         const validToken = await getValidToken();
         if (validToken) {
-          syncProfile(validToken); // Background sync profile
+          setIsAuthenticated(true);
+          scheduleProactiveRefresh(validToken);
+          syncProfile(validToken);
         }
       }
       appState.current = nextAppState;
@@ -209,30 +253,39 @@ export const Auth0ProviderWithHistory = ({
 
     const subscription = AppState.addEventListener("change", handleAppStateChange);
     return () => subscription.remove();
-  }, [getValidToken, syncProfile]);
+  }, [getValidToken, syncProfile, scheduleProactiveRefresh]);
 
   /* ================= RESTORE SESSION ================= */
 
   useEffect(() => {
+    let cancelled = false;
+
     const bootstrap = async () => {
       try {
         const cachedProfile = await authStorage.getProfile();
-        if (cachedProfile) setUser(cachedProfile);
+        if (!cancelled && cachedProfile) setUser(cachedProfile);
 
         const validToken = await getValidToken();
-        if (validToken) {
-          syncProfile(validToken); // Refresh profile in background
+        if (!cancelled) {
+          setIsAuthenticated(Boolean(validToken));
+          if (validToken) {
+            scheduleProactiveRefresh(validToken);
+            syncProfile(validToken);
+          }
         }
       } catch (e) {
         console.error("❌ Bootstrap error:", e);
-        await logout();
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     if (discovery) bootstrap();
-  }, [discovery, getValidToken, syncProfile, logout]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [discovery, getValidToken, syncProfile, scheduleProactiveRefresh]);
 
   /* ================= HANDLE LOGIN RESPONSE ================= */
 
@@ -249,7 +302,11 @@ export const Auth0ProviderWithHistory = ({
             clientId: AUTH0_CLIENT_ID,
             code: response.params.code,
             redirectUri,
-            extraParams: { code_verifier: request.codeVerifier },
+            scopes: AUTH_SCOPES,
+            extraParams: {
+              code_verifier: request.codeVerifier,
+              ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
+            },
           },
           { tokenEndpoint: discovery.tokenEndpoint },
         );
@@ -257,9 +314,17 @@ export const Auth0ProviderWithHistory = ({
         const { accessToken, refreshToken } = tokenResponse;
         if (!accessToken) throw new Error("No access token");
 
+        if (!refreshToken) {
+          console.error(
+            "❌ Auth0 returned no refresh token. In Auth0 Dashboard: enable Refresh Token grant on your Native app AND 'Allow Offline Access' on API https://api.tracking-wallet.com",
+          );
+        }
+
         await authStorage.saveTokens(accessToken, refreshToken);
         setToken(accessToken);
-        
+        setIsAuthenticated(true);
+        scheduleProactiveRefresh(accessToken);
+
         const profile = await fetchUserInfo(accessToken);
         setUser(profile);
         await authStorage.saveProfile(profile);
@@ -271,7 +336,7 @@ export const Auth0ProviderWithHistory = ({
     };
 
     handleAuth();
-  }, [response, discovery, request, router]);
+  }, [response, discovery, request, router, scheduleProactiveRefresh]);
 
   /* ================= LOGIN ACTION ================= */
 
@@ -281,7 +346,9 @@ export const Auth0ProviderWithHistory = ({
   };
 
   return (
-    <AuthContext.Provider value={{ login, logout, getValidToken, token, user, loading }}>
+    <AuthContext.Provider
+      value={{ login, logout, getValidToken, token, user, loading, isAuthenticated }}
+    >
       {children}
     </AuthContext.Provider>
   );

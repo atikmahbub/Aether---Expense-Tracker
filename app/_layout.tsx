@@ -56,7 +56,7 @@ const applyDefaultFont = () => {
 };
 
 const NavigationBoundary: React.FC = () => {
-  const { token, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const rootSegment = segments[0];
@@ -85,15 +85,15 @@ const NavigationBoundary: React.FC = () => {
       console.warn("Failed to persist onboarding completion", error);
     }
     setHasCompletedOnboarding(true);
-    router.replace(token ? DEFAULT_AUTHENTICATED_ROUTE : LOGIN_ROUTE);
-  }, [router, token]);
+    router.replace(isAuthenticated ? DEFAULT_AUTHENTICATED_ROUTE : LOGIN_ROUTE);
+  }, [router, isAuthenticated]);
 
   useEffect(() => {
     if (loading || !onboardingChecked || !hasCompletedOnboarding) {
       return;
     }
 
-    if (!token) {
+    if (!isAuthenticated) {
       if (rootSegment !== "login") {
         router.replace(LOGIN_ROUTE);
       }
@@ -105,7 +105,7 @@ const NavigationBoundary: React.FC = () => {
     }
   }, [
     loading,
-    token,
+    isAuthenticated,
     router,
     rootSegment,
     onboardingChecked,

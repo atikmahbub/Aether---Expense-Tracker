@@ -69,6 +69,7 @@ export const isTokenExpired = (token: string | null, threshold = 60): boolean =>
   if (!token) return true;
 
   const decoded = decodeToken(token);
+  // Undecodable tokens can't be checked client-side — treat as expired so refresh is attempted.
   if (!decoded || !decoded.exp) return true;
 
   const currentTime = Math.floor(Date.now() / 1000);
