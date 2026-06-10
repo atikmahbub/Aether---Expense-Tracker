@@ -97,11 +97,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontWeight: '500',
     },
     actionHint: {
-      color: colors.primary,
+      color: colors.primaryText,
       fontSize: 11,
       fontWeight: '700',
       marginTop: 12,
-      opacity: 0.9,
     },
   });
 }

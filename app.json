@@ -7,22 +7,26 @@
     "orientation": "portrait",
     "scheme": "aether",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0E1117",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F4F6FA",
 
     "splash": {
-      "backgroundColor": "#0E1117",
+      "backgroundColor": "#F4F6FA",
       "resizeMode": "contain",
-      "image": "./assets/splash.png"
+      "image": "./assets/splash-icon.png",
+      "dark": {
+        "backgroundColor": "#09090A",
+        "image": "./assets/splash-icon.png"
+      }
     },
 
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.atik.aether",
+      "backgroundColor": "#F4F6FA",
       "infoPlist": {
         "CFBundleDisplayName": "Scalar",
-        "UIStatusBarStyle": "UIStatusBarStyleLightContent",
-        "UIViewControllerBasedStatusBarAppearance": false,
+        "UIViewControllerBasedStatusBarAppearance": true,
         "NSFaceIDUsageDescription": "Use Face ID to securely unlock your wallet."
       }
     },
@@ -33,7 +37,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#0E1117"
+        "backgroundColor": "#09090A"
       }
     },
 
@@ -42,7 +46,24 @@
       "favicon": "./assets/icon.png"
     },
 
-    "plugins": ["expo-router", "expo-secure-store", "expo-font"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F4F6FA",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 96,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#09090A",
+            "image": "./assets/splash-icon.png"
+          }
+        }
+      ]
+    ],
 
     "extra": {
       "auth0Domain": "dev-pm0712stgt281lme.us.auth0.com",

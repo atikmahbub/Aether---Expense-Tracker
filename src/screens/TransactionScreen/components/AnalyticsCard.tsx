@@ -190,7 +190,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
         <Svg width="100%" height="100%" viewBox={`-${paddingLeft} -15 ${width + paddingLeft + paddingRight} ${height + 40}`}>
           <Defs>
             <LinearGradient id="mainFill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={graphColor} stopOpacity="0.2" />
+              <Stop offset="0%" stopColor={graphColor} stopOpacity="0.28" />
               <Stop offset="100%" stopColor={graphColor} stopOpacity="0" />
             </LinearGradient>
           </Defs>
@@ -200,11 +200,11 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
               <Line key={v} x1="0" y1={height * (1-v)} x2={width} y2={height * (1-v)} stroke={colors.glassBorder} strokeWidth="1" />
             ))}
 
-            <SvgText x={width + 10} y="5" fill={colors.muted} fontSize="8" fontWeight="700">{formatCompact(maxDayVal)}</SvgText>
-            <SvgText x={width + 10} y={height} fill={colors.muted} fontSize="8" fontWeight="700">0</SvgText>
+            <SvgText x={width + 10} y="5" fill={colors.subText} fontSize="9" fontWeight="700">{formatCompact(maxDayVal)}</SvgText>
+            <SvgText x={width + 10} y={height} fill={colors.subText} fontSize="9" fontWeight="700">0</SvgText>
 
             {dateLabels.map(d => (
-              <SvgText key={d} x={(d - 1) * stepX} y={height + 18} fill={colors.muted} fontSize="8" textAnchor="middle" fontWeight="600">{d}</SvgText>
+              <SvgText key={d} x={(d - 1) * stepX} y={height + 18} fill={colors.subText} fontSize="9" textAnchor="middle" fontWeight="600">{d}</SvgText>
             ))}
 
             <Path d={mainArea} fill="url(#mainFill)" />

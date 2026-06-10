@@ -137,9 +137,9 @@ const TabButton = ({ tab, isFocused, onPress, colors, styles }: any) => {
       <MaterialCommunityIcons
         name={tab.icon}
         size={isFocused ? 23 : 22}
-        color={isFocused ? colors.primary : colors.muted}
+        color={isFocused ? colors.primaryText : colors.muted}
       />
-      <Text style={[styles.label, { color: isFocused ? colors.primary : colors.muted }]}>
+      <Text style={[styles.label, { color: isFocused ? colors.primaryText : colors.muted }]}>
         {tab.label}
       </Text>
     </TouchableOpacity>
@@ -170,8 +170,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
       borderRadius: 36,
       backgroundColor: isDark ? 'rgba(18, 18, 20, 0.82)' : 'rgba(250, 251, 254, 0.88)',
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.07)',
-      borderTopColor: 'rgba(255, 255, 255, 0.10)',
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.glassBorder,
+      borderTopColor: isDark ? 'rgba(255, 255, 255, 0.10)' : colors.glassBorder,
       overflow: 'hidden',
     },
     tabContainer: {

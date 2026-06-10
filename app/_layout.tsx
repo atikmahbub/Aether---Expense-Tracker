@@ -21,6 +21,7 @@ import {
   useAuth,
 } from "@trackingPortal/auth/Auth0ProviderWithHistory";
 import { AnimatedLoader } from "@trackingPortal/components";
+import ScalarSplashGate from "@trackingPortal/components/ScalarSplashGate";
 import OfflineBanner from '@trackingPortal/components/OfflineBanner';
 import toastConfig from '@trackingPortal/components/ToastConfig';
 import { NetworkProvider } from '@trackingPortal/contexts/NetworkProvider';
@@ -162,12 +163,8 @@ const NavigationBoundary: React.FC = () => {
   );
 };
 
-function ThemedApp({ fontsLoaded }: { fontsLoaded: boolean }) {
+function ThemedApp() {
   const { paperTheme, isDark, colors } = useAppTheme();
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -211,11 +208,11 @@ export default function RootLayout() {
     Manrope_600SemiBold,
     Manrope_700Bold,
   });
+  const [splashComplete, setSplashComplete] = useState(false);
 
   useEffect(() => {
     if (fontsLoaded) {
       applyDefaultFont();
-      SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
 
@@ -238,7 +235,14 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <ThemedApp fontsLoaded={!!fontsLoaded} />
+      {!splashComplete ? (
+        <ScalarSplashGate
+          fontsLoaded={!!fontsLoaded}
+          onComplete={() => setSplashComplete(true)}
+        />
+      ) : (
+        <ThemedApp />
+      )}
     </ThemeProvider>
   );
 }

@@ -30,7 +30,7 @@ interface LoanFormProps {
 }
 
 export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -123,7 +123,7 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
         mode="date"
         open={pickerVisible}
         date={currentDeadline}
-        theme="dark"
+        theme={isDark ? 'dark' : 'light'}
         onConfirm={selectedDate => {
           setFieldValue(EAddLoanFields.DEADLINE, selectedDate);
           setPickerVisible(false);

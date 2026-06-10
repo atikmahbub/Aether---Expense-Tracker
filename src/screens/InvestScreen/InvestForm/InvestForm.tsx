@@ -17,7 +17,7 @@ interface IInvestForm {
 }
 
 const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [startPickerVisible, setStartPickerVisible] = useState(false);
@@ -102,7 +102,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
         mode="date"
         open={startPickerVisible}
         date={startDate}
-        theme="dark"
+        theme={isDark ? 'dark' : 'light'}
         onConfirm={selectedDate => {
           setFieldValue(EAddInvestFormFields.START_DATE, selectedDate);
           setStartPickerVisible(false);
@@ -135,7 +135,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
             mode="date"
             open={endPickerVisible}
             date={endDate}
-            theme="dark"
+            theme={isDark ? 'dark' : 'light'}
             onConfirm={selectedDate => {
               setFieldValue(EAddInvestFormFields.END_DATE, selectedDate);
               setEndPickerVisible(false);

@@ -151,10 +151,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       letterSpacing: 0.2,
     },
     activeLabel: {
-      color: colors.primary,
+      color: colors.primaryText,
     },
     inactiveLabel: {
-      color: colors.subText,
+      color: colors.muted,
     },
   });
 }

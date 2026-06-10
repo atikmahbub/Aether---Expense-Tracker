@@ -14,6 +14,7 @@ export const colors = {
   primary: '#22C55E',
   primaryMid: '#16A34A',
   primaryDark: '#15803D',
+  primaryText: '#22C55E',
   primarySoft: 'rgba(34,197,94,0.12)',
   badgeBg: 'rgba(34,197,94,0.15)',
 

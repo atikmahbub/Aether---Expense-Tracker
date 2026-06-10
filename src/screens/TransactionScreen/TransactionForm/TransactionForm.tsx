@@ -35,7 +35,7 @@ export default function TransactionForm({
   onCancel,
   loading,
 }: TransactionFormProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -86,7 +86,8 @@ export default function TransactionForm({
           ref={amountInputRef}
           style={styles.amountInput}
           placeholder="0.00"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={colors.placeholder}
+          textColor={colors.text}
           underlineColor="transparent"
           activeUnderlineColor="transparent"
           left={
@@ -146,7 +147,7 @@ export default function TransactionForm({
         mode="date"
         open={pickerVisible}
         date={currentDate}
-        theme="dark"
+        theme={isDark ? 'dark' : 'light'}
         onConfirm={selectedDate => {
           setFieldValue(EAddTransactionFields.DATE, selectedDate);
           setPickerVisible(false);
@@ -209,15 +210,18 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontWeight: '400',
     },
     currencyPill: {
-      backgroundColor: colors.surfaceAlt,
+      backgroundColor: colors.surface,
       paddingHorizontal: 16,
       paddingVertical: 6,
       borderRadius: 20,
       marginTop: 8,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
     },
     currencyPillText: {
-      color: colors.muted,
+      color: colors.subText,
       fontSize: 12,
+      fontWeight: '600',
     },
     fieldSection: {
       gap: 8,

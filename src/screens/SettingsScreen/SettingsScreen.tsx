@@ -108,7 +108,7 @@ export default function SettingsScreen() {
                 <MaterialCommunityIcons
                   name={option.icon}
                   size={18}
-                  color={isSelected ? '#000' : colors.muted}
+                  color={isSelected ? '#0F1117' : colors.muted}
                 />
                 <Text style={[
                   styles.themeToggleLabel,
@@ -429,7 +429,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontWeight: '700',
     },
     themeToggleLabelSelected: {
-      color: '#000',
+      color: '#0F1117',
     },
     logoutCard: {
       backgroundColor: colors.cardBg,
