@@ -13,10 +13,8 @@
     "splash": {
       "backgroundColor": "#F4F6FA",
       "resizeMode": "contain",
-      "image": "./assets/splash-icon.png",
       "dark": {
-        "backgroundColor": "#09090A",
-        "image": "./assets/splash-icon.png"
+        "backgroundColor": "#09090A"
       }
     },
 
@@ -35,6 +33,7 @@
       "package": "com.atik.aether",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
+      "backgroundColor": "#F4F6FA",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#09090A"
@@ -54,12 +53,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#F4F6FA",
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 96,
-          "resizeMode": "contain",
           "dark": {
-            "backgroundColor": "#09090A",
-            "image": "./assets/splash-icon.png"
+            "backgroundColor": "#09090A"
           }
         }
       ]

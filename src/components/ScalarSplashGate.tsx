@@ -20,17 +20,28 @@ const ScalarSplashGate: React.FC<ScalarSplashGateProps> = ({ fontsLoaded, onComp
 
   const [exiting, setExiting] = useState(false);
   const nativeHiddenRef = useRef(false);
+  const layoutReadyRef = useRef(false);
   const readyAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(palette.background).catch(() => {});
   }, [palette.background]);
 
-  const handleSplashLayout = useCallback(() => {
-    if (nativeHiddenRef.current) return;
+  /** Keep native solid-color splash until JS splash + fonts are ready — no icon flash */
+  const tryHideNativeSplash = useCallback(() => {
+    if (nativeHiddenRef.current || !fontsLoaded || !layoutReadyRef.current) return;
     nativeHiddenRef.current = true;
     SplashScreen.hideAsync().catch(() => {});
-  }, []);
+  }, [fontsLoaded]);
+
+  const handleSplashLayout = useCallback(() => {
+    layoutReadyRef.current = true;
+    tryHideNativeSplash();
+  }, [tryHideNativeSplash]);
+
+  useEffect(() => {
+    tryHideNativeSplash();
+  }, [tryHideNativeSplash]);
 
   useEffect(() => {
     if (!fontsLoaded) return;
