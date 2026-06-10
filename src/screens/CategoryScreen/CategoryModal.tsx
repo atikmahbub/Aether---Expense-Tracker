@@ -1,24 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import BaseBottomSheet from '@trackingPortal/components/BaseBottomSheet';
 import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/models';
 import LoadingButton from '@trackingPortal/components/LoadingButton';
 
 const AVAILABLE_ICONS = [
-  'silverware-fork-knife', 'cart', 'car-sports', 'file-document', 'shopping', 
-  'gamepad-variant', 'heart-pulse', 'airplane', 'repeat', 'home-variant', 
+  'silverware-fork-knife', 'cart', 'car-sports', 'file-document', 'shopping',
+  'gamepad-variant', 'heart-pulse', 'airplane', 'repeat', 'home-variant',
   'book-open-page-variant', 'account', 'gift', 'account-group', 'dots-horizontal',
   'transit-connection-horizontal', 'bank', 'cash-multiple', 'piggy-bank', 'wallet',
   'laptop', 'phone', 'coffee', 'medical-bag', 'umbrella'
 ];
 
 const AVAILABLE_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#1DD3B0', '#FFA500', '#9B5DE5', 
+  '#FF6B6B', '#4ECDC4', '#1DD3B0', '#FFA500', '#9B5DE5',
   '#FFB347', '#E63946', '#00B4D8', '#6D597A', '#2A9D8F',
   '#264653', '#F4A261', '#E76F51', '#8AB17D', '#ADB5BD'
 ];
@@ -32,6 +32,9 @@ interface CategoryModalProps {
 }
 
 const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }: CategoryModalProps) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const validationSchema = Yup.object().shape({
     name: Yup.string()
       .required('Required')
@@ -46,8 +49,8 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
   });
 
   return (
-    <BaseBottomSheet 
-      index={visible ? 0 : -1} 
+    <BaseBottomSheet
+      index={visible ? 0 : -1}
       onClose={onClose}
       snapPoints={['85%']}
     >
@@ -81,7 +84,7 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
                   error={touched.name && !!errors.name}
                   style={styles.input}
                   textColor={colors.text}
-                  placeholderTextColor="rgba(255,255,255,0.2)"
+                  placeholderTextColor={colors.muted}
                   activeUnderlineColor={colors.primary}
                 />
                 {touched.name && errors.name && (
@@ -98,14 +101,14 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
                       style={[
                         styles.iconPickerItem,
                         values.icon === icon && styles.selectedItem,
-                        { backgroundColor: values.icon === icon ? `${values.color}20` : 'rgba(255,255,255,0.05)' }
+                        { backgroundColor: values.icon === icon ? `${values.color}20` : colors.surface }
                       ]}
                       onPress={() => setFieldValue('icon', icon)}
                     >
-                      <MaterialCommunityIcons 
-                        name={icon} 
-                        size={24} 
-                        color={values.icon === icon ? values.color : 'rgba(255,255,255,0.4)'} 
+                      <MaterialCommunityIcons
+                        name={icon}
+                        size={24}
+                        color={values.icon === icon ? values.color : colors.muted}
                       />
                     </TouchableOpacity>
                   ))}
@@ -150,81 +153,83 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text,
-    fontFamily: 'Manrope',
-    marginBottom: 24,
-    letterSpacing: -0.5,
-  },
-  form: {
-    gap: 24,
-  },
-  inputGroup: {
-    gap: 12,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-  },
-  errorText: {
-    color: '#ff4d4d',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  pickerScroll: {
-    gap: 12,
-    paddingVertical: 4,
-  },
-  iconPickerItem: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  colorPickerItem: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectedItem: {
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  selectedColorItem: {
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  footer: {
-    marginTop: 12,
-  },
-  saveButton: {
-    borderRadius: 20,
-    height: 60,
-  },
-  saveButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      paddingTop: 16,
+      paddingBottom: 40,
+    },
+    modalTitle: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: colors.text,
+      fontFamily: 'Manrope',
+      marginBottom: 24,
+      letterSpacing: -0.5,
+    },
+    form: {
+      gap: 24,
+    },
+    inputGroup: {
+      gap: 12,
+    },
+    label: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    input: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    pickerScroll: {
+      gap: 12,
+      paddingVertical: 4,
+    },
+    iconPickerItem: {
+      width: 52,
+      height: 52,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    colorPickerItem: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    selectedItem: {
+      borderColor: colors.glassBorder,
+    },
+    selectedColorItem: {
+      borderWidth: 2,
+      borderColor: '#fff',
+    },
+    footer: {
+      marginTop: 12,
+    },
+    saveButton: {
+      borderRadius: 20,
+      height: 60,
+    },
+    saveButtonText: {
+      color: '#000',
+      fontSize: 16,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+    },
+  });
+}
 
 export default CategoryModal;

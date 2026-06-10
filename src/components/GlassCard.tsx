@@ -5,6 +5,10 @@ import { BlurView } from 'expo-blur';
 import Svg, { Rect, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -23,9 +27,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
   blurIntensity = 20,
   onPress,
 }) => {
-  const Container = Platform.OS === "ios" ? BlurView : View;
-  const AnimatedContainer = Animated.createAnimatedComponent(Container);
-  
+  const { isDark } = useAppTheme();
+
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
@@ -66,6 +69,23 @@ const GlassCard: React.FC<GlassCardProps> = ({
     marginVertical: flattenedStyle?.marginVertical,
   };
 
+  const containerBg = isDark ? 'rgba(27, 32, 38, 0.4)' : 'rgba(255, 255, 255, 0.7)';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+  const gradientOverlay = (
+    <View style={StyleSheet.absoluteFill}>
+      <Svg height="100%" width="100%">
+        <Defs>
+          <SvgGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="white" stopOpacity="0.02" />
+            <Stop offset="1" stopColor="black" stopOpacity="0.2" />
+          </SvgGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="url(#grad)" />
+      </Svg>
+    </View>
+  );
+
   return (
     <Pressable
       onPressIn={handlePressIn}
@@ -74,30 +94,39 @@ const GlassCard: React.FC<GlassCardProps> = ({
       disabled={!onPress}
       style={wrapperStyle}
     >
-      <AnimatedContainer
-        entering={FadeIn.duration(400)}
-        intensity={blurIntensity}
-        tint="dark"
-        style={[styles.container, styles.shadow, style, animatedStyle]}
-      >
-        {/* Subtle Gradient Overlay */}
-        <View style={StyleSheet.absoluteFill}>
-          <Svg height="100%" width="100%">
-            <Defs>
-              <SvgGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="white" stopOpacity="0.02" />
-                <Stop offset="1" stopColor="black" stopOpacity="0.2" />
-              </SvgGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#grad)" />
-          </Svg>
-        </View>
-
-        {/* Inner Highlight Border (very subtle) */}
-        <View style={[styles.innerHighlight, StyleSheet.absoluteFill]} pointerEvents="none" />
-
-        <View style={[styles.inner, { padding }, contentStyle]}>{children}</View>
-      </AnimatedContainer>
+      {Platform.OS === "ios" ? (
+        <AnimatedBlurView
+          entering={FadeIn.duration(400)}
+          intensity={blurIntensity}
+          tint={isDark ? "dark" : "light"}
+          style={[
+            styles.container,
+            styles.shadow,
+            { backgroundColor: containerBg, borderColor },
+            style,
+            animatedStyle,
+          ]}
+        >
+          {gradientOverlay}
+          <View style={[styles.innerHighlight, StyleSheet.absoluteFill]} pointerEvents="none" />
+          <View style={[styles.inner, { padding }, contentStyle]}>{children}</View>
+        </AnimatedBlurView>
+      ) : (
+        <AnimatedView
+          entering={FadeIn.duration(400)}
+          style={[
+            styles.container,
+            styles.shadow,
+            { backgroundColor: containerBg, borderColor },
+            style,
+            animatedStyle,
+          ]}
+        >
+          {gradientOverlay}
+          <View style={[styles.innerHighlight, StyleSheet.absoluteFill]} pointerEvents="none" />
+          <View style={[styles.inner, { padding }, contentStyle]}>{children}</View>
+        </AnimatedView>
+      )}
     </Pressable>
   );
 };
@@ -106,9 +135,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.08)",
     overflow: "hidden",
-    backgroundColor: "rgba(27, 32, 38, 0.4)",
   },
   inner: {
     gap: 0,

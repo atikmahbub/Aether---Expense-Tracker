@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {TextInput, TextInputProps} from 'react-native-paper';
 import {useField} from 'formik';
 import {View, Text, StyleSheet} from 'react-native';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface FormikTextInputProps extends TextInputProps {
   name: string;
@@ -20,6 +20,8 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
   autoFocus,
   ...props
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [field, meta] = useField(name);
   const inputRef = React.useRef<any>(null);
 
@@ -54,18 +56,20 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  input: {
-    fontSize: 16,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    input: {
+      fontSize: 16,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
+}
 
 export default FormikTextInput;

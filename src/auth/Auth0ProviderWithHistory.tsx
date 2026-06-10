@@ -14,7 +14,6 @@ WebBrowser.maybeCompleteAuthSession();
 const LOGGED_IN_ROUTE = "/(tabs)/transactions";
 const LOGIN_ROUTE = "/login";
 
-/* ===== READ FROM app.json ===== */
 const getExtra = () => Constants?.expoConfig?.extra ?? {};
 
 const getConfigValue = (key: string, fallback = ""): string => {
@@ -27,7 +26,6 @@ const AUTH0_DOMAIN = getConfigValue("auth0Domain");
 const AUTH0_CLIENT_ID = getConfigValue("auth0ClientId");
 const AUTH0_AUDIENCE = getConfigValue("auth0Audience");
 
-/* 🚀 REDIRECT URI */
 const redirectUri = AuthSession.makeRedirectUri({
   scheme: "aether",
   path: "auth/callback",
@@ -41,10 +39,13 @@ type AuthContextType = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   getValidToken: () => Promise<string | null>;
+  retrySession: () => Promise<void>;
   token: string | null;
   user: UserProfile;
   loading: boolean;
   isAuthenticated: boolean;
+  /** True when tokens exist in storage but a transient network error prevented refresh. NavigationBoundary should not redirect to login in this state. */
+  refreshFailed: boolean;
 };
 
 const AUTH_SCOPES = ["openid", "profile", "email", "offline_access"];
@@ -76,6 +77,7 @@ export const Auth0ProviderWithHistory = ({
   const [user, setUser] = useState<UserProfile>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [refreshFailed, setRefreshFailed] = useState(false);
 
   const refreshPromise = useRef<Promise<string | null> | null>(null);
   const appState = useRef(AppState.currentState);
@@ -182,11 +184,33 @@ export const Auth0ProviderWithHistory = ({
         console.error("❌ Token refresh failed:", e);
         const message =
           e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
+        const code = (e as any)?.code?.toLowerCase?.() ?? "";
 
-        if (message.includes("invalid_grant")) {
+        // Auth0 returns the OAuth error code in `e.code`; the human-readable
+        // message never contains the literal "invalid_grant" string.
+        const isInvalidGrant =
+          code === "invalid_grant" ||
+          message.includes("invalid_grant") ||
+          message.includes("unknown or invalid refresh token") ||
+          message.includes("refresh token is invalid") ||
+          message.includes("token is expired") ||
+          message.includes("token has been revoked");
+
+        if (isInvalidGrant) {
+          // Before logging out, verify the stored refresh token is still the
+          // same one we just tried — a mid-save crash during rotation can leave
+          // a stale token that triggers invalid_grant on the next cold start.
+          const currentStored = await authStorage.getRefreshToken();
+          if (currentStored && currentStored !== storedRefreshToken) {
+            console.warn("⚠️ Stale refresh token detected, retrying with latest...");
+            refreshPromise.current = null;
+            return refreshAccessTokenRef.current(currentStored);
+          }
           console.warn("⚠️ Refresh token invalid or expired. Logging out.");
           await logout();
         }
+        // Network / server error — NOT an auth failure. Return null so the caller
+        // can decide; do NOT log out. Tokens remain in storage for the next attempt.
       } finally {
         refreshPromise.current = null;
       }
@@ -240,7 +264,6 @@ export const Auth0ProviderWithHistory = ({
         appState.current.match(/inactive|background/) &&
         nextAppState === "active"
       ) {
-        // App has come to the foreground, proactively check/refresh token
         const validToken = await getValidToken();
         if (validToken) {
           setIsAuthenticated(true);
@@ -267,10 +290,15 @@ export const Auth0ProviderWithHistory = ({
 
         const validToken = await getValidToken();
         if (!cancelled) {
-          setIsAuthenticated(Boolean(validToken));
           if (validToken) {
+            setIsAuthenticated(true);
+            setRefreshFailed(false);
             scheduleProactiveRefresh(validToken);
             syncProfile(validToken);
+          } else {
+            const hasSession = await authStorage.hasSession();
+            setRefreshFailed(hasSession);
+            setIsAuthenticated(false);
           }
         }
       } catch (e) {
@@ -316,13 +344,14 @@ export const Auth0ProviderWithHistory = ({
 
         if (!refreshToken) {
           console.error(
-            "❌ Auth0 returned no refresh token. In Auth0 Dashboard: enable Refresh Token grant on your Native app AND 'Allow Offline Access' on API https://api.tracking-wallet.com",
+            "❌ Auth0 returned no refresh token. In Auth0 Dashboard: enable Refresh Token grant on your Native app AND 'Allow Offline Access' on API.",
           );
         }
 
         await authStorage.saveTokens(accessToken, refreshToken);
         setToken(accessToken);
         setIsAuthenticated(true);
+        setRefreshFailed(false);
         scheduleProactiveRefresh(accessToken);
 
         const profile = await fetchUserInfo(accessToken);
@@ -338,6 +367,29 @@ export const Auth0ProviderWithHistory = ({
     handleAuth();
   }, [response, discovery, request, router, scheduleProactiveRefresh]);
 
+  /* ================= RETRY SESSION ================= */
+
+  const retrySession = useCallback(async () => {
+    setLoading(true);
+    setRefreshFailed(false);
+    try {
+      const validToken = await getValidToken();
+      if (validToken) {
+        setIsAuthenticated(true);
+        scheduleProactiveRefresh(validToken);
+        syncProfile(validToken);
+      } else {
+        const hasSession = await authStorage.hasSession();
+        if (hasSession) {
+          setRefreshFailed(true);
+          setIsAuthenticated(false);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [getValidToken, scheduleProactiveRefresh, syncProfile]);
+
   /* ================= LOGIN ACTION ================= */
 
   const login = async () => {
@@ -347,7 +399,7 @@ export const Auth0ProviderWithHistory = ({
 
   return (
     <AuthContext.Provider
-      value={{ login, logout, getValidToken, token, user, loading, isAuthenticated }}
+      value={{ login, logout, getValidToken, retrySession, token, user, loading, isAuthenticated, refreshFailed }}
     >
       {children}
     </AuthContext.Provider>

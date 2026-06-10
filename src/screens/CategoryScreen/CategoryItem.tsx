@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Swipeable } from 'react-native-gesture-handler';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/models';
 import { normalizeCategoryIcon } from '../TransactionScreen/TransactionScreen.constants';
 
@@ -14,11 +14,13 @@ interface CategoryItemProps {
 }
 
 const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const isSystem = item.userId === null;
-  
+
   const renderRightActions = () => {
     if (isSystem) return null;
-    
+
     return (
       <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
         <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.error} />
@@ -28,17 +30,17 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
 
   return (
     <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
-      <TouchableOpacity 
-        style={styles.container} 
+      <TouchableOpacity
+        style={styles.container}
         onPress={onEdit}
         activeOpacity={0.7}
       >
         <View style={styles.leftContent}>
           <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
-            <MaterialCommunityIcons 
-              name={normalizeCategoryIcon(item.icon)} 
-              size={24} 
-              color={item.color} 
+            <MaterialCommunityIcons
+              name={normalizeCategoryIcon(item.icon)}
+              size={24}
+              color={item.color}
             />
           </View>
           <View>
@@ -46,11 +48,11 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
             {isSystem && <Text style={styles.systemBadge}>Default</Text>}
           </View>
         </View>
-        
+
         <View style={styles.rightContent}>
           <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
           {!isSystem && (
-            <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(255,255,255,0.2)" />
+            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.inactiveIcon} />
           )}
         </View>
       </TouchableOpacity>
@@ -58,65 +60,67 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.cardBg,
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  leftContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text,
-    fontFamily: 'Manrope',
-  },
-  systemBadge: {
-    fontSize: 10,
-    color: colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  rightContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  colorIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  deleteAction: {
-    backgroundColor: colors.errorSoft,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    borderRadius: 20,
-    marginBottom: 12,
-    marginLeft: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(248, 113, 113, 0.2)',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.cardBg,
+      padding: 16,
+      borderRadius: 20,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    leftContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    name: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.text,
+      fontFamily: 'Manrope',
+    },
+    systemBadge: {
+      fontSize: 10,
+      color: colors.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    rightContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    colorIndicator: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    deleteAction: {
+      backgroundColor: colors.errorSoft,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 80,
+      borderRadius: 20,
+      marginBottom: 12,
+      marginLeft: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(248, 113, 113, 0.2)',
+    },
+  });
+}
 
 export default CategoryItem;

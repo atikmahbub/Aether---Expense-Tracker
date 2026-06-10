@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import LoadingButton from '@trackingPortal/components/LoadingButton';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface IFormModal {
   isVisible: boolean;
@@ -37,6 +37,9 @@ const FormModal: React.FC<IFormModal> = ({
   loading,
   children,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const dismissKeyboard = () => Keyboard.dismiss();
 
   const handleClose = () => {
@@ -68,7 +71,7 @@ const FormModal: React.FC<IFormModal> = ({
                 <View style={styles.formContainer}>
                   {children}
                 </View>
-                
+
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
                     style={styles.cancelButton}
@@ -95,65 +98,67 @@ const FormModal: React.FC<IFormModal> = ({
 
 export default FormModal;
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  keyboardView: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  floatingCard: {
-    width: SCREEN_WIDTH * 0.9,
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: 0.4,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: colors.subText,
-    marginTop: 6,
-  },
-  formContainer: {
-    marginBottom: 24,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: 12,
-  },
-  cancelButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  buttonText: {
-    color: colors.subText,
-    fontWeight: '600',
-    fontSize: 15,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    keyboardView: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    floatingCard: {
+      width: SCREEN_WIDTH * 0.9,
+      backgroundColor: colors.surface,
+      borderRadius: 24,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.3,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    header: {
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      letterSpacing: 0.4,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: colors.subText,
+      marginTop: 6,
+    },
+    formContainer: {
+      marginBottom: 24,
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: 12,
+    },
+    cancelButton: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    buttonText: {
+      color: colors.subText,
+      fontWeight: '600',
+      fontSize: 15,
+    },
+  });
+}

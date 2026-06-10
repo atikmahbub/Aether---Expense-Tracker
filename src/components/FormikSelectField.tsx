@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import {useField} from 'formik';
 import {TextInput, TouchableRipple} from 'react-native-paper';
-import {darkTheme} from '@trackingPortal/themes/darkTheme';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface FormikSelectFieldProps {
   name: string;
@@ -26,6 +25,8 @@ const FormikSelectField: React.FC<FormikSelectFieldProps> = ({
   options,
   height,
 }) => {
+  const { colors, paperTheme } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, paperTheme), [colors, paperTheme]);
   const [field, meta, helpers] = useField(name);
   const [visible, setVisible] = React.useState(false);
   const inputRef = React.useRef<View>(null);
@@ -116,44 +117,46 @@ const FormikSelectField: React.FC<FormikSelectFieldProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  input: {
-    backgroundColor: darkTheme.colors.surface,
-    color: colors.text,
-  },
-  dropdownOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
-  },
-  dropdown: {
-    position: 'absolute',
-    backgroundColor: darkTheme.colors.surface,
-    borderRadius: 18,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    zIndex: 999,
-    elevation: 6,
-  },
-  flatListContent: {
-    paddingVertical: 5,
-  },
-  dropdownItem: {
-    padding: 10,
-    color: colors.text,
-    fontSize: 16,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], paperTheme: ReturnType<typeof useAppTheme>['paperTheme']) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      borderRadius: 14,
+      overflow: 'hidden',
+    },
+    input: {
+      backgroundColor: paperTheme.colors.surface,
+      color: colors.text,
+    },
+    dropdownOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
+    },
+    dropdown: {
+      position: 'absolute',
+      backgroundColor: paperTheme.colors.surface,
+      borderRadius: 18,
+      paddingVertical: 4,
+      paddingHorizontal: 10,
+      zIndex: 999,
+      elevation: 6,
+    },
+    flatListContent: {
+      paddingVertical: 5,
+    },
+    dropdownItem: {
+      padding: 10,
+      color: colors.text,
+      fontSize: 16,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
+}
 
 export default FormikSelectField;

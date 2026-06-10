@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
+import React, { useMemo, useState } from 'react';
 import {Menu, Button} from 'react-native-paper';
 import {View, StyleSheet, Platform, StyleProp, ViewStyle} from 'react-native';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {BlurView} from 'expo-blur';
 
 interface TwMenuProps {
@@ -9,6 +9,7 @@ interface TwMenuProps {
   onSelect: (value: any) => void;
   buttonLabel?: string;
   containerStyle?: StyleProp<ViewStyle>;
+  buttonStyle?: any;
 }
 
 const TwMenu: React.FC<TwMenuProps> = ({
@@ -16,7 +17,10 @@ const TwMenu: React.FC<TwMenuProps> = ({
   onSelect,
   buttonLabel = 'Select Option',
   containerStyle,
+  buttonStyle,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [visible, setVisible] = useState(false);
 
   const openMenu = () => setVisible(true);
@@ -37,7 +41,7 @@ const TwMenu: React.FC<TwMenuProps> = ({
           <Button
             mode="contained-tonal"
             onPress={openMenu}
-            style={styles.menuButton}
+            style={[styles.menuButton, buttonStyle]}
             labelStyle={styles.menuLabel}
             contentStyle={styles.menuContent}
             uppercase={false}
@@ -66,41 +70,43 @@ const TwMenu: React.FC<TwMenuProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuButton: {
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 4,
-  },
-  menuContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  menuLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    color: colors.text,
-  },
-  menuSurface: {
-    backgroundColor: 'transparent',
-    borderRadius: 22,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
-  },
-  menuTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    menuButton: {
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 4,
+    },
+    menuContent: {
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+    },
+    menuLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      letterSpacing: 0.4,
+      color: colors.text,
+    },
+    menuSurface: {
+      backgroundColor: 'transparent',
+      borderRadius: 22,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    menuBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 22,
+    },
+    menuTint: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
+    },
+  });
+}
 
 export default TwMenu;

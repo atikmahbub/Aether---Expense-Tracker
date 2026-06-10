@@ -10,6 +10,7 @@ import { offlineService } from "@trackingPortal/api/utils/OfflineService";
 import { AnimatedLoader } from "@trackingPortal/components";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import AnalyticsCard from "@trackingPortal/screens/TransactionScreen/components/AnalyticsCard";
 import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
@@ -17,7 +18,6 @@ import { useTransactionInsights } from "@trackingPortal/screens/TransactionScree
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
-import { colors } from "@trackingPortal/themes/colors";
 import { parseDate, getMonthTimestamp } from "@trackingPortal/utils/date";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
@@ -30,6 +30,9 @@ import Toast from "react-native-toast-message";
 const AnimatedKeyboardAwareScrollView = RNAnimated.createAnimatedComponent(KeyboardAwareScrollView);
 
 export default function TransactionScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const {
     currentUser: user,
     apiGateway,
@@ -51,10 +54,7 @@ export default function TransactionScreen() {
   }, [transactions, typeFilter]);
 
   const handleTypeFilterChange = useCallback((option: string) => {
-    // Reset visible count first to reduce render load
     setVisibleCount(12);
-    
-    // Defer the heavy state change until after interaction
     InteractionManager.runAfterInteractions(() => {
       setTypeFilter(option as 'expense' | 'income');
     });
@@ -81,7 +81,6 @@ export default function TransactionScreen() {
   const { isOnline } = useNetwork();
   const wasOfflineRef = useRef(false);
 
-  // 🔥 PRELOAD CREATION UI
   useEffect(() => {
     const id = setTimeout(() => {
       setIsCreationPreloaded(true);
@@ -127,8 +126,6 @@ export default function TransactionScreen() {
     }
   }, [activeUserId, apiGateway, user.userId, filterMonth]);
 
-  // useDailyTransactionReminder();
-
   const fetchAnalytics = useCallback(
     (options?: { force?: boolean }) => {
       if (!activeUserId || !isCategoryHydrated) return;
@@ -150,7 +147,6 @@ export default function TransactionScreen() {
     setLoading(true);
 
     try {
-      // 1. Fetch from server using the new transactions API
       let serverTransactions: TransactionModel[] = [];
       try {
         serverTransactions = await apiGateway.transactionService.getTransactions({
@@ -161,14 +157,13 @@ export default function TransactionScreen() {
         console.log("Server Transactions fetch failed", e);
       }
 
-      // 2. Load from offline queue
       const queue = await offlineService.getQueue();
       const currentMonthStr = dayjs(filterMonth).format("YYYY-MM");
-      
+
       const offlineTransactions: TransactionModel[] = queue
-        .filter(item => 
-          item.type === 'transaction' && 
-          !item.synced && 
+        .filter(item =>
+          item.type === 'transaction' &&
+          !item.synced &&
           dayjs(parseDate(item.payload.date)).format("YYYY-MM") === currentMonthStr
         )
         .map(item => ({
@@ -189,9 +184,8 @@ export default function TransactionScreen() {
       console.log("transaction error", error);
     } finally {
       setLoading(false);
-      // Removed setCombinedLoading(false) from here to control it in loadData
     }
-  }, [user.userId, apiGateway.transactionService, filterMonth, categories]);
+  }, [user.userId, apiGateway.transactionService, filterMonth, categories, colors.subText]);
 
   const getMonthlyLimit = useCallback(async () => {
     if (!user.userId) return;
@@ -217,10 +211,10 @@ export default function TransactionScreen() {
   const loadData = useCallback(async (options?: { force?: boolean }) => {
     setVisibleCount(12);
     setCombinedLoading(true);
-    
+
     try {
       await Promise.all([
-        getMonthlyLimit(), 
+        getMonthlyLimit(),
         fetchAnalytics(options),
         getTransactions(),
         fetchSummary(),
@@ -275,8 +269,6 @@ export default function TransactionScreen() {
     }
   }, [activeUserId, user.default, isCategoryHydrated, filterMonth, loadData]);
 
-
-
   useEffect(() => {
     if (!recentHydrated || recentCategoryIds.length || !transactions.length || !categories.length) return;
 
@@ -329,9 +321,6 @@ export default function TransactionScreen() {
     const value = typeFilter === 'expense' ? summary.expenseChangePercentage : summary.incomeChangePercentage;
     const isIncrease = value > 0;
     const isDecrease = value < 0;
-
-    // For expenses, increase is bad (red), decrease is good (green)
-    // For income, increase is good (green), decrease is bad (red)
     const isBetter = typeFilter === 'expense' ? isDecrease : isIncrease;
 
     return {
@@ -341,7 +330,7 @@ export default function TransactionScreen() {
       color: value === 0 ? colors.subText : (isBetter ? colors.primary : colors.error),
       icon: isIncrease ? 'arrow-top-right' : (isDecrease ? 'arrow-bottom-right' : 'minus'),
     };
-  }, [summary, loadingSummary, typeFilter]);
+  }, [summary, loadingSummary, typeFilter, colors]);
 
   const headerComponent = useMemo(() => (
     <View>
@@ -378,7 +367,7 @@ export default function TransactionScreen() {
         transactions={filteredTransactions}
       />
     </View>
-  ), [typeFilter, totalDisplayValue, crossTabTotal, activeTrend, loadingSummary, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency]);
+  ), [typeFilter, totalDisplayValue, crossTabTotal, activeTrend, loadingSummary, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency, styles]);
 
   const footerComponent = useMemo(() => (
     <TransactionList
@@ -487,47 +476,49 @@ export default function TransactionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    paddingTop: 12,
-  },
-  topToggleRow: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    alignItems: 'flex-end',
-  },
-  segmentedToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 8,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  toggleButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 7,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  toggleText: {
-    color: colors.subText,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  toggleTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingTop: 8,
+    },
+    topToggleRow: {
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      alignItems: 'flex-end',
+    },
+    segmentedToggle: {
+      flexDirection: 'row',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 8,
+      padding: 2,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    toggleButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 7,
+    },
+    toggleButtonActive: {
+      backgroundColor: colors.surface,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    toggleText: {
+      color: colors.subText,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    toggleTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+  });
+}

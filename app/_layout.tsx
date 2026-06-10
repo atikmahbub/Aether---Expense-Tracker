@@ -8,8 +8,9 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, TextInput, KeyboardAvoidingView, Platform, View, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -25,10 +26,9 @@ import toastConfig from '@trackingPortal/components/ToastConfig';
 import { NetworkProvider } from '@trackingPortal/contexts/NetworkProvider';
 import { StoreProvider } from '@trackingPortal/contexts/StoreProvider';
 import { OfflineProvider } from '@trackingPortal/contexts/OfflineProvider';
+import { ThemeProvider, useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import AppLayout from '@trackingPortal/layout';
 import OnboardingScreen from '@trackingPortal/screens/OnboardingScreen';
-import { colors } from '@trackingPortal/themes/colors';
-import { darkTheme } from '@trackingPortal/themes/darkTheme';
 
 console.log("🔥 LAYOUT LOADED");
 
@@ -56,7 +56,8 @@ const applyDefaultFont = () => {
 };
 
 const NavigationBoundary: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, refreshFailed, retrySession } = useAuth();
+  const { colors } = useAppTheme();
   const router = useRouter();
   const segments = useSegments();
   const rootSegment = segments[0];
@@ -89,7 +90,7 @@ const NavigationBoundary: React.FC = () => {
   }, [router, isAuthenticated]);
 
   useEffect(() => {
-    if (loading || !onboardingChecked || !hasCompletedOnboarding) {
+    if (loading || !onboardingChecked || !hasCompletedOnboarding || refreshFailed) {
       return;
     }
 
@@ -106,6 +107,7 @@ const NavigationBoundary: React.FC = () => {
   }, [
     loading,
     isAuthenticated,
+    refreshFailed,
     router,
     rootSegment,
     onboardingChecked,
@@ -128,6 +130,22 @@ const NavigationBoundary: React.FC = () => {
     return <AnimatedLoader />;
   }
 
+  if (refreshFailed) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background, padding: 24 }}>
+        <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 24, fontSize: 16 }}>
+          Unable to connect. Check your internet and try again.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 32, borderRadius: 8 }}
+          onPress={retrySession}
+        >
+          <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen
@@ -143,6 +161,48 @@ const NavigationBoundary: React.FC = () => {
     </Stack>
   );
 };
+
+function ThemedApp({ fontsLoaded }: { fontsLoaded: boolean }) {
+  const { paperTheme, isDark, colors } = useAppTheme();
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaProvider style={{ backgroundColor: colors.background }}>
+        <PaperProvider theme={paperTheme}>
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <Auth0ProviderWithHistory>
+            <StoreProvider>
+              <NetworkProvider>
+                <OfflineProvider>
+                  {Platform.OS === 'ios' ? (
+                    <KeyboardAvoidingView
+                      behavior="padding"
+                      style={{ flex: 1, backgroundColor: colors.background }}
+                    >
+                      <NavigationBoundary />
+                      <OfflineBanner />
+                    </KeyboardAvoidingView>
+                  ) : (
+                    <>
+                      <NavigationBoundary />
+                      <OfflineBanner />
+                    </>
+                  )}
+                </OfflineProvider>
+              </NetworkProvider>
+            </StoreProvider>
+          </Auth0ProviderWithHistory>
+        </PaperProvider>
+      </SafeAreaProvider>
+
+      <Toast topOffset={70} position="top" config={toastConfig} />
+    </GestureHandlerRootView>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -176,40 +236,9 @@ export default function RootLayout() {
   //   requestPermissions();
   // }, []);
 
-  if (!fontsLoaded) {
-    return null;
-  }
-
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <SafeAreaProvider style={{ backgroundColor: colors.background }}>
-        <PaperProvider theme={darkTheme}>
-          <Auth0ProviderWithHistory>
-            <StoreProvider>
-              <NetworkProvider>
-                <OfflineProvider>
-                  {Platform.OS === 'ios' ? (
-                    <KeyboardAvoidingView
-                      behavior="padding"
-                      style={{ flex: 1, backgroundColor: colors.background }}
-                    >
-                      <NavigationBoundary />
-                      <OfflineBanner />
-                    </KeyboardAvoidingView>
-                  ) : (
-                    <>
-                      <NavigationBoundary />
-                      <OfflineBanner />
-                    </>
-                  )}
-                </OfflineProvider>
-              </NetworkProvider>
-            </StoreProvider>
-          </Auth0ProviderWithHistory>
-        </PaperProvider>
-      </SafeAreaProvider>
-
-      <Toast topOffset={70} position="top" config={toastConfig} />
-    </GestureHandlerRootView>
+    <ThemeProvider>
+      <ThemedApp fontsLoaded={!!fontsLoaded} />
+    </ThemeProvider>
   );
 }

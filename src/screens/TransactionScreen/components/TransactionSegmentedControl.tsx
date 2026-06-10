@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,7 +14,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface SegmentedControlProps {
   options: string[];
@@ -29,11 +29,13 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   onOptionPress,
   containerStyle,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  
+
   const containerPadding = 4;
   const segmentWidth = (dimensions.width - (containerPadding * 2)) / options.length;
-  
+
   const selectedIndex = options.indexOf(selectedOption);
   const translateX = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -65,21 +67,20 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
 
   const handlePress = (option: string) => {
     if (option === selectedOption) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Subtle scale up on change
+
     scale.value = withSequence(
       withTiming(1.02, { duration: 100 }),
       withSpring(1, { damping: 12, stiffness: 200 })
     );
-    
+
     onOptionPress(option);
   };
 
   return (
-    <View 
-      style={[styles.container, containerStyle]} 
+    <View
+      style={[styles.container, containerStyle]}
       onLayout={onLayout}
     >
       {dimensions.width > 0 && (
@@ -113,47 +114,49 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    height: 44,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    top: 4,
-    bottom: 4,
-    left: 4,
-    backgroundColor: colors.background, 
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  segment: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 80,
-    zIndex: 1,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-    letterSpacing: 0.2,
-  },
-  activeLabel: {
-    color: colors.primary,
-  },
-  inactiveLabel: {
-    color: colors.subText,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      height: 44,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 12,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    activeIndicator: {
+      position: 'absolute',
+      top: 4,
+      bottom: 4,
+      left: 4,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    segment: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      minWidth: 80,
+      zIndex: 1,
+    },
+    label: {
+      fontSize: 13,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+      letterSpacing: 0.2,
+    },
+    activeLabel: {
+      color: colors.primary,
+    },
+    inactiveLabel: {
+      color: colors.subText,
+    },
+  });
+}
 
 export default SegmentedControl;

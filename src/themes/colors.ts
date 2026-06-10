@@ -34,4 +34,13 @@ export const colors = {
 
   // Overlay
   overlay: 'rgba(10,10,11,0.9)',
+
+  // extras
+  accent: '#22C55E',
+  secondary: '#38BDF8',
+  disabled: '#3A3A3F',
+  placeholder: '#71717A',
+  success: '#22C55E',
+  badgePositiveBg: 'rgba(34,197,94,0.12)',
+  badgeNegativeBg: 'rgba(248,113,113,0.10)',
 };

@@ -1,10 +1,10 @@
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, {FC, Fragment, useCallback, useState} from 'react';
+import React, {FC, Fragment, useCallback, useMemo, useState} from 'react';
 import {Text} from 'react-native-paper';
 
 import DataTable from '@trackingPortal/components/DataTable';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 import {LoanModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
@@ -39,6 +39,8 @@ interface ILoanList {
 const headers = ['Name', 'Type', 'Deadline', 'Amount'];
 
 const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
   const {currentUser: user, apiGateway, currency} = useStoreContext();
   const [loading, setLoading] = useState<boolean>(false);
@@ -182,58 +184,60 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
 
 export default React.memo(LoanList);
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  listCard: {
-    marginTop: 0,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-    letterSpacing: -0.5,
-  },
-  viewAllText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  tableContainer: {
-    marginTop: 12,
-  },
-  collapsibleContent: {
-    gap: 16,
-    paddingBottom: 20,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-    paddingBottom: 20,
-    gap: 10,
-  },
-  cancelButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  cancelButtonText: {
-    color: colors.subText,
-    fontWeight: '600',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    mainContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
+    listCard: {
+      marginTop: 0,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+      letterSpacing: -0.5,
+    },
+    viewAllText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    tableContainer: {
+      marginTop: 12,
+    },
+    collapsibleContent: {
+      gap: 16,
+      paddingBottom: 20,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 10,
+      paddingBottom: 20,
+      gap: 10,
+    },
+    cancelButton: {
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    cancelButtonText: {
+      color: colors.subText,
+      fontWeight: '600',
+    },
+  });
+}

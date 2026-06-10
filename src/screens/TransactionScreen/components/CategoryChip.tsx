@@ -1,6 +1,7 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useAppTheme} from '../../../contexts/ThemeContext';
 
 interface CategoryChipProps {
   label: string;
@@ -26,20 +27,29 @@ const CategoryChip: React.FC<CategoryChipProps> = ({
   active = false,
   onPress,
 }) => {
+  const {colors} = useAppTheme();
+
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.container, active && styles.activeContainer, active && {
-        backgroundColor: toRgba(color, 0.16),
-        shadowColor: color,
-      }]}
+      style={[
+        styles.container,
+        {backgroundColor: colors.surface, borderColor: colors.glassBorder},
+        active && styles.activeContainer,
+        active && {
+          backgroundColor: toRgba(color, 0.16),
+          shadowColor: color,
+        },
+      ]}
       accessibilityRole="button"
       accessibilityState={{selected: active}}
     >
       <View style={[styles.iconWrapper, {backgroundColor: toRgba(color, active ? 0.25 : 0.12)}]}>
         <MaterialCommunityIcons name={icon} size={18} color={color} />
       </View>
-      <Text style={[styles.label, active && styles.activeLabel]} numberOfLines={1}>
+      <Text
+        style={[styles.label, {color: colors.subText}, active && {color: colors.text}]}
+        numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -51,12 +61,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.03)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   activeContainer: {
     borderColor: 'transparent',
@@ -69,14 +77,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    color: 'rgba(255,255,255,0.6)',
     fontSize: 13,
     fontWeight: '700',
     fontFamily: 'Manrope',
     letterSpacing: 0.2,
-  },
-  activeLabel: {
-    color: '#fff',
   },
 });
 

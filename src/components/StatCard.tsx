@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { CommonCard } from './CommonCard';
 
 interface StatCardProps {
@@ -13,14 +13,17 @@ interface StatCardProps {
   onPress?: () => void;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ 
-  icon, 
-  label, 
-  value, 
+export const StatCard: React.FC<StatCardProps> = ({
+  icon,
+  label,
+  value,
   subtitle,
-  style, 
-  onPress 
+  style,
+  onPress
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <CommonCard style={[styles.container, style]} padding={20} onPress={onPress}>
       <View style={styles.header}>
@@ -31,11 +34,11 @@ export const StatCard: React.FC<StatCardProps> = ({
           {label.toUpperCase()}
         </Text>
       </View>
-      
+
       <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
-      
+
       {subtitle && (
         <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}
@@ -51,52 +54,54 @@ export const StatCard: React.FC<StatCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    minWidth: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  iconWrapper: {
-    backgroundColor: colors.iconBg,
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  label: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    flex: 1,
-  },
-  value: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    color: colors.subText,
-    fontSize: 12,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  actionHint: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 12,
-    opacity: 0.9,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      minWidth: 0,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 16,
+    },
+    iconWrapper: {
+      backgroundColor: colors.iconBg,
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    label: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1,
+      flex: 1,
+    },
+    value: {
+      color: colors.text,
+      fontSize: 24,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 4,
+      fontWeight: '500',
+    },
+    actionHint: {
+      color: colors.primary,
+      fontSize: 11,
+      fontWeight: '700',
+      marginTop: 12,
+      opacity: 0.9,
+    },
+  });
+}

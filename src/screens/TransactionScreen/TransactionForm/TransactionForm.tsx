@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity, Keyboard} from 'react-native';
+import {View, Pressable, StyleSheet, Text, TouchableOpacity, Keyboard} from 'react-native';
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddTransactionFields} from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants';
@@ -10,7 +10,7 @@ import {ExpenseCategoryModel} from '@trackingPortal/api/models';
 import CategorySelector from '@trackingPortal/screens/TransactionScreen/components/CategorySelector';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {LoadingButton} from '@trackingPortal/components';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface TransactionFormProps {
   categories: ExpenseCategoryModel[];
@@ -35,6 +35,8 @@ export default function TransactionForm({
   onCancel,
   loading,
 }: TransactionFormProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const amountInputRef = useRef<any>(null);
@@ -84,7 +86,7 @@ export default function TransactionForm({
           ref={amountInputRef}
           style={styles.amountInput}
           placeholder="0.00"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.muted}
           underlineColor="transparent"
           activeUnderlineColor="transparent"
           left={
@@ -101,9 +103,9 @@ export default function TransactionForm({
 
       <View style={styles.fieldSection}>
         <Text style={styles.sectionLabel}>PURPOSE</Text>
-        <FormikTextInput 
-          name={EAddTransactionFields.DESCRIPTION} 
-          placeholder="What is this for?" 
+        <FormikTextInput
+          name={EAddTransactionFields.DESCRIPTION}
+          placeholder="What is this for?"
         />
       </View>
 
@@ -153,7 +155,7 @@ export default function TransactionForm({
       />
 
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => {
             Keyboard.dismiss();
@@ -163,7 +165,7 @@ export default function TransactionForm({
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.saveButtonWrapper}>
           <LoadingButton
             label="Save Entry"
@@ -179,87 +181,89 @@ export default function TransactionForm({
   );
 }
 
-const styles = StyleSheet.create({
-  amountContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  amountLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  amountInput: {
-    backgroundColor: 'transparent',
-    fontSize: 56,
-    fontFamily: 'Manrope',
-    fontWeight: '800',
-    textAlign: 'center',
-    height: 80,
-    width: '100%',
-  },
-  amountCurrency: {
-    color: colors.primary,
-    fontSize: 32,
-    fontWeight: '400',
-  },
-  currencyPill: {
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  currencyPillText: {
-    color: colors.muted,
-    fontSize: 12,
-  },
-  fieldSection: {
-    gap: 8,
-  },
-  sectionLabel: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-  },
-  inputWrapper: {
-    position: 'relative',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  dateInput: {
-    backgroundColor: 'transparent',
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  cancelButton: {
-    paddingHorizontal: 20,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  cancelButtonText: {
-    color: colors.subText,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  saveButtonWrapper: {
-    minWidth: 140,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    amountContainer: {
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    amountLabel: {
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+    },
+    amountInput: {
+      backgroundColor: 'transparent',
+      fontSize: 56,
+      fontFamily: 'Manrope',
+      fontWeight: '800',
+      textAlign: 'center',
+      height: 80,
+      width: '100%',
+    },
+    amountCurrency: {
+      color: colors.primary,
+      fontSize: 32,
+      fontWeight: '400',
+    },
+    currencyPill: {
+      backgroundColor: colors.surfaceAlt,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: 20,
+      marginTop: 8,
+    },
+    currencyPillText: {
+      color: colors.muted,
+      fontSize: 12,
+    },
+    fieldSection: {
+      gap: 8,
+    },
+    sectionLabel: {
+      color: colors.muted,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.5,
+    },
+    inputWrapper: {
+      position: 'relative',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    dateInput: {
+      backgroundColor: 'transparent',
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 24,
+      marginBottom: 16,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+    cancelButton: {
+      paddingHorizontal: 20,
+      height: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    cancelButtonText: {
+      color: colors.subText,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    saveButtonWrapper: {
+      minWidth: 140,
+    },
+  });
+}

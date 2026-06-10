@@ -1,9 +1,9 @@
 import {
-  MD3DarkTheme as PaperDarkTheme,
+  MD3LightTheme as PaperLightTheme,
   configureFonts,
   type MD3Theme,
 } from 'react-native-paper';
-import {colors} from '@trackingPortal/themes/colors';
+import {lightColors} from '@trackingPortal/themes/lightColors';
 
 const baseFonts = {
   regular: 'Manrope_400Regular',
@@ -32,24 +32,24 @@ const fontConfig = configureFonts({
   },
 });
 
-export const darkTheme: MD3Theme = {
-  ...PaperDarkTheme,
+export const lightTheme: MD3Theme = {
+  ...PaperLightTheme,
   roundness: 22,
   isV3: true,
   fonts: fontConfig,
   colors: {
-    ...PaperDarkTheme.colors,
-    primary: colors.primary,
-    secondary: colors.accent,
-    tertiary: colors.secondary,
-    background: colors.background,
-    surface: colors.surface,
-    surfaceVariant: colors.surfaceAlt,
-    onSurface: colors.text,
-    onSurfaceVariant: colors.subText,
-    outline: colors.glassBorder,
-    outlineVariant: colors.glassBorder,
-    error: colors.error,
-    backdrop: colors.overlay,
+    ...PaperLightTheme.colors,
+    primary: lightColors.primary,
+    secondary: lightColors.accent,
+    tertiary: lightColors.secondary,
+    background: lightColors.background,
+    surface: lightColors.surface,
+    surfaceVariant: lightColors.surfaceAlt,
+    onSurface: lightColors.text,
+    onSurfaceVariant: lightColors.subText,
+    outline: lightColors.glassBorder,
+    outlineVariant: lightColors.glassBorder,
+    error: lightColors.error,
+    backdrop: lightColors.overlay,
   },
 };

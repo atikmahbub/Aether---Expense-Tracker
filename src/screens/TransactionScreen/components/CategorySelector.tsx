@@ -2,7 +2,7 @@ import React, {useCallback, useMemo} from 'react';
 import {ActivityIndicator, FlatList, StyleSheet, Text, View} from 'react-native';
 import CategoryChip from '@trackingPortal/screens/TransactionScreen/components/CategoryChip';
 import {ExpenseCategoryModel} from '@trackingPortal/api/models';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface CategorySelectorProps {
   categories: ExpenseCategoryModel[];
@@ -23,6 +23,9 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   onRetry,
   recentCategoryIds,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const prioritizedCategories = useMemo(() => {
     if (!recentCategoryIds?.length) {
       return categories;
@@ -92,40 +95,42 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  listContent: {
-    paddingVertical: 4,
-    paddingRight: 12,
-  },
-  separator: {
-    width: 12,
-  },
-  fallbackContainer: {
-    minHeight: 48,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    backgroundColor: colors.surface,
-  },
-  placeholder: {
-    color: colors.subText,
-    fontSize: 13,
-  },
-  helper: {
-    color: colors.subText,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  errorText: {
-    color: colors.warning,
-    fontSize: 12,
-    marginTop: 6,
-    fontFamily: 'Manrope',
-    fontWeight: '600',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    listContent: {
+      paddingVertical: 4,
+      paddingRight: 12,
+    },
+    separator: {
+      width: 12,
+    },
+    fallbackContainer: {
+      minHeight: 48,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
+      backgroundColor: colors.surface,
+    },
+    placeholder: {
+      color: colors.subText,
+      fontSize: 13,
+    },
+    helper: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    errorText: {
+      color: colors.warning,
+      fontSize: 12,
+      marginTop: 6,
+      fontFamily: 'Manrope',
+      fontWeight: '600',
+    },
+  });
+}
 
 export default CategorySelector;

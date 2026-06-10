@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Text, FAB } from 'react-native-paper';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useCategories, CategoryType } from '@trackingPortal/hooks/useCategories';
 import CategoryItem from '@trackingPortal/screens/CategoryScreen/CategoryItem';
@@ -11,10 +11,12 @@ import { useNavigation } from 'expo-router';
 import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
 
 const CategoryScreen = () => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
   const [selectedType, setSelectedType] = useState<CategoryType>('expense');
   const { categories, loading, createCategory, updateCategory, deleteCategory } = useCategories(selectedType);
-  
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategoryModel | IncomeCategoryModel | null>(null);
 
@@ -37,14 +39,14 @@ const CategoryScreen = () => {
       Alert.alert('System Category', 'Default categories cannot be deleted.');
       return;
     }
-    
+
     Alert.alert(
       'Delete Category',
       `Are you sure you want to delete "${item.name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: () => deleteCategory(item.id)
         },
@@ -53,8 +55,8 @@ const CategoryScreen = () => {
   };
 
   const renderItem = ({ item }: { item: ExpenseCategoryModel | IncomeCategoryModel }) => (
-    <CategoryItem 
-      item={item} 
+    <CategoryItem
+      item={item}
       onEdit={() => handleEdit(item)}
       onDelete={() => handleDelete(item)}
     />
@@ -89,7 +91,7 @@ const CategoryScreen = () => {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.centerContainer}>
-              <MaterialCommunityIcons name="tag-off-outline" size={64} color="rgba(255,255,255,0.1)" />
+              <MaterialCommunityIcons name="tag-off-outline" size={64} color={colors.inactiveIcon} />
               <Text style={styles.emptyText}>No categories yet</Text>
             </View>
           }
@@ -121,60 +123,62 @@ const CategoryScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.text,
-    fontFamily: 'Manrope',
-    letterSpacing: -0.5,
-  },
-  segmentedControl: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 100,
-  },
-  emptyText: {
-    color: 'rgba(255,255,255,0.3)',
-    marginTop: 16,
-    fontSize: 16,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 16,
-    bottom: 32,
-    backgroundColor: colors.primary,
-    borderRadius: 28,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 60,
+      paddingBottom: 16,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: colors.text,
+      fontFamily: 'Manrope',
+      letterSpacing: -0.5,
+    },
+    segmentedControl: {
+      marginHorizontal: 20,
+      marginBottom: 20,
+    },
+    listContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 100,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 100,
+    },
+    emptyText: {
+      color: colors.muted,
+      marginTop: 16,
+      fontSize: 16,
+    },
+    fab: {
+      position: 'absolute',
+      margin: 16,
+      right: 16,
+      bottom: 32,
+      backgroundColor: colors.primary,
+      borderRadius: 28,
+    },
+  });
+}
 
 export default CategoryScreen;

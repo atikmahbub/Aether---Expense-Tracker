@@ -1,5 +1,5 @@
-import { colors } from '@trackingPortal/themes/colors';
-import React from 'react';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   GestureResponderEvent,
@@ -23,9 +23,12 @@ const LoadingButton: React.FC<ILoadingButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
-    <TouchableOpacity 
-      style={[styles.buttonContainer, style]} 
+    <TouchableOpacity
+      style={[styles.buttonContainer, style]}
       onPress={onPress}
       disabled={loading}
     >
@@ -43,24 +46,26 @@ const LoadingButton: React.FC<ILoadingButtonProps> = ({
 
 export default LoadingButton;
 
-const styles = StyleSheet.create({
-  buttonContainer: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  buttonText: {
-    color: colors.background,
-    fontWeight: '700',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  loader: {
-    marginLeft: 8,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    buttonContainer: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 48,
+    },
+    buttonText: {
+      color: colors.background,
+      fontWeight: '700',
+      fontSize: 16,
+      textAlign: 'center',
+    },
+    loader: {
+      marginLeft: 8,
+    },
+  });
+}

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle, TouchableOpacity } from 'react-native';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface CommonCardProps {
   children: React.ReactNode;
@@ -15,12 +15,14 @@ export const CommonCard: React.FC<CommonCardProps> = ({
   onPress,
   padding = 20,
 }) => {
+  const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const CardContainer = onPress ? (TouchableOpacity as any) : View;
-  
+
   return (
-    <CardContainer 
-      activeOpacity={0.9} 
-      onPress={onPress} 
+    <CardContainer
+      activeOpacity={0.9}
+      onPress={onPress}
       style={[styles.card, { padding }, style]}
     >
       {children}
@@ -28,16 +30,18 @@ export const CommonCard: React.FC<CommonCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: boolean) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: isDark ? 4 : 1 },
+      shadowOpacity: isDark ? 0.2 : 0.04,
+      shadowRadius: isDark ? 8 : 2,
+      elevation: isDark ? 4 : 0,
+    },
+  });
+}

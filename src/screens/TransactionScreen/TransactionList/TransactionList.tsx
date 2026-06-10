@@ -24,7 +24,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import DatePicker from 'react-native-date-picker';
 import DataTable from '@trackingPortal/components/DataTable';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {Formik} from 'formik';
 import {
   CreateTransactionSchema,
@@ -99,6 +99,8 @@ const TransactionList: FC<ITransactionList> = ({
   onCategoryUsed,
   refreshSummary,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -129,13 +131,12 @@ const TransactionList: FC<ITransactionList> = ({
 
   const scrollToActiveMonth = useCallback((monthIndex: number, animated = true) => {
     if (!scrollRef.current) return;
-    
-    // Fixed chip width + gap
+
     const CHIP_WIDTH = 75;
     const GAP = 8;
     const itemCenter = monthIndex * (CHIP_WIDTH + GAP) + CHIP_WIDTH / 2;
-    const scrollX = itemCenter - SCREEN_WIDTH / 2 + 20; // 20 is paddingHorizontal
-    
+    const scrollX = itemCenter - SCREEN_WIDTH / 2 + 20;
+
     scrollRef.current.scrollTo({
       x: Math.max(0, scrollX),
       animated,
@@ -143,7 +144,6 @@ const TransactionList: FC<ITransactionList> = ({
   }, []);
 
   useEffect(() => {
-    // Small delay to ensure layout is ready
     const timer = setTimeout(() => {
       scrollToActiveMonth(filteredMonth.month());
     }, 100);
@@ -161,7 +161,6 @@ const TransactionList: FC<ITransactionList> = ({
   ) => {
     if (user.default) return;
 
-    // 🌐 Network guard
     if (!isOnline) {
       Toast.show({
         type: 'offline',
@@ -177,7 +176,7 @@ const TransactionList: FC<ITransactionList> = ({
         (values.categoryId && categoryLookup[values.categoryId]?.name) || '';
       const description =
         values.description?.trim() || categoryName || 'Quick entry';
-      
+
       const payload: any = {
         amount: Number(values.amount),
         date: makeUnixTimestampString(Number(new Date(values.date))),
@@ -237,7 +236,6 @@ const TransactionList: FC<ITransactionList> = ({
   const handleDeleteTransaction = useCallback(async (rowId: any) => {
     if (!rowId) return;
 
-    // 🌐 Network guard
     if (!isOnline) {
       Toast.show({
         type: 'offline',
@@ -300,7 +298,7 @@ const TransactionList: FC<ITransactionList> = ({
       return (
         <Formik
           enableReinitialize
-           initialValues={{
+          initialValues={{
             id: selectedItem.id,
             [EAddTransactionFields.DATE]: parseDate(selectedItem.date),
             [EAddTransactionFields.DESCRIPTION]: selectedItem.description || '',
@@ -344,7 +342,6 @@ const TransactionList: FC<ITransactionList> = ({
       typeFilter,
     ],
   );
-
 
   const tableData = useMemo(() => {
     return transactions.map(item => {
@@ -473,141 +470,143 @@ const TransactionList: FC<ITransactionList> = ({
 
 export default React.memo(TransactionList);
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    flex: 1,
-  },
-  listCard: {
-    marginTop: 0,
-  },
-  chipsScroll: {
-    flexGrow: 0,
-    marginBottom: 12,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 20,
-  },
-  chip: {
-    borderColor: colors.glassBorder,
-    borderRadius: 14,
-    height: 42,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    width: 75, // Fixed width for scroll centering
-  },
-  chipActive: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(94, 234, 212, 0.1)',
-  },
-  chipLabel: {
-    color: colors.subText,
-    fontSize: 11,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-    letterSpacing: 0.5,
-  },
-  chipLabelActive: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-    letterSpacing: 0.5,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-    letterSpacing: -0.5,
-  },
-  viewAllText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  monthButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    paddingHorizontal: 4,
-  },
-  monthButtonLabel: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-  },
-  tableContainer: {
-    marginTop: 4,
-  },
-  collapsibleContent: {
-    gap: 16,
-    paddingBottom: 20,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-    paddingBottom: 20,
-    gap: 10,
-  },
-  cancelButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  cancelButtonText: {
-    color: colors.subText,
-    fontWeight: '600',
-  },
-  yearPickerOverlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  yearPickerContent: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 24,
-    padding: 24,
-    width: 240,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  yearPickerTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  yearOption: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  yearOptionText: {
-    color: colors.subText,
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  yearOptionTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    mainContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      flex: 1,
+    },
+    listCard: {
+      marginTop: 0,
+    },
+    chipsScroll: {
+      flexGrow: 0,
+      marginBottom: 12,
+    },
+    timelineRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    chipsRow: {
+      flexDirection: 'row',
+      gap: 8,
+      paddingRight: 20,
+    },
+    chip: {
+      borderColor: colors.glassBorder,
+      borderRadius: 14,
+      height: 42,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      width: 75,
+    },
+    chipActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    chipLabel: {
+      color: colors.subText,
+      fontSize: 11,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+      letterSpacing: 0.5,
+    },
+    chipLabelActive: {
+      color: colors.primary,
+      fontSize: 11,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+      letterSpacing: 0.5,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+      letterSpacing: -0.5,
+    },
+    viewAllText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    monthButton: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      paddingHorizontal: 4,
+    },
+    monthButtonLabel: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+    },
+    tableContainer: {
+      marginTop: 4,
+    },
+    collapsibleContent: {
+      gap: 16,
+      paddingBottom: 20,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 10,
+      paddingBottom: 20,
+      gap: 10,
+    },
+    cancelButton: {
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    cancelButtonText: {
+      color: colors.subText,
+      fontWeight: '600',
+    },
+    yearPickerOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    yearPickerContent: {
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 24,
+      padding: 24,
+      width: 240,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    yearPickerTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    yearOption: {
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    yearOptionText: {
+      color: colors.subText,
+      fontSize: 18,
+      fontWeight: '500',
+    },
+    yearOptionTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+  });
+}

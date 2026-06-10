@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, TouchableOpacity, InteractionManager, Keyboard} from 'react-native';
+import {View, Pressable, StyleSheet, Text, TouchableOpacity, Keyboard} from 'react-native';
 import React, {useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddLoanFields} from '@trackingPortal/screens/LoanScreen';
@@ -7,7 +7,7 @@ import {FormikTextInput} from '@trackingPortal/components';
 import DatePicker from 'react-native-date-picker';
 import dayjs from 'dayjs';
 import {LoanType} from '@trackingPortal/api/enums';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {LoadingButton} from '@trackingPortal/components';
 
 const LOAN_TYPE_OPTIONS = [
@@ -30,6 +30,8 @@ interface LoanFormProps {
 }
 
 export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const deadlineValue = values[EAddLoanFields.DEADLINE];
@@ -48,7 +50,6 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
   return (
     <View style={styles.formRoot}>
       <View style={styles.toggleContainer}>
-        {/* ... existing toggle code ... */}
         <View style={styles.toggleGroup}>
           {LOAN_TYPE_OPTIONS.map(option => {
             const isSelected = values[EAddLoanFields.LOAN_TYPE] === option.value;
@@ -77,9 +78,9 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
       </View>
       <View style={styles.fieldSection}>
         <Text style={styles.sectionLabel}>COUNTERPARTY NAME</Text>
-        <FormikTextInput 
-          name={EAddLoanFields.NAME} 
-          placeholder="Who is this loan with?" 
+        <FormikTextInput
+          name={EAddLoanFields.NAME}
+          placeholder="Who is this loan with?"
         />
       </View>
       <View style={styles.fieldSection}>
@@ -101,18 +102,18 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
             underlineColor="transparent"
             activeUnderlineColor="transparent"
           />
-        <Pressable
-          style={StyleSheet.absoluteFillObject}
-          onPress={openDeadlinePicker}
-        />
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={openDeadlinePicker}
+          />
         </View>
       </View>
 
       <View style={styles.fieldSection}>
         <Text style={styles.sectionLabel}>LOAN PURPOSE / NOTE</Text>
-        <FormikTextInput 
-          name={EAddLoanFields.NOTE} 
-          placeholder="Add details about the agreement..." 
+        <FormikTextInput
+          name={EAddLoanFields.NOTE}
+          placeholder="Add details about the agreement..."
           multiline
           numberOfLines={4}
         />
@@ -131,7 +132,7 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
       />
 
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => {
             Keyboard.dismiss();
@@ -141,7 +142,7 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.saveButtonWrapper}>
           <LoadingButton
             label="Save Loan Entry"
@@ -157,86 +158,88 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  formRoot: {
-    gap: 16,
-  },
-  inputWrapper: {
-    position: 'relative',
-  },
-  toggleContainer: {
-    gap: 12,
-    marginBottom: 8,
-  },
-  toggleLabel: {
-    display: 'none',
-  },
-  toggleGroup: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  toggleOption: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 24,
-    backgroundColor: '#1b2026',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleOptionSelected: {
-    backgroundColor: colors.primary,
-  },
-  toggleTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  toggleTitleSelected: {
-    color: '#000',
-  },
-  givenTitle: {
-    color: colors.primary,
-  },
-  takenTitle: {
-    color: colors.text,
-  },
-  toggleDescription: {
-    display: 'none',
-  },
-  fieldSection: {
-    gap: 8,
-  },
-  sectionLabel: {
-    color: '#8a929a',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  cancelButton: {
-    paddingHorizontal: 20,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  cancelButtonText: {
-    color: colors.subText,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  saveButtonWrapper: {
-    minWidth: 140,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    formRoot: {
+      gap: 16,
+    },
+    inputWrapper: {
+      position: 'relative',
+    },
+    toggleContainer: {
+      gap: 12,
+      marginBottom: 8,
+    },
+    toggleLabel: {
+      display: 'none',
+    },
+    toggleGroup: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    toggleOption: {
+      flex: 1,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 24,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    toggleOptionSelected: {
+      backgroundColor: colors.primary,
+    },
+    toggleTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    toggleTitleSelected: {
+      color: '#000',
+    },
+    givenTitle: {
+      color: colors.primary,
+    },
+    takenTitle: {
+      color: colors.text,
+    },
+    toggleDescription: {
+      display: 'none',
+    },
+    fieldSection: {
+      gap: 8,
+    },
+    sectionLabel: {
+      color: colors.muted,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 24,
+      marginBottom: 16,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+    cancelButton: {
+      paddingHorizontal: 20,
+      height: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    cancelButtonText: {
+      color: colors.subText,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    saveButtonWrapper: {
+      minWidth: 140,
+    },
+  });
+}

@@ -51,4 +51,5 @@ export const FALLBACK_CATEGORIES: ExpenseCategoryModel[] =
     name: category.name,
     icon: normalizeCategoryIcon(category.icon),
     color: category.color,
+    userId: null,
   }));

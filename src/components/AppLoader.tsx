@@ -1,66 +1,60 @@
-import React, {useEffect, useRef} from 'react';
-import {Animated, Dimensions, StyleSheet, View} from 'react-native';
-import {colors} from '@trackingPortal/themes/colors';
+import React, { useMemo } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
+import LottieView from 'lottie-react-native';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
-const {width} = Dimensions.get('window');
-
-const AnimatedLoader = () => {
-  const rotation = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const spinAnimation = Animated.loop(
-      Animated.timing(rotation, {
-        toValue: 1,
-        duration: 1600,
-        useNativeDriver: true,
-      }),
-    );
-
-    spinAnimation.start();
-    return () => spinAnimation.stop();
-  }, [rotation]);
-
-  const animatedStyle = {
-    transform: [
-      {
-        rotate: rotation.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', '360deg'],
-        }),
-      },
-      {
-        scale: rotation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [1, 1.15],
-        }),
-      },
-    ],
-  };
+const AppLoader = () => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <View style={[styles.container, styles.backdrop]}>
-      <Animated.View style={[styles.loader, animatedStyle]} />
+    <View style={styles.container}>
+      <View style={styles.loaderCard}>
+        <LottieView
+          source={require('@trackingPortal/assets/loader2.json')}
+          autoPlay={true}
+          loop
+          style={styles.loader}
+        />
+        <Text style={styles.loaderLabel}>Warming up Scalar…</Text>
+      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backdrop: {
-    backgroundColor: colors.overlay,
-  },
-  loader: {
-    width: width * 0.2,
-    height: width * 0.2,
-    borderWidth: 5,
-    borderRadius: width * 0.1,
-    borderColor: colors.primary,
-    borderTopColor: colors.accent,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      overflow: 'hidden',
+    },
+    loaderCard: {
+      width: 220,
+      borderRadius: 32,
+      paddingVertical: 32,
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: colors.surface,
+      shadowColor: colors.overlay,
+      shadowOpacity: 0.35,
+      shadowRadius: 24,
+      shadowOffset: {width: 0, height: 16},
+    },
+    loader: {
+      width: 150,
+      height: 150,
+    },
+    loaderLabel: {
+      color: colors.text,
+      fontSize: 14,
+      letterSpacing: 0.4,
+    },
+  });
+}
 
-export default AnimatedLoader;
+export default AppLoader;

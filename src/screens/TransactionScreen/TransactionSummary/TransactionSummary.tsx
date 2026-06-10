@@ -15,7 +15,7 @@ import {EMonthlyLimitFields} from '@trackingPortal/screens/TransactionScreen/Tra
 import Toast from 'react-native-toast-message';
 import {Month, Year} from '@trackingPortal/api/primitives';
 import {withHaptic} from '@trackingPortal/utils/haptic';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { CommonCard, StatCard } from '@trackingPortal/components';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -38,6 +38,8 @@ const TransactionSummary: React.FC<ISummary> = ({
   getMonthlyLimit,
   isLoading,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [isLimitModalVisible, setIsLimitModalVisible] =
     useState<boolean>(false);
   const {apiGateway, currentUser: user} = useStoreContext();
@@ -48,7 +50,7 @@ const TransactionSummary: React.FC<ISummary> = ({
   const hasLimit = type === 'expense' && limitValue > 0;
 
   const progressRatio = hasLimit ? totalValue / limitValue : 0;
-  
+
   const progressLabel = hasLimit
     ? formatNumber(Math.min(progressRatio * 100, 999), {
         minimumFractionDigits: 0,
@@ -126,27 +128,25 @@ const TransactionSummary: React.FC<ISummary> = ({
 
   const progressColor = useMemo(() => {
     return progressRatio > 1 ? colors.error : colors.primary;
-  }, [progressRatio]);
+  }, [progressRatio, colors]);
 
   const statusBgColor = useMemo(() => {
     return progressRatio > 1 ? colors.errorSoft : colors.primarySoft;
-  }, [progressRatio]);
-
-
+  }, [progressRatio, colors]);
 
   return (
     <View style={styles.mainContainer}>
-      <CommonCard 
-        style={styles.heroCard} 
+      <CommonCard
+        style={styles.heroCard}
         padding={20}
       >
         <View style={styles.topSection}>
           <View style={styles.headerRow}>
             <View style={styles.headingRow}>
-              <MaterialCommunityIcons 
-                name={type === 'expense' ? "wallet-outline" : "bank-outline"} 
-                size={16} 
-                color={colors.primary} 
+              <MaterialCommunityIcons
+                name={type === 'expense' ? "wallet-outline" : "bank-outline"}
+                size={16}
+                color={colors.primary}
               />
               <Text style={styles.headingLabel}>
                 {type === 'expense' ? 'MONTHLY SPENDING' : 'MONTHLY INCOME'}
@@ -165,7 +165,7 @@ const TransactionSummary: React.FC<ISummary> = ({
               </View>
             )}
           </View>
-  
+
           <View style={styles.amountRow}>
             <View style={styles.amountContainer}>
               <Text
@@ -183,13 +183,13 @@ const TransactionSummary: React.FC<ISummary> = ({
                   })}{' '}
                   {type === 'expense' ? 'earned' : 'spent'}
                 </Text>
-                
+
                 <View style={styles.dot} />
-                
+
                 <View style={styles.netContainer}>
                   <Text style={styles.netLabel}>NET: </Text>
                   <Text style={[
-                    styles.netValue, 
+                    styles.netValue,
                     { color: netBalance === 0 ? colors.muted : (isPositiveBalance ? colors.primary : colors.error) }
                   ]}>
                     {formatCurrency(Math.abs(netBalance), currency, {
@@ -207,9 +207,9 @@ const TransactionSummary: React.FC<ISummary> = ({
 
       {type === 'expense' && (
         <View style={styles.metricsRow}>
-          <StatCard 
-            icon="target" 
-            label="Target Limit" 
+          <StatCard
+            icon="target"
+            label="Target Limit"
             onPress={openLimitModal}
             value={limitValue
               ? formatCurrency(limitValue, currency, {
@@ -219,12 +219,12 @@ const TransactionSummary: React.FC<ISummary> = ({
               : 'No Limit'}
           />
 
-          <StatCard 
-            icon="chart-line" 
-            label="Daily Avg" 
+          <StatCard
+            icon="chart-line"
+            label="Daily Avg"
             value={(() => {
               const divisor = Math.max(filterMonth.daysInMonth(), 1);
-              
+
               return formatCurrency(
                 totalValue / divisor,
                 currency,
@@ -275,109 +275,109 @@ const TransactionSummary: React.FC<ISummary> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    marginBottom: 20,
-  },
-  heroCard: {
-    marginBottom: 20,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    width: '100%',
-  },
-  headingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headingLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  topSection: {
-    // No margin bottom needed as bottom section is removed
-  },
-  amountRow: {
-    marginTop: 8, // Reduced gap from header
-  },
-  amountContainer: {
-    width: '100%',
-  },
-  totalValueText: {
-    color: colors.text,
-    fontSize: 52,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-    letterSpacing: -2.5,
-    includeFontPadding: false,
-    flexShrink: 1,
-  },
-  earnedText: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Manrope',
-  },
-  summaryFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 8,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.glassBorder,
-  },
-  netContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  netLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  netValue: {
-    fontSize: 12,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-  },
-  percentageContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  percentageInline: {
-    fontSize: 10,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-  },
-  percentageSub: {
-    fontSize: 10,
-    color: colors.muted,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.2,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  limitForm: {
-    gap: 12,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    mainContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      marginBottom: 20,
+    },
+    heroCard: {
+      marginBottom: 20,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      width: '100%',
+    },
+    headingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    headingLabel: {
+      color: colors.muted,
+      fontSize: 10,
+      letterSpacing: 1,
+      fontWeight: '700',
+    },
+    topSection: {},
+    amountRow: {
+      marginTop: 8,
+    },
+    amountContainer: {
+      width: '100%',
+    },
+    totalValueText: {
+      color: colors.text,
+      fontSize: 52,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+      letterSpacing: -2.5,
+      includeFontPadding: false,
+      flexShrink: 1,
+    },
+    earnedText: {
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: '600',
+      fontFamily: 'Manrope',
+    },
+    summaryFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+      gap: 8,
+    },
+    dot: {
+      width: 3,
+      height: 3,
+      borderRadius: 1.5,
+      backgroundColor: colors.glassBorder,
+    },
+    netContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    netLabel: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    netValue: {
+      fontSize: 12,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+    },
+    percentageContainer: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    percentageInline: {
+      fontSize: 10,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+    },
+    percentageSub: {
+      fontSize: 10,
+      color: colors.muted,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.2,
+    },
+    metricsRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    limitForm: {
+      gap: 12,
+    },
+  });
+}
 
 export default React.memo(TransactionSummary);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {View, StyleSheet, Image, ScrollView} from 'react-native';
 import {Text} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -6,7 +6,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import {AnimatedLoader} from '@trackingPortal/components';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 import {
   Alert,
@@ -26,6 +26,8 @@ const DEFAULT_AVATAR =
   'https://api.dicebear.com/7.x/avataaars/png?seed=Scalar&backgroundColor=transparent';
 
 const ProfileScreen: React.FC = () => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const {logout, user, loading} = useAuth();
   const {currentUser, apiGateway} = useStoreContext();
   const [deleteModalVisible, setDeleteModalVisible] = React.useState(false);
@@ -42,13 +44,13 @@ const ProfileScreen: React.FC = () => {
       "Are you sure you want to proceed with account deletion? This will erase all your data.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Proceed", 
-          style: "destructive", 
+        {
+          text: "Proceed",
+          style: "destructive",
           onPress: () => {
             setDeleteConfirmationText('');
             setDeleteModalVisible(true);
-          } 
+          }
         }
       ]
     );
@@ -68,14 +70,14 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  const displayName = user?.name ?? 'Scalar User';
-  const displayEmail = user?.email ?? 'hello@scalar.finance';
-  const avatarSource = user?.picture || user?.profilePicture || DEFAULT_AVATAR;
+  const displayName = (user?.name as string | undefined) ?? 'Scalar User';
+  const displayEmail = (user?.email as string | undefined) ?? 'hello@scalar.finance';
+  const avatarSource = (user?.picture as string | undefined) || (user?.profilePicture as string | undefined) || DEFAULT_AVATAR;
   const firstName = displayName.split(' ')[0] || 'there';
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: 60 }]}
         showsVerticalScrollIndicator={false}
       >
@@ -131,7 +133,7 @@ const ProfileScreen: React.FC = () => {
             style={[styles.actionRow, styles.dangerRow]}
             activeOpacity={0.8}
             onPress={handleInitialDeleteTap}>
-             <View style={[styles.detailIcon, {backgroundColor: 'rgba(248, 113, 113, 0.1)'}]}>
+            <View style={[styles.detailIcon, {backgroundColor: 'rgba(248, 113, 113, 0.1)'}]}>
               <MaterialCommunityIcons
                 name="delete-outline"
                 size={20}
@@ -159,7 +161,6 @@ const ProfileScreen: React.FC = () => {
         animationType="fade"
         transparent
         onRequestClose={() => !isDeleting && setDeleteModalVisible(false)}>
-        {/* ... Modal content remains same for functionality ... */}
         <TouchableWithoutFeedback
           onPress={() => {
             if (!isDeleting) {
@@ -169,12 +170,12 @@ const ProfileScreen: React.FC = () => {
           }}>
           <View style={styles.modalBackdrop} />
         </TouchableWithoutFeedback>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoidingContainer}
           pointerEvents="box-none">
           <View style={styles.modalSheet}>
-            <RNScrollView 
+            <RNScrollView
               contentContainerStyle={styles.modalScrollContent}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}>
@@ -185,7 +186,7 @@ const ProfileScreen: React.FC = () => {
               <TextInput
                 style={styles.deleteInput}
                 placeholder="Type DELETE to confirm"
-                placeholderTextColor="#4f555c"
+                placeholderTextColor={colors.muted}
                 value={deleteConfirmationText}
                 onChangeText={setDeleteConfirmationText}
                 autoCapitalize="characters"
@@ -193,12 +194,12 @@ const ProfileScreen: React.FC = () => {
                 editable={!isDeleting}
               />
               <View style={styles.modalButtonsGroup}>
-                <TouchableOpacity 
-                   style={[
-                    styles.modalButton, 
+                <TouchableOpacity
+                  style={[
+                    styles.modalButton,
                     styles.deleteButton,
                     deleteConfirmationText !== 'DELETE' && styles.deleteButtonDisabled
-                  ]} 
+                  ]}
                   onPress={handleDeleteAccount}
                   disabled={isDeleting || deleteConfirmationText !== 'DELETE'}>
                   {isDeleting ? (
@@ -207,8 +208,8 @@ const ProfileScreen: React.FC = () => {
                     <Text style={styles.deleteButtonText}>Delete</Text>
                   )}
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.cancelButton]} 
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => {
                     setDeleteModalVisible(false);
                     Keyboard.dismiss();
@@ -225,226 +226,228 @@ const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    gap: 32,
-  },
-  hero: {
-    alignItems: 'center',
-    gap: 16,
-    width: '100%',
-    position: 'relative',
-    marginBottom: 8,
-  },
-  heroGlow: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(34, 197, 94, 0.05)',
-    top: -50,
-  },
-  avatarWrapper: {
-    width: AVATAR_SIZE + 12,
-    height: AVATAR_SIZE + 12,
-    borderRadius: (AVATAR_SIZE + 12) / 2,
-    padding: 4,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    shadowOffset: {width: 0, height: 10},
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: colors.surface,
-  },
-  greeting: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  caption: {
-    color: colors.subText,
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    opacity: 0.8,
-  },
-  cardGroup: {
-    width: '100%',
-    gap: 12,
-  },
-  sectionHeader: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    paddingLeft: 4,
-  },
-  detailCard: {
-    width: '100%',
-    backgroundColor: colors.cardBg,
-    borderRadius: 24,
-    padding: 20,
-    gap: 20,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  detailIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailTextCol: {
-    flex: 1,
-  },
-  detailLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  detailValue: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.glassBorder,
-  },
-  actionRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.cardBg,
-    borderRadius: 20,
-    padding: 16,
-    gap: 14,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  actionLabel: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  dangerRow: {
-    borderColor: 'rgba(248, 113, 113, 0.15)',
-  },
-  dangerHint: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  versionTag: {
-    textAlign: 'center',
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 8,
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
-  },
-  modalSheet: {
-    backgroundColor: colors.cardBg,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 36,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    marginTop: 'auto',
-  },
-  modalScrollContent: {
-    flexGrow: 1,
-  },
-  modalTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  modalMessage: {
-    color: colors.subText,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  keyboardAvoidingContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  deleteInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modalButtonsGroup: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  cancelButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  deleteButton: {
-    backgroundColor: colors.error,
-  },
-  deleteButtonText: {
-    color: colors.background,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  deleteButtonDisabled: {
-    opacity: 0.5,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: 40,
+      gap: 32,
+    },
+    hero: {
+      alignItems: 'center',
+      gap: 16,
+      width: '100%',
+      position: 'relative',
+      marginBottom: 8,
+    },
+    heroGlow: {
+      position: 'absolute',
+      width: 260,
+      height: 260,
+      borderRadius: 130,
+      backgroundColor: 'rgba(34, 197, 94, 0.05)',
+      top: -50,
+    },
+    avatarWrapper: {
+      width: AVATAR_SIZE + 12,
+      height: AVATAR_SIZE + 12,
+      borderRadius: (AVATAR_SIZE + 12) / 2,
+      padding: 4,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      shadowRadius: 20,
+      shadowOffset: {width: 0, height: 10},
+    },
+    avatar: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      backgroundColor: colors.surface,
+    },
+    greeting: {
+      color: colors.text,
+      fontSize: 32,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+      textAlign: 'center',
+    },
+    caption: {
+      color: colors.subText,
+      fontSize: 15,
+      textAlign: 'center',
+      lineHeight: 22,
+      opacity: 0.8,
+    },
+    cardGroup: {
+      width: '100%',
+      gap: 12,
+    },
+    sectionHeader: {
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      paddingLeft: 4,
+    },
+    detailCard: {
+      width: '100%',
+      backgroundColor: colors.cardBg,
+      borderRadius: 24,
+      padding: 20,
+      gap: 20,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    detailIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    detailTextCol: {
+      flex: 1,
+    },
+    detailLabel: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1,
+      marginBottom: 4,
+    },
+    detailValue: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.glassBorder,
+    },
+    actionRow: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 20,
+      padding: 16,
+      gap: 14,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    actionLabel: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    dangerRow: {
+      borderColor: 'rgba(248, 113, 113, 0.15)',
+    },
+    dangerHint: {
+      color: colors.muted,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    versionTag: {
+      textAlign: 'center',
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: '500',
+      marginTop: 8,
+    },
+    modalBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
+    },
+    modalSheet: {
+      backgroundColor: colors.cardBg,
+      borderTopLeftRadius: 32,
+      borderTopRightRadius: 32,
+      paddingHorizontal: 24,
+      paddingTop: 24,
+      paddingBottom: 36,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      marginTop: 'auto',
+    },
+    modalScrollContent: {
+      flexGrow: 1,
+    },
+    modalTitle: {
+      color: colors.text,
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: 16,
+    },
+    modalMessage: {
+      color: colors.subText,
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: 24,
+    },
+    keyboardAvoidingContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    deleteInput: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    modalButtonsGroup: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 16,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cancelButton: {
+      backgroundColor: colors.surface,
+    },
+    cancelButtonText: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    deleteButton: {
+      backgroundColor: colors.error,
+    },
+    deleteButtonText: {
+      color: colors.background,
+      fontSize: 16,
+      fontWeight: '800',
+    },
+    deleteButtonDisabled: {
+      opacity: 0.5,
+    },
+  });
+}
 
 export default ProfileScreen;

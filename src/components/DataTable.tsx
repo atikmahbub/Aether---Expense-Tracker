@@ -12,7 +12,7 @@ import Swipeable from 'react-native-gesture-handler/Swipeable';
 import Collapsible from 'react-native-collapsible';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {Image} from 'react-native';
 import {formatNumber} from '@trackingPortal/utils/utils';
 
@@ -39,12 +39,12 @@ interface DataTableProps {
   renderSwipeActions?: (id: any, close: () => void) => React.ReactNode;
 }
 
-import Animated, { 
-  FadeInDown, 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withSpring, 
-  withTiming 
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
@@ -59,6 +59,8 @@ const Row = React.memo(
     renderSwipeActions,
     defaultSwipeActions,
     renderCollapsibleContent,
+    colors,
+    styles,
   }: {
     item: any;
     index: number;
@@ -69,9 +71,11 @@ const Row = React.memo(
     renderSwipeActions?: (id: any, close: () => void) => React.ReactNode;
     defaultSwipeActions: (id: any, close: () => void) => React.ReactNode;
     renderCollapsibleContent: (item: any) => React.ReactNode;
+    colors: ReturnType<typeof useAppTheme>['colors'];
+    styles: ReturnType<typeof makeStyles>;
   }) => {
     const isLoanRow = item.Type === "Given" || item.Type === "Taken";
-    
+
     // Press animations
     const scale = useSharedValue(1);
     const opacity = useSharedValue(1);
@@ -97,7 +101,7 @@ const Row = React.memo(
     };
 
     return (
-      <Animated.View 
+      <Animated.View
         entering={FadeInDown.delay(index < 12 ? index * 60 : 0).duration(400).springify()}
         style={[styles.rowContainer, animatedStyle]}
       >
@@ -240,6 +244,8 @@ const DataTable: React.FC<DataTableProps> = ({
   renderCollapsibleContent,
   renderSwipeActions,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const swipeableRefs = useRef<Record<string, any>>({});
 
   const formattedData = useMemo(() => {
@@ -309,7 +315,7 @@ const DataTable: React.FC<DataTableProps> = ({
         </View>
       </View>
     ),
-    [handleDelete],
+    [handleDelete, styles, colors],
   );
 
   useEffect(() => {
@@ -340,6 +346,8 @@ const DataTable: React.FC<DataTableProps> = ({
               renderSwipeActions={renderSwipeActions}
               defaultSwipeActions={defaultSwipeActions}
               renderCollapsibleContent={renderCollapsibleContent}
+              colors={colors}
+              styles={styles}
             />
           ))
         ) : (
@@ -352,214 +360,216 @@ const DataTable: React.FC<DataTableProps> = ({
 
 export default DataTable;
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    width: '100%',
-    marginTop: 4,
-  },
-  header: {
-    display: 'none',
-  },
-  headerCell: {
-    display: 'none',
-  },
-  table: {
-    width: '100%',
-    paddingVertical: 10,
-  },
-  rowContainer: {
-    width: '100%',
-  },
-  rowWrapper: {
-    width: '100%',
-    marginBottom: 14,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceAlt,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 16,
-    alignItems: 'center',
-  },
-  rowActive: {
-    backgroundColor: colors.surface,
-  },
-  iconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  purposeText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-  categoryLine: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    marginTop: 2,
-    textTransform: 'uppercase',
-  },
-  categoryLineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  categoryInlineIcon: {
-    marginTop: 1,
-  },
-  dateText: {
-    color: colors.subText,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  amountContainer: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  amountText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-    letterSpacing: 0.2,
-  },
-  typeBadge: {
-    marginTop: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  typeBadgeGiven: {
-    backgroundColor: 'rgba(182, 247, 0, 0.1)',
-  },
-  typeBadgeTaken: {
-    backgroundColor: 'rgba(255, 142, 139, 0.1)',
-  },
-  categoryText: {
-    color: colors.subText,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontWeight: '700',
-  },
-  avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    position: 'relative',
-  },
-  avatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.surface,
-  },
-  avatarBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.surfaceAlt,
-  },
-  badgeGiven: {
-    backgroundColor: '#a1faff',
-  },
-  badgeTaken: {
-    backgroundColor: '#ff8e8b',
-  },
-  swipeActions: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    justifyContent: 'flex-end',
-    height: '100%',
-    paddingHorizontal: 12,
-  },
-  swipeActionsBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
-    backgroundColor: colors.overlay,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  swipeActionsContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    height: '100%',
-  },
-  swipeActionButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    shadowColor: colors.overlay,
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 10},
-    elevation: Platform.OS === 'android' ? 2 : 6,
-  },
-  editAction: {
-    backgroundColor: colors.badgePositiveBg,
-  },
-  deleteAction: {
-    backgroundColor: colors.badgeNegativeBg,
-  },
-  actionIconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editBadge: {
-    backgroundColor: colors.accent,
-  },
-  deleteBadge: {
-    backgroundColor: colors.error,
-  },
-  collapsibleContent: {
-    backgroundColor: colors.overlay,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
-    width: '100%',
-  },
-  emptyContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    marginTop: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    backgroundColor: colors.surfaceAlt,
-  },
-  emptyText: {
-    color: colors.subText,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    mainContainer: {
+      width: '100%',
+      marginTop: 4,
+    },
+    header: {
+      display: 'none',
+    },
+    headerCell: {
+      display: 'none',
+    },
+    table: {
+      width: '100%',
+      paddingVertical: 10,
+    },
+    rowContainer: {
+      width: '100%',
+    },
+    rowWrapper: {
+      width: '100%',
+      marginBottom: 14,
+      borderRadius: 20,
+      backgroundColor: colors.surfaceAlt,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      gap: 16,
+      alignItems: 'center',
+    },
+    rowActive: {
+      backgroundColor: colors.surface,
+    },
+    iconWrapper: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    textContainer: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    purposeText: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.1,
+    },
+    categoryLine: {
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.3,
+      marginTop: 2,
+      textTransform: 'uppercase',
+    },
+    categoryLineRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    categoryInlineIcon: {
+      marginTop: 1,
+    },
+    dateText: {
+      color: colors.subText,
+      fontSize: 13,
+      marginTop: 4,
+    },
+    amountContainer: {
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+    amountText: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+      letterSpacing: 0.2,
+    },
+    typeBadge: {
+      marginTop: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    typeBadgeGiven: {
+      backgroundColor: 'rgba(182, 247, 0, 0.1)',
+    },
+    typeBadgeTaken: {
+      backgroundColor: 'rgba(255, 142, 139, 0.1)',
+    },
+    categoryText: {
+      color: colors.subText,
+      fontSize: 10,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      fontWeight: '700',
+    },
+    avatarContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      position: 'relative',
+    },
+    avatarImage: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.surface,
+    },
+    avatarBadge: {
+      position: 'absolute',
+      bottom: -2,
+      right: -2,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.surfaceAlt,
+    },
+    badgeGiven: {
+      backgroundColor: '#a1faff',
+    },
+    badgeTaken: {
+      backgroundColor: '#ff8e8b',
+    },
+    swipeActions: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      justifyContent: 'flex-end',
+      height: '100%',
+      paddingHorizontal: 12,
+    },
+    swipeActionsBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 22,
+      backgroundColor: colors.overlay,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    swipeActionsContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      height: '100%',
+    },
+    swipeActionButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      shadowColor: colors.overlay,
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+      shadowOffset: {width: 0, height: 10},
+      elevation: Platform.OS === 'android' ? 2 : 6,
+    },
+    editAction: {
+      backgroundColor: colors.badgePositiveBg,
+    },
+    deleteAction: {
+      backgroundColor: colors.badgeNegativeBg,
+    },
+    actionIconBadge: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    editBadge: {
+      backgroundColor: colors.accent,
+    },
+    deleteBadge: {
+      backgroundColor: colors.error,
+    },
+    collapsibleContent: {
+      backgroundColor: colors.overlay,
+      paddingVertical: 20,
+      paddingHorizontal: 20,
+      borderTopWidth: 1,
+      borderTopColor: colors.glassBorder,
+      width: '100%',
+    },
+    emptyContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 40,
+      marginTop: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      backgroundColor: colors.surfaceAlt,
+    },
+    emptyText: {
+      color: colors.subText,
+      fontSize: 16,
+      textAlign: 'center',
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import {View, Pressable, StyleSheet, Text, InteractionManager, TouchableOpacity, Keyboard} from 'react-native';
+import {View, Pressable, StyleSheet, Text, TouchableOpacity, Keyboard} from 'react-native';
 import React, {Fragment, useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddInvestFormFields} from '@trackingPortal/screens/InvestScreen';
@@ -7,7 +7,7 @@ import {FormikCheckboxField, FormikTextInput} from '@trackingPortal/components';
 import DatePicker from 'react-native-date-picker';
 import dayjs from 'dayjs';
 import {LoadingButton} from '@trackingPortal/components';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface IInvestForm {
   update?: boolean;
@@ -17,6 +17,8 @@ interface IInvestForm {
 }
 
 const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [startPickerVisible, setStartPickerVisible] = useState(false);
   const [endPickerVisible, setEndPickerVisible] = useState(false);
@@ -53,9 +55,9 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
     <View style={styles.formRoot}>
       <View style={styles.fieldSection}>
         <Text style={styles.sectionLabel}>NAME</Text>
-        <FormikTextInput 
-          name={EAddInvestFormFields.NAME} 
-          placeholder="e.g. S&P 500 Index" 
+        <FormikTextInput
+          name={EAddInvestFormFields.NAME}
+          placeholder="e.g. S&P 500 Index"
         />
       </View>
       <View style={styles.fieldSection}>
@@ -78,10 +80,10 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
             underlineColor="transparent"
             activeUnderlineColor="transparent"
           />
-        <Pressable
-          style={StyleSheet.absoluteFillObject}
-          onPress={openStartPicker}
-        />
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={openStartPicker}
+          />
         </View>
       </View>
 
@@ -94,7 +96,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
           numberOfLines={4}
         />
       </View>
-      
+
       <DatePicker
         modal
         mode="date"
@@ -156,7 +158,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
       )}
 
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => {
             Keyboard.dismiss();
@@ -166,7 +168,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.saveButtonWrapper}>
           <LoadingButton
             label={update ? "Update Investment" : "Save Investment"}
@@ -184,49 +186,51 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
 
 export default InvestForm;
 
-const styles = StyleSheet.create({
-  formRoot: {
-    gap: 16,
-  },
-  fieldSection: {
-    gap: 8,
-  },
-  sectionLabel: {
-    color: '#8a929a',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  inputWrapper: {
-    position: 'relative',
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  cancelButton: {
-    paddingHorizontal: 20,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  cancelButtonText: {
-    color: colors.subText,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  saveButtonWrapper: {
-    minWidth: 140,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    formRoot: {
+      gap: 16,
+    },
+    fieldSection: {
+      gap: 8,
+    },
+    sectionLabel: {
+      color: colors.muted,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 2,
+      textTransform: 'uppercase',
+    },
+    inputWrapper: {
+      position: 'relative',
+      borderRadius: 24,
+      overflow: 'hidden',
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 24,
+      marginBottom: 16,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+    cancelButton: {
+      paddingHorizontal: 20,
+      height: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    cancelButtonText: {
+      color: colors.subText,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    saveButtonWrapper: {
+      minWidth: 140,
+    },
+  });
+}

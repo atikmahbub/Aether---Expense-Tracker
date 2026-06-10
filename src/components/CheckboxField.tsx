@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {View, StyleSheet, Text} from 'react-native';
 import {Checkbox} from 'react-native-paper';
 import {useField} from 'formik';
-import {darkTheme} from '@trackingPortal/themes/darkTheme';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface FormikCheckboxFieldProps {
   name: string;
@@ -14,6 +13,8 @@ const FormikCheckboxField: React.FC<FormikCheckboxFieldProps> = ({
   name,
   label,
 }) => {
+  const { colors, paperTheme } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, paperTheme), [colors, paperTheme]);
   const [field, meta, helpers] = useField(name);
 
   const handleChange = () => {
@@ -37,21 +38,23 @@ const FormikCheckboxField: React.FC<FormikCheckboxFieldProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    color: colors.text,
-  },
-  checkbox: {
-    backgroundColor: darkTheme.colors.background,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], paperTheme: ReturnType<typeof useAppTheme>['paperTheme']) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      color: colors.text,
+    },
+    checkbox: {
+      backgroundColor: paperTheme.colors.background,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
+}
 
 export default FormikCheckboxField;

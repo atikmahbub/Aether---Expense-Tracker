@@ -54,9 +54,9 @@ export const useDailyTransactionReminder = () => {
               priority: Notifications.AndroidNotificationPriority.DEFAULT,
             },
             trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
               hour: 21,
               minute: 0,
-              repeats: true,
             },
           });
         }

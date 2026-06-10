@@ -24,7 +24,7 @@ import {
 import { INewTransaction } from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.interfaces';
 import TransactionForm from '@trackingPortal/screens/TransactionScreen/TransactionForm';
 import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
-import { colors } from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 
 interface ITransactionCreation {
@@ -66,6 +66,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   onCategoryUsed,
   refreshSummary,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { apiGateway } = useStoreContext();
   const { user } = useAuth();
   const { isOnline, saveOffline } = useOffline();
@@ -78,7 +80,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
     setTransactionType(initialType);
   }, [initialType]);
 
-  const activeCategories = useMemo(() => 
+  const activeCategories = useMemo(() =>
     transactionType === 'Expense' ? categories : incomeCategories,
   [transactionType, categories, incomeCategories]);
 
@@ -125,8 +127,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
 
           const offlineItem = await saveOffline('transaction', params);
           triggerSuccessHaptic();
-          
-          // ✅ Optimistic update for offline
+
+          // Optimistic update for offline
           const mockTransaction: TransactionModel = {
             id: String(offlineItem.id),
             type: params.type || 'expense',
@@ -158,7 +160,6 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           item => item.id === values.categoryId,
         )?.name;
 
-        // ✅ FIXED timezone-safe date
         const safeDate = dayjs(values.date)
           .hour(12)
           .minute(0)
@@ -181,7 +182,6 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           newTransaction = await apiGateway.transactionService.addExpense(params);
         }
 
-        // ✅ OPTIMISTIC UI UPDATE
         const mockTransaction: TransactionModel = {
           id: newTransaction.id,
           amount: Number(newTransaction.amount),
@@ -205,15 +205,13 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           },
         });
 
-        // Close modal first for smooth UX
         handleClose();
 
-        // 1. Refresh everything else
         requestAnimationFrame(async () => {
           await getUserExpenses();
           await refreshAnalytics({ force: true });
           await refreshSummary?.();
-          
+
           triggerSuccessHaptic();
           onCategoryUsed?.(params.categoryId);
 
@@ -226,10 +224,9 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         });
       } catch (error: any) {
         console.error('Transaction Creation Error:', error);
-        
+
         let message = 'Failed to add transaction. Please try again.';
-        
-        // Handle axios/network errors
+
         if (error.response) {
           const status = error.response.status;
           if (status === 400) {
@@ -252,6 +249,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
       }
     },
     [
+      colors.subText,
       apiGateway.transactionService,
       categories,
       getExceedExpenseNotification,
@@ -331,54 +329,56 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  modalToggleRow: {
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  segmentedToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  toggleButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 7,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  toggleText: {
-    color: colors.subText,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  toggleTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  topHeader: {
-    position: 'absolute',
-    top: 5,
-    right: 8,
-    zIndex: 10,
-  },
-  checkIcon: {
-    margin: 0,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    modalToggleRow: {
+      alignItems: 'center',
+      marginBottom: 20,
+      marginTop: 10,
+    },
+    segmentedToggle: {
+      flexDirection: 'row',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 10,
+      padding: 3,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    toggleButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 7,
+    },
+    toggleButtonActive: {
+      backgroundColor: colors.surface,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    toggleText: {
+      color: colors.subText,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    toggleTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    topHeader: {
+      position: 'absolute',
+      top: 5,
+      right: 8,
+      zIndex: 10,
+    },
+    checkIcon: {
+      margin: 0,
+    },
+  });
+}
 
 export default React.memo(TransactionCreation);

@@ -17,7 +17,7 @@ import {
   TransactionModel,
 } from '@trackingPortal/api/models';
 import Svg, { Path, Defs, Circle, Line, Text as SvgText, LinearGradient, Stop, G, Rect } from 'react-native-svg';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {parseDate} from '@trackingPortal/utils/date';
 import {CurrencyPreference} from '@trackingPortal/constants/currency';
@@ -58,14 +58,15 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   totalSpent,
   transactions = [],
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
   const [showHeavyUI, setShowHeavyUI] = useState(false);
 
-  // Calculate daily totals and smoothed points for the spline graph
   const { points, dailyTotals, maxDayVal } = useMemo(() => {
     const daysInMonth = 31;
     let totals = new Array(daysInMonth).fill(0);
-    
+
     transactions.forEach(t => {
       const d = dayjs(parseDate(t.date));
       if (d.isValid()) {
@@ -77,7 +78,6 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     });
 
     const rawTotals = [...totals];
-    // Apply 5-day weighted average for smooth "Insight" curves
     const smoothedTotals = totals.map((val, i) => {
       const prev2 = totals[Math.max(0, i - 2)];
       const prev1 = totals[Math.max(0, i - 1)];
@@ -101,7 +101,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     ) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
-    
+
     const rafId = requestAnimationFrame(() => {
       setShowHeavyUI(true);
     });
@@ -140,7 +140,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   const renderGraph = () => {
     const isOverLimit = budgetSummary?.isOver ?? false;
     const graphColor = isOverLimit ? colors.error : colors.primary;
-    
+
     const formatCompact = (val: number) => {
       if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
       return val.toFixed(0);
@@ -197,9 +197,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
           <G y={5}>
             {[0, 0.5, 1].map(v => (
-              <Line key={v} x1="0" y1={height * (1-v)} x2={width} y2={height * (1-v)} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+              <Line key={v} x1="0" y1={height * (1-v)} x2={width} y2={height * (1-v)} stroke={colors.glassBorder} strokeWidth="1" />
             ))}
-            
+
             <SvgText x={width + 10} y="5" fill={colors.muted} fontSize="8" fontWeight="700">{formatCompact(maxDayVal)}</SvgText>
             <SvgText x={width + 10} y={height} fill={colors.muted} fontSize="8" fontWeight="700">0</SvgText>
 
@@ -209,7 +209,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
             <Path d={mainArea} fill="url(#mainFill)" />
             <Path d={mainPath} fill="none" stroke={graphColor} strokeWidth="2.5" />
-            
+
             {rawPeakValue > 0 && (
               <G>
                 <Circle cx={peakX} cy={peakY} r="6" fill={graphColor} opacity={0.15} />
@@ -242,14 +242,14 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
           <Text style={styles.previewLabel}>{mode === 'expense' ? 'TOP EXPENSE' : 'TOP INCOME'}</Text>
           <Text style={styles.previewAmount}>{formatAmount(analytics.topCategory.totalAmount)}</Text>
         </View>
-        
+
         <View style={styles.previewMain}>
           <View style={styles.previewValueRow}>
             <Text style={styles.previewValue}>{analytics.topCategory.categoryName}</Text>
             <Text style={styles.percentageText}>{formatNumber(percentage, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</Text>
           </View>
           <View style={styles.miniBarTrack}>
-             <View style={[styles.miniBarFill, { width: `${percentage}%`, backgroundColor: catColor }]} />
+            <View style={[styles.miniBarFill, { width: `${percentage}%`, backgroundColor: catColor }]} />
           </View>
         </View>
       </View>
@@ -258,7 +258,6 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
 
   return (
     <CommonCard style={styles.container} padding={16} onPress={handleToggle}>
-
       <View style={styles.headerArea}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
@@ -343,222 +342,224 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  headerArea: {
-    width: '100%',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  title: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    fontFamily: 'Manrope',
-  },
-  trendContainer: {
-    alignItems: 'flex-end',
-  },
-  trendPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  trendPillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-  },
-  graphWrapper: {
-    height: 120, // Reduced for a more compact look
-    width: '100%',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  previewContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  previewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  previewLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    fontFamily: 'Manrope',
-  },
-  previewAmount: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-  },
-  previewMain: {
-    gap: 6,
-  },
-  previewValueRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  previewValue: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-  },
-  percentageText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-  },
-  miniBarTrack: {
-    height: 4, // Slimmer progress bar
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 2,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  miniBarFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  expandedContent: {
-    marginTop: 8,
-  },
-  breakdownHeader: {
-    marginTop: 12,
-    marginBottom: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  breakdownTitle: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    fontFamily: 'Manrope',
-  },
-  listContainer: {
-    gap: 12,
-  },
-  listRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  listLabelColumn: {
-    flex: 1,
-  },
-  categoryName: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  categorySecondary: {
-    color: colors.subText,
-    fontSize: 10,
-    marginTop: 1,
-  },
-  categoryAmount: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Manrope',
-  },
-  loadingRow: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: colors.muted,
-    textAlign: 'center',
-    marginTop: 16,
-    fontSize: 11,
-  },
-  chevronWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 4,
-  },
-  chevronWrapActive: {
-    backgroundColor: 'rgba(34,197,94,0.10)',
-    borderColor: 'rgba(34,197,94,0.20)',
-  },
-  breakdownCount: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '500',
-    fontFamily: 'Manrope',
-  },
-  categoryTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 5,
-  },
-  categoryBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  categoryBarTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  categoryBarFill: {
-    height: '100%',
-    borderRadius: 2,
-    opacity: 0.85,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      marginHorizontal: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    headerArea: {
+      width: '100%',
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    title: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      fontFamily: 'Manrope',
+    },
+    trendContainer: {
+      alignItems: 'flex-end',
+    },
+    trendPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 7,
+      paddingVertical: 4,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    trendPillText: {
+      fontSize: 10,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+    },
+    graphWrapper: {
+      height: 120,
+      width: '100%',
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    previewContainer: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.glassBorder,
+    },
+    previewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    previewLabel: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      fontFamily: 'Manrope',
+    },
+    previewAmount: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+    },
+    previewMain: {
+      gap: 6,
+    },
+    previewValueRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+    },
+    previewValue: {
+      color: colors.text,
+      fontSize: 18,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+    },
+    percentageText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+    },
+    miniBarTrack: {
+      height: 4,
+      backgroundColor: colors.surface,
+      borderRadius: 2,
+      width: '100%',
+      overflow: 'hidden',
+    },
+    miniBarFill: {
+      height: '100%',
+      borderRadius: 2,
+    },
+    expandedContent: {
+      marginTop: 8,
+    },
+    breakdownHeader: {
+      marginTop: 12,
+      marginBottom: 12,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.glassBorder,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    breakdownTitle: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      fontFamily: 'Manrope',
+    },
+    listContainer: {
+      gap: 12,
+    },
+    listRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    bullet: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    listLabelColumn: {
+      flex: 1,
+    },
+    categoryName: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    categorySecondary: {
+      color: colors.subText,
+      fontSize: 10,
+      marginTop: 1,
+    },
+    categoryAmount: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '700',
+      fontFamily: 'Manrope',
+    },
+    loadingRow: {
+      padding: 16,
+      alignItems: 'center',
+    },
+    emptyText: {
+      color: colors.muted,
+      textAlign: 'center',
+      marginTop: 16,
+      fontSize: 11,
+    },
+    chevronWrap: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 4,
+    },
+    chevronWrapActive: {
+      backgroundColor: colors.primarySoft,
+      borderColor: colors.primaryMid,
+    },
+    breakdownCount: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '500',
+      fontFamily: 'Manrope',
+    },
+    categoryTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      marginBottom: 5,
+    },
+    categoryBarRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    categoryBarTrack: {
+      flex: 1,
+      height: 4,
+      backgroundColor: colors.surface,
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    categoryBarFill: {
+      height: '100%',
+      borderRadius: 2,
+      opacity: 0.85,
+    },
+  });
+}
 
 export default React.memo(AnalyticsCard);

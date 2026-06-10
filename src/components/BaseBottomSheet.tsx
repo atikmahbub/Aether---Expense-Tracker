@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {StyleSheet, View, Platform, TouchableOpacity, Dimensions, Pressable, KeyboardAvoidingView, Keyboard} from 'react-native';
 import Modal from 'react-native-modal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -26,6 +26,8 @@ const BaseBottomSheet = React.memo(
       },
       _ref,
     ) => {
+      const { colors } = useAppTheme();
+      const styles = useMemo(() => makeStyles(colors), [colors]);
       const isVisible = index >= 0;
 
       return (
@@ -66,9 +68,9 @@ const BaseBottomSheet = React.memo(
                   bounces={false}
                   contentContainerStyle={styles.scrollContent}
                 >
-                  <Pressable 
-                    onPress={Keyboard.dismiss} 
-                    style={{flex: 1}} 
+                  <Pressable
+                    onPress={Keyboard.dismiss}
+                    style={{flex: 1}}
                     accessible={false}
                   >
                     {children}
@@ -90,9 +92,9 @@ const BaseBottomSheet = React.memo(
                   bounces={false}
                   contentContainerStyle={styles.scrollContent}
                 >
-                  <Pressable 
-                    onPress={() => {}} 
-                    style={{flex: 1}} 
+                  <Pressable
+                    onPress={() => {}}
+                    style={{flex: 1}}
                     accessible={false}
                   >
                     {children}
@@ -110,41 +112,43 @@ const BaseBottomSheet = React.memo(
 // @ts-ignore
 BaseBottomSheet.displayName = 'BaseBottomSheet';
 
-const styles = StyleSheet.create({
-  modal: {
-    margin: 0,
-    justifyContent: 'flex-end',
-  },
-  keyboardView: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'flex-end',
-  },
-  contentWrapper: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    maxHeight: SCREEN_HEIGHT * 0.9,
-    paddingTop: 8,
-  },
-  indicatorWrapper: {
-    alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  indicator: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 120,
-    flexGrow: 1,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    modal: {
+      margin: 0,
+      justifyContent: 'flex-end',
+    },
+    keyboardView: {
+      flex: 1,
+      width: '100%',
+      justifyContent: 'flex-end',
+    },
+    contentWrapper: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 32,
+      borderTopRightRadius: 32,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      maxHeight: SCREEN_HEIGHT * 0.9,
+      paddingTop: 8,
+    },
+    indicatorWrapper: {
+      alignItems: 'center',
+      paddingTop: 8,
+      paddingBottom: 16,
+    },
+    indicator: {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+    },
+    scrollContent: {
+      paddingHorizontal: 24,
+      paddingBottom: 120,
+      flexGrow: 1,
+    },
+  });
+}
 
 export default BaseBottomSheet;

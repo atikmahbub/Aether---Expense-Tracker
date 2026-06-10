@@ -1,16 +1,16 @@
 import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import {getGreeting} from '@trackingPortal/utils/utils';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import dayjs from 'dayjs';
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {View, StyleSheet, Text, TouchableOpacity} from 'react-native';
 import {Avatar} from 'react-native-paper';
-import {colors} from '@trackingPortal/themes/colors';
 import {useRouter} from 'expo-router';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
-import Animated, { 
-  useAnimatedStyle, 
-  withRepeat, 
-  withSequence, 
+import Animated, {
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
   withTiming,
   useSharedValue,
   withDelay,
@@ -24,6 +24,8 @@ const AVATAR_SIZE = 54;
 const CustomAppBar: React.FC = () => {
   const {user} = useAuth();
   const router = useRouter();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const greeting = React.useMemo(() => getGreeting(), []);
   const userName = React.useMemo(
@@ -79,7 +81,7 @@ const CustomAppBar: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Animated.View 
+      <Animated.View
         entering={FadeInLeft.delay(100).duration(500)}
         style={styles.textBlock}>
         <View style={styles.dateRow}>
@@ -90,12 +92,12 @@ const CustomAppBar: React.FC = () => {
           <Text style={styles.greetingText}>{greeting}, <Text style={styles.userNameText}>{userName}</Text></Text>
         </View>
       </Animated.View>
-      
+
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={handleProfilePress}
         style={styles.avatarTapArea}>
-        <Animated.View 
+        <Animated.View
           entering={FadeInRight.delay(200).duration(500)}
           style={styles.avatarContainer}>
           <View style={styles.avatarBorder}>
@@ -118,92 +120,94 @@ const CustomAppBar: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 20,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  textBlock: {
-    flex: 1,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  dateLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    fontFamily: 'Manrope',
-  },
-  greetingRow: {
-    flexDirection: 'row',
-  },
-  greetingText: {
-    color: colors.subText,
-    fontSize: 20,
-    fontFamily: 'Manrope',
-    fontWeight: '400',
-    letterSpacing: -0.3,
-  },
-  userNameText: {
-    color: colors.text,
-    fontSize: 20,
-    fontFamily: 'Manrope',
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  avatarTapArea: {
-    padding: 4,
-  },
-  avatarContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBorder: {
-    width: AVATAR_SIZE + 4,
-    height: AVATAR_SIZE + 4,
-    borderRadius: (AVATAR_SIZE + 4) / 2,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-    zIndex: 2,
-  },
-  avatarImage: {
-    backgroundColor: colors.surfaceAlt,
-  },
-  avatarGlow: {
-    position: 'absolute',
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: colors.primary,
-    zIndex: 1,
-  },
-  avatarFallback: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 12,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    textBlock: {
+      flex: 1,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 4,
+    },
+    dateLabel: {
+      color: colors.muted,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1.5,
+      fontFamily: 'Manrope',
+    },
+    greetingRow: {
+      flexDirection: 'row',
+    },
+    greetingText: {
+      color: colors.subText,
+      fontSize: 20,
+      fontFamily: 'Manrope',
+      fontWeight: '400',
+      letterSpacing: -0.3,
+    },
+    userNameText: {
+      color: colors.text,
+      fontSize: 20,
+      fontFamily: 'Manrope',
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    avatarTapArea: {
+      padding: 4,
+    },
+    avatarContainer: {
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarBorder: {
+      width: AVATAR_SIZE + 4,
+      height: AVATAR_SIZE + 4,
+      borderRadius: (AVATAR_SIZE + 4) / 2,
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+      zIndex: 2,
+    },
+    avatarImage: {
+      backgroundColor: colors.surfaceAlt,
+    },
+    avatarGlow: {
+      position: 'absolute',
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      backgroundColor: colors.primary,
+      zIndex: 1,
+    },
+    avatarFallback: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarInitial: {
+      color: colors.text,
+      fontSize: 18,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+    },
+  });
+}
 
 export default React.memo(CustomAppBar);

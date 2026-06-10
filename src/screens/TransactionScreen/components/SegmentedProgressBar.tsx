@@ -1,6 +1,6 @@
 import React, {useMemo} from 'react';
 import {StyleSheet, View} from 'react-native';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 export interface SegmentedProgressItem {
   id: string;
@@ -17,6 +17,9 @@ const SegmentedProgressBar: React.FC<SegmentedProgressBarProps> = ({
   segments,
   height = 10,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const normalized = useMemo(() => {
     const safeTotal = segments.reduce(
       (sum, segment) => sum + Math.max(segment.percentage, 0),
@@ -38,7 +41,7 @@ const SegmentedProgressBar: React.FC<SegmentedProgressBarProps> = ({
   }
 
   return (
-    <View style={[styles.track, {height}]}> 
+    <View style={[styles.track, {height}]}>
       {normalized.map(segment => (
         <View
           key={segment.id}
@@ -52,14 +55,16 @@ const SegmentedProgressBar: React.FC<SegmentedProgressBarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  track: {
-    width: '100%',
-    borderRadius: 999,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceAlt,
-    flexDirection: 'row',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    track: {
+      width: '100%',
+      borderRadius: 999,
+      overflow: 'hidden',
+      backgroundColor: colors.surfaceAlt,
+      flexDirection: 'row',
+    },
+  });
+}
 
 export default SegmentedProgressBar;

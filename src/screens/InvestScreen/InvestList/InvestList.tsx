@@ -10,7 +10,7 @@ import React, {
 import {Text} from 'react-native-paper';
 
 import DataTable from '@trackingPortal/components/DataTable';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 import {InvestModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
@@ -67,6 +67,8 @@ const InvestList: FC<IInvestList> = ({
   status,
   setStatus,
 }) => {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<InvestId | null>(null);
   const {currentUser: user, apiGateway, currency} = useStoreContext();
   const [loading, setLoading] = useState<boolean>(false);
@@ -286,70 +288,72 @@ const InvestList: FC<IInvestList> = ({
 
 export default React.memo(InvestList);
 
-const styles = StyleSheet.create({
-  mainContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  listCard: {
-    marginTop: 0,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  headerTextBlock: {
-    flex: 1,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'Manrope',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    color: colors.subText,
-    fontSize: 13,
-    fontFamily: 'Manrope',
-    lineHeight: 18,
-    maxWidth: 240,
-  },
-  tableContainer: {
-    marginTop: 0,
-  },
-  collapsibleContent: {
-    gap: 16,
-    paddingBottom: 20,
-  },
-  menuContainer: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  statusButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-    gap: 10,
-  },
-  cancelButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-  },
-  cancelButtonText: {
-    color: colors.subText,
-    fontWeight: '600',
-  },
-});
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
+    mainContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
+    listCard: {
+      marginTop: 0,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 8,
+    },
+    headerTextBlock: {
+      flex: 1,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: '800',
+      fontFamily: 'Manrope',
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      color: colors.subText,
+      fontSize: 13,
+      fontFamily: 'Manrope',
+      lineHeight: 18,
+      maxWidth: 240,
+    },
+    tableContainer: {
+      marginTop: 0,
+    },
+    collapsibleContent: {
+      gap: 16,
+      paddingBottom: 20,
+    },
+    menuContainer: {
+      alignSelf: 'flex-start',
+      marginTop: 4,
+    },
+    statusButton: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 10,
+      gap: 10,
+    },
+    cancelButton: {
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+    },
+    cancelButtonText: {
+      color: colors.subText,
+      fontWeight: '600',
+    },
+  });
+}

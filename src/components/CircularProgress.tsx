@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {Animated, Easing, View, Text, StyleSheet} from 'react-native';
 import Svg, {Circle} from 'react-native-svg';
-import {colors} from '@trackingPortal/themes/colors';
+import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface CircularProgressProps {
   progress: number; // value can be > 1
@@ -18,9 +18,10 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   strokeWidth = 4,
   label,
 }) => {
+  const { colors } = useAppTheme();
   const isExceeded = progress > 1;
   const clamped = useMemo(() => Math.max(0, Math.min(progress, 1)), [progress]);
-  
+
   const progressColor = isExceeded ? colors.error : colors.primary;
   const trackColor = 'rgba(255, 255, 255, 0.04)';
 
