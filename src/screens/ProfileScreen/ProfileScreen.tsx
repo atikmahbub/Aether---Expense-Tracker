@@ -153,7 +153,7 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.versionTag}>Scalar v1.0.4</Text>
+        <Text style={styles.versionTag}>Scalar v1.1.0</Text>
       </ScrollView>
 
       <Modal
