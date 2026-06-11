@@ -79,9 +79,7 @@ export const useTransactionInsights = ({
   );
 
   useEffect(() => {
-    // Only fetch if we have a valid non-default user and categories are ready
-    // We also check for userId !== 'admin' as an extra safety measure
-    if (userId && userId !== 'admin' && isCategoryHydrated) {
+    if (userId && isCategoryHydrated) {
       refreshAnalytics();
     }
   }, [userId, month, isCategoryHydrated, refreshAnalytics]);

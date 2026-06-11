@@ -70,8 +70,8 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  const displayName = (user?.name as string | undefined) ?? 'Scalar User';
-  const displayEmail = (user?.email as string | undefined) ?? 'hello@scalar.finance';
+  const displayName = (user?.name as string | undefined) ?? '';
+  const displayEmail = (user?.email as string | undefined) ?? '';
   const avatarSource = (user?.picture as string | undefined) || (user?.profilePicture as string | undefined) || DEFAULT_AVATAR;
   const firstName = displayName.split(' ')[0] || 'there';
 

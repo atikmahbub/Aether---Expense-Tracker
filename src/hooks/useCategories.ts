@@ -13,7 +13,7 @@ export const useCategories = (selectedType: CategoryType) => {
   const [loading, setLoading] = useState(false);
 
   const fetchCategories = useCallback(async () => {
-    if (!currentUser.userId || currentUser.default) return;
+    if (!currentUser?.userId || currentUser.default) return;
     
     setLoading(true);
     try {
@@ -30,14 +30,14 @@ export const useCategories = (selectedType: CategoryType) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedType, currentUser.userId, currentUser.default, apiGateway.categoryService]);
+  }, [selectedType, currentUser?.userId, currentUser?.default, apiGateway.categoryService]);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
   const createCategory = async (params: Omit<ICreateCategoryParams, 'userId'>) => {
-    if (!currentUser.userId) return;
+    if (!currentUser?.userId) return;
     try {
       const payload = { ...params, userId: currentUser.userId };
       if (selectedType === 'expense') {
@@ -55,7 +55,7 @@ export const useCategories = (selectedType: CategoryType) => {
   };
 
   const updateCategory = async (id: string, params: Omit<IUpdateCategoryParams, 'userId'>) => {
-    if (!currentUser.userId) return;
+    if (!currentUser?.userId) return;
     try {
       const payload = { ...params, userId: currentUser.userId };
       if (selectedType === 'expense') {
@@ -73,7 +73,7 @@ export const useCategories = (selectedType: CategoryType) => {
   };
 
   const deleteCategory = async (id: string) => {
-    if (!currentUser.userId) return;
+    if (!currentUser?.userId) return;
     try {
       if (selectedType === 'expense') {
         await apiGateway.categoryService.deleteExpenseCategory(id, currentUser.userId);

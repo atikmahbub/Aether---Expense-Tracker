@@ -20,6 +20,7 @@ import {
   Auth0ProviderWithHistory,
   useAuth,
 } from "@trackingPortal/auth/Auth0ProviderWithHistory";
+import { authStorage } from "@trackingPortal/auth/authStorage";
 import { AnimatedLoader } from "@trackingPortal/components";
 import ScalarSplashGate from "@trackingPortal/components/ScalarSplashGate";
 import OfflineBanner from '@trackingPortal/components/OfflineBanner';
@@ -83,12 +84,16 @@ const NavigationBoundary: React.FC = () => {
   const handleOnboardingFinish = useCallback(async () => {
     try {
       await AsyncStorage.setItem(ONBOARDING_DONE_KEY, "true");
+      // Clear any stale tokens from a previous session (SecureStore survives
+      // iOS reinstalls, so without this the bootstrap would silently re-auth
+      // and skip the login screen entirely).
+      await authStorage.clearAll();
     } catch (error) {
       console.warn("Failed to persist onboarding completion", error);
     }
     setHasCompletedOnboarding(true);
-    router.replace(isAuthenticated ? DEFAULT_AUTHENTICATED_ROUTE : LOGIN_ROUTE);
-  }, [router, isAuthenticated]);
+    router.replace(LOGIN_ROUTE);
+  }, [router]);
 
   useEffect(() => {
     if (loading || !onboardingChecked || !hasCompletedOnboarding || refreshFailed) {
@@ -128,6 +133,10 @@ const NavigationBoundary: React.FC = () => {
   }
 
   if (loading) {
+    return <AnimatedLoader />;
+  }
+
+  if (!isAuthenticated && rootSegment !== "login" && rootSegment !== "auth") {
     return <AnimatedLoader />;
   }
 

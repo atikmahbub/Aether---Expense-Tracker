@@ -46,20 +46,20 @@ interface NewUserModel extends UserModel {
   default: boolean;
 }
 
-const defaultUser: NewUserModel = {
-  name: "Admin",
-  email: "admin@gmail.com",
-  userId: "admin" as UserId,
-  profilePicture: "link" as URLString,
-  created: makeUnixTimestampString(Number(new Date())),
-  updated: makeUnixTimestampString(Number(new Date())),
+const unsetUser = (): NewUserModel => ({
+  name: "",
+  email: "",
+  userId: "" as UserId,
+  profilePicture: "" as URLString,
+  created: makeUnixTimestampString(0),
+  updated: makeUnixTimestampString(0),
   default: true,
-};
+});
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
-  const { getValidToken, token, user: auth0User } = useAuth();
+  const { getValidToken, token, user: auth0User, isAuthenticated } = useAuth();
 
-  const [currentUser, setCurrentUser] = useState<NewUserModel>(defaultUser);
+  const [currentUser, setCurrentUser] = useState<NewUserModel>(unsetUser);
   const [currency, setCurrency] =
     useState<CurrencyPreference>(DEFAULT_CURRENCY);
 
@@ -76,31 +76,32 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   }, [getValidToken]);
 
   useEffect(() => {
-    if (token) {
-      addUserToDb();
+    if (!isAuthenticated || !token) {
+      setCurrentUser(unsetUser());
+      setIsCategoryHydrated(false);
+      setCategories(FALLBACK_CATEGORIES);
+      setIncomeCategories([]);
+      return;
     }
-  }, [auth0User, token]);
+
+    addUserToDb();
+  }, [auth0User, token, isAuthenticated]);
 
   useEffect(() => {
     hydrateCurrencyPreference();
-    if (token) {
+    if (token && !currentUser.default && currentUser.userId) {
       refreshCategories({ force: true });
     }
-  }, [token]);
+  }, [token, currentUser.userId, currentUser.default]);
 
   useEffect(() => {
-    if (!currentUser.default && currentUser.userId !== 'admin') {
-      refreshCategories({ force: true });
-    }
-  }, [currentUser.userId, currentUser.default]);
-
-  useEffect(() => {
-    if (!currentUser.default && currentUser.userId && currentUser.userId !== 'admin') {
+    if (!currentUser.default && currentUser.userId) {
       fetchIncomeCategories(currentUser.userId);
     }
   }, [currentUser.userId, currentUser.default]);
 
   const refreshCategories = async (options?: { force?: boolean }) => {
+    if (currentUser.default || !currentUser.userId) return;
     if (isCategoryHydrated && !options?.force) return;
 
     setCategoryLoading(true);
