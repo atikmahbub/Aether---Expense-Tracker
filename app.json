@@ -9,7 +9,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#F4F6FA",
-
     "splash": {
       "backgroundColor": "#F4F6FA",
       "resizeMode": "contain",
@@ -17,7 +16,6 @@
         "backgroundColor": "#09090A"
       }
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.atik.aether",
@@ -28,7 +26,6 @@
         "NSFaceIDUsageDescription": "Use Face ID to securely unlock your wallet."
       }
     },
-
     "android": {
       "package": "com.atik.aether",
       "versionCode": 1,
@@ -39,12 +36,10 @@
         "backgroundColor": "#09090A"
       }
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/icon.png"
     },
-
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -61,7 +56,6 @@
         }
       ]
     ],
-
     "extra": {
       "auth0Domain": "dev-pm0712stgt281lme.us.auth0.com",
       "auth0ClientId": "ZKFTcNI7NKpHeAv11HY5qQjCIpkddOH9",
@@ -71,10 +65,15 @@
         "projectId": "f6321d98-7753-456b-b4c8-61857344a854"
       }
     },
-
     "experiments": {
       "typedRoutes": true,
       "newArchEnabled": false
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f6321d98-7753-456b-b4c8-61857344a854"
     }
   }
 }
