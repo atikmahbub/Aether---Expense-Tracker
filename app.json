@@ -49,10 +49,12 @@
       "expo-router",
       "expo-secure-store",
       "expo-font",
+      "./plugins/withAndroidTransparentSplashIcon",
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#F4F6FA",
+          "image": "./assets/splash-icon.png",
           "dark": {
             "backgroundColor": "#09090A"
           }
