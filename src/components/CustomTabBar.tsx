@@ -74,7 +74,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   );
 
   return (
-    <View style={[styles.wrapper, { bottom: Platform.OS === 'ios' ? insets.bottom + 4 : 16 }]}>
+    <View style={[styles.wrapper, { bottom: Platform.OS === 'ios' ? insets.bottom + 4 : Math.max(insets.bottom, 16) }]}>
       <BlurView intensity={Platform.OS === 'ios' ? 45 : 100} tint={isDark ? "dark" : "light"} style={styles.container}>
         <View style={styles.tabContainer}>
           {renderTabByName("transactions")}

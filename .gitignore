@@ -41,3 +41,4 @@ app-example
 # generated native folders
 /ios
 /android
+.claude/worktrees/agent-a25a08f09062e22a6
