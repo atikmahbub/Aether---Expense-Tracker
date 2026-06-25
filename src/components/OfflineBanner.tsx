@@ -51,6 +51,11 @@ const OfflineBanner: React.FC = () => {
 
   return (
     <Animated.View
+      // CRITICAL: when hidden, the banner stays mounted (opacity 0) and slides
+      // down over the tab bar. Without disabling pointer events it would swallow
+      // taps on the tab buttons — making other tabs unreachable. 'box-none' when
+      // shown lets taps pass through empty areas to the content behind it.
+      pointerEvents={shouldShow ? 'box-none' : 'none'}
       style={[
         styles.container,
         {
