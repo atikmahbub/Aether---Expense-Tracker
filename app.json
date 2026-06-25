@@ -4,6 +4,7 @@
     "slug": "aether",
     "owner": "atikmahbub100",
     "version": "1.0.0",
+    "platforms": ["ios", "android"],
     "orientation": "portrait",
     "scheme": "aether",
     "icon": "./assets/icon.png",

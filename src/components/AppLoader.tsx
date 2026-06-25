@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import LottieView from 'lottie-react-native';
+import ScalarSpinner from '@trackingPortal/components/ScalarSpinner';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 const AppLoader = () => {
@@ -10,12 +10,7 @@ const AppLoader = () => {
   return (
     <View style={styles.container}>
       <View style={styles.loaderCard}>
-        <LottieView
-          source={require('@trackingPortal/assets/loader2.json')}
-          autoPlay={true}
-          loop
-          style={styles.loader}
-        />
+        <ScalarSpinner size={72} />
         <Text style={styles.loaderLabel}>Warming up Scalar…</Text>
       </View>
     </View>
