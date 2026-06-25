@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
-import { UnixTimeStampString } from '@trackingPortal/api/primitives';
+import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
 import { colors } from '@trackingPortal/themes/colors';
 import { formatNumber } from '@trackingPortal/utils/utils';
 
@@ -18,7 +17,7 @@ export const useTrendSnapshot = ({
   type,
   filterMonth,
 }: TrendSnapshotOptions) => {
-  const { apiGateway } = useStoreContext();
+  const { transactionData } = useDatabase();
   const [previousMonthTotal, setPreviousMonthTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -32,16 +31,13 @@ export const useTrendSnapshot = ({
   useEffect(() => {
     let isMounted = true;
     const fetchPreviousMonth = async () => {
-      if (!userId) return;
-      
+      if (!userId || !transactionData) return;
+
       try {
         setLoading(true);
-        const response = await apiGateway.transactionService.getTransactionsByUser({
-          userId: userId as any,
-          date: previousMonthDate.unix() as unknown as UnixTimeStampString,
-          type,
-        });
-        const total = response.reduce((sum, t) => sum + t.amount, 0);
+        // Computed locally from SQLite — works offline.
+        const summary = await transactionData.getSummary(userId, previousMonthDate);
+        const total = type === 'expense' ? summary.totalExpense : summary.totalIncome;
         if (isMounted) setPreviousMonthTotal(total);
       } catch (error) {
         console.log('Failed to fetch previous month total', error);
@@ -53,7 +49,7 @@ export const useTrendSnapshot = ({
 
     fetchPreviousMonth();
     return () => { isMounted = false; };
-  }, [apiGateway, userId, previousMonthDate, type]);
+  }, [transactionData, userId, previousMonthDate, type]);
 
   const trend = useMemo(() => {
     if (loading) {

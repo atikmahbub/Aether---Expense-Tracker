@@ -10,7 +10,14 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, TextInput, KeyboardAvoidingView, Platform, View, TouchableOpacity } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -22,15 +29,20 @@ import {
 } from "@trackingPortal/auth/Auth0ProviderWithHistory";
 import { authStorage } from "@trackingPortal/auth/authStorage";
 import { AnimatedLoader } from "@trackingPortal/components";
+import MigrationOverlay from "@trackingPortal/components/MigrationOverlay";
+import OfflineBanner from "@trackingPortal/components/OfflineBanner";
 import ScalarSplashGate from "@trackingPortal/components/ScalarSplashGate";
-import OfflineBanner from '@trackingPortal/components/OfflineBanner';
-import toastConfig from '@trackingPortal/components/ToastConfig';
-import { NetworkProvider } from '@trackingPortal/contexts/NetworkProvider';
-import { StoreProvider } from '@trackingPortal/contexts/StoreProvider';
-import { OfflineProvider } from '@trackingPortal/contexts/OfflineProvider';
-import { ThemeProvider, useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import AppLayout from '@trackingPortal/layout';
-import OnboardingScreen from '@trackingPortal/screens/OnboardingScreen';
+import toastConfig from "@trackingPortal/components/ToastConfig";
+import { NetworkProvider } from "@trackingPortal/contexts/NetworkProvider";
+import { OfflineProvider } from "@trackingPortal/contexts/OfflineProvider";
+import { StoreProvider } from "@trackingPortal/contexts/StoreProvider";
+import {
+  ThemeProvider,
+  useAppTheme,
+} from "@trackingPortal/contexts/ThemeContext";
+import { DatabaseProvider } from "@trackingPortal/db";
+import AppLayout from "@trackingPortal/layout";
+import OnboardingScreen from "@trackingPortal/screens/OnboardingScreen";
 
 console.log("🔥 LAYOUT LOADED");
 
@@ -96,7 +108,12 @@ const NavigationBoundary: React.FC = () => {
   }, [router]);
 
   useEffect(() => {
-    if (loading || !onboardingChecked || !hasCompletedOnboarding || refreshFailed) {
+    if (
+      loading ||
+      !onboardingChecked ||
+      !hasCompletedOnboarding ||
+      refreshFailed
+    ) {
       return;
     }
 
@@ -142,15 +159,37 @@ const NavigationBoundary: React.FC = () => {
 
   if (refreshFailed) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background, padding: 24 }}>
-        <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 24, fontSize: 16 }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.background,
+          padding: 24,
+        }}
+      >
+        <Text
+          style={{
+            color: colors.text,
+            textAlign: "center",
+            marginBottom: 24,
+            fontSize: 16,
+          }}
+        >
           Unable to connect. Check your internet and try again.
         </Text>
         <TouchableOpacity
-          style={{ backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 32, borderRadius: 8 }}
+          style={{
+            backgroundColor: colors.primary,
+            paddingVertical: 12,
+            paddingHorizontal: 32,
+            borderRadius: 8,
+          }}
           onPress={retrySession}
         >
-          <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>Retry</Text>
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+            Retry
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -176,31 +215,37 @@ function ThemedApp() {
   const { paperTheme, isDark, colors } = useAppTheme();
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
       <SafeAreaProvider style={{ backgroundColor: colors.background }}>
         <PaperProvider theme={paperTheme}>
-          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <StatusBar style={isDark ? "light" : "dark"} />
           <Auth0ProviderWithHistory>
-            <StoreProvider>
-              <NetworkProvider>
-                <OfflineProvider>
-                  {Platform.OS === 'ios' ? (
-                    <KeyboardAvoidingView
-                      behavior="padding"
-                      style={{ flex: 1, backgroundColor: colors.background }}
-                    >
-                      <NavigationBoundary />
-                      <OfflineBanner />
-                    </KeyboardAvoidingView>
-                  ) : (
-                    <>
-                      <NavigationBoundary />
-                      <OfflineBanner />
-                    </>
-                  )}
-                </OfflineProvider>
-              </NetworkProvider>
-            </StoreProvider>
+            <DatabaseProvider>
+              <StoreProvider>
+                <NetworkProvider>
+                  <OfflineProvider>
+                    {Platform.OS === "ios" ? (
+                      <KeyboardAvoidingView
+                        behavior="padding"
+                        style={{ flex: 1, backgroundColor: colors.background }}
+                      >
+                        <NavigationBoundary />
+                        <OfflineBanner />
+                        <MigrationOverlay />
+                      </KeyboardAvoidingView>
+                    ) : (
+                      <>
+                        <NavigationBoundary />
+                        <OfflineBanner />
+                        <MigrationOverlay />
+                      </>
+                    )}
+                  </OfflineProvider>
+                </NetworkProvider>
+              </StoreProvider>
+            </DatabaseProvider>
           </Auth0ProviderWithHistory>
         </PaperProvider>
       </SafeAreaProvider>

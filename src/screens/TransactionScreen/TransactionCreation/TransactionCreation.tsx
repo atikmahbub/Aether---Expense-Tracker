@@ -9,14 +9,12 @@ import React, {
 import { StyleSheet, View, Pressable, Text, InteractionManager, Keyboard } from 'react-native';
 import { IconButton } from 'react-native-paper';
 
-import { ExpenseCategoryModel, TransactionModel, TransactionModelV1 } from '@trackingPortal/api/models';
-import { IAddTransactionParams } from '@trackingPortal/api/params';
-import { makeUnixTimestampString, TransactionId, UserId } from '@trackingPortal/api/primitives';
+import { ExpenseCategoryModel, TransactionModel } from '@trackingPortal/api/models';
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import { BaseBottomSheet } from '@trackingPortal/components';
 import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
-import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
-import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
+import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
+import { TransactionDataService } from '@trackingPortal/db/services/TransactionDataService';
 import {
   CreateTransactionSchema,
   EAddTransactionFields,
@@ -68,9 +66,9 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
 }) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { apiGateway } = useStoreContext();
+  const { transactionData } = useDatabase();
   const { user } = useAuth();
-  const { isOnline, saveOffline } = useOffline();
+  const { syncNow } = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
   const [transactionType, setTransactionType] = useState<'Expense' | 'Income'>(
     initialType,
@@ -99,59 +97,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
 
   const handleAddTransaction = useCallback(
     async (values: INewTransaction, { resetForm }: any) => {
-      if (!user?.sub) return;
+      if (!user?.sub || !transactionData) return;
 
-      if (!isOnline) {
-        try {
-          setLoading(true);
-          const trimmedDescription = values.description?.trim();
-          const categoryLabel = activeCategories.find(
-            item => item.id === values.categoryId,
-          )?.name;
-
-          const safeDate = dayjs(values.date)
-            .hour(12)
-            .minute(0)
-            .second(0)
-            .millisecond(0)
-            .toDate();
-
-          const params: IAddTransactionParams = {
-            userId: user.sub as any,
-            amount: Number(values.amount),
-            date: makeUnixTimestampString(Number(safeDate)),
-            description: trimmedDescription || categoryLabel || 'Quick entry',
-            categoryId: values.categoryId,
-            type: transactionType.toLowerCase() as 'expense' | 'income',
-          };
-
-          const offlineItem = await saveOffline('transaction', params);
-          triggerSuccessHaptic();
-
-          // Optimistic update for offline
-          const mockTransaction: TransactionModel = {
-            id: String(offlineItem.id),
-            type: params.type || 'expense',
-            amount: Number(values.amount),
-            date: safeDate.toISOString(),
-            description: trimmedDescription || categoryLabel || 'Quick entry',
-            category: {
-              name: activeCategories.find(c => c.id === values.categoryId)?.name || 'Other',
-              icon: activeCategories.find(c => c.id === values.categoryId)?.icon || 'receipt',
-              color: activeCategories.find(c => c.id === values.categoryId)?.color || colors.subText,
-            }
-          };
-
-          setTransactions(prev => [mockTransaction, ...prev]);
-          handleClose();
-          resetForm();
-          return;
-        } catch (error) {
-          console.error('Offline Transaction Error:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
       try {
         setLoading(true);
 
@@ -159,42 +106,22 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         const categoryLabel = activeCategories.find(
           item => item.id === values.categoryId,
         )?.name;
+        const description = trimmedDescription || categoryLabel || 'Quick entry';
+        const date = TransactionDataService.toTimestamp(dayjs(values.date).toDate());
+        const type = transactionType.toLowerCase() as 'expense' | 'income';
 
-        const safeDate = dayjs(values.date)
-          .hour(12)
-          .minute(0)
-          .second(0)
-          .millisecond(0)
-          .toDate();
-
-        const params: any = {
-          userId: user.sub as any,
+        // Offline-first: write to SQLite immediately (works online or offline).
+        const created = await transactionData.createTransaction({
+          userId: user.sub as string,
           amount: Number(values.amount),
-          date: makeUnixTimestampString(Number(safeDate)),
-          description: trimmedDescription || categoryLabel || 'Quick entry',
+          description,
+          date,
           categoryId: values.categoryId,
-        };
+          type,
+        });
 
-        let newTransaction: TransactionModelV1;
-        if (transactionType.toLowerCase() === 'income') {
-          newTransaction = await apiGateway.transactionService.addIncome(params);
-        } else {
-          newTransaction = await apiGateway.transactionService.addExpense(params);
-        }
-
-        const mockTransaction: TransactionModel = {
-          id: newTransaction.id,
-          amount: Number(newTransaction.amount),
-          date: newTransaction.date,
-          description: newTransaction.description || trimmedDescription || 'Quick entry',
-          type: transactionType.toLowerCase() as 'expense' | 'income',
-          category: {
-            name: activeCategories.find(c => c.id === values.categoryId)?.name || newTransaction.categoryName || 'Other',
-            icon: activeCategories.find(c => c.id === values.categoryId)?.icon || 'receipt',
-            color: activeCategories.find(c => c.id === values.categoryId)?.color || colors.subText,
-          }
-        };
-        setTransactions(prev => [mockTransaction, ...prev]);
+        triggerSuccessHaptic();
+        setTransactions(prev => [created, ...prev]);
 
         resetForm({
           values: {
@@ -212,8 +139,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           await refreshAnalytics({ force: true });
           await refreshSummary?.();
 
-          triggerSuccessHaptic();
-          onCategoryUsed?.(params.categoryId);
+          onCategoryUsed?.(values.categoryId);
 
           Toast.show({
             type: 'success',
@@ -221,45 +147,32 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           });
 
           await getExceedExpenseNotification();
+
+          // Push to the cloud now if online; a no-op (queued) when offline.
+          syncNow();
         });
       } catch (error: any) {
         console.error('Transaction Creation Error:', error);
-
-        let message = 'Failed to add transaction. Please try again.';
-
-        if (error.response) {
-          const status = error.response.status;
-          if (status === 400) {
-            message = 'Invalid data provided. Please check your entries.';
-          } else if (status === 401) {
-            message = 'Session expired. Please log in again.';
-          } else if (status === 404) {
-            message = 'Service endpoint not found.';
-          } else if (error.response.data?.message) {
-            message = error.response.data.message;
-          }
-        }
-
         Toast.show({
           type: 'error',
-          text1: message,
+          text1: 'Failed to add transaction. Please try again.',
         });
       } finally {
         setLoading(false);
       }
     },
     [
-      colors.subText,
-      apiGateway.transactionService,
-      categories,
+      transactionData,
+      user?.sub,
+      activeCategories,
       getExceedExpenseNotification,
       getUserExpenses,
       handleClose,
       onCategoryUsed,
       refreshAnalytics,
+      refreshSummary,
       setTransactions,
-      isOnline,
-      saveOffline,
+      syncNow,
       transactionType,
     ],
   );

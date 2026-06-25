@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ApiGateway } from "@trackingPortal/api/implementations";
+import { apiGateway } from "@trackingPortal/api/apiGatewayInstance";
 import { IApiGateWay } from "@trackingPortal/api/interfaces";
 import { ExpenseCategoryModel, UserModel } from "@trackingPortal/api/models";
 import { IAddUserParams } from "@trackingPortal/api/params";
@@ -19,9 +19,9 @@ import {
   FALLBACK_CATEGORIES,
   normalizeCategoryIcon,
 } from "@trackingPortal/screens/TransactionScreen/TransactionScreen.constants";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import { getCountryData } from "country-currency-utils";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import Toast from "react-native-toast-message";
 
 const IPINFO_TOKEN = process.env.EXPO_PUBLIC_IPINFO_TOKEN;
 const PRIORITY_ORDER = ["Groceries", "Food", "Kids", "Health"];
@@ -40,7 +40,6 @@ type StoreContextType = {
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
-const apiGateway = new ApiGateway();
 
 interface NewUserModel extends UserModel {
   default: boolean;
@@ -58,6 +57,7 @@ const unsetUser = (): NewUserModel => ({
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const { getValidToken, token, user: auth0User, isAuthenticated } = useAuth();
+  const { repositories, ready: dbReady } = useDatabase();
 
   const [currentUser, setCurrentUser] = useState<NewUserModel>(unsetUser);
   const [currency, setCurrency] =
@@ -85,35 +85,59 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     addUserToDb();
-  }, [auth0User, token, isAuthenticated]);
+  }, [auth0User, token, isAuthenticated, dbReady]);
 
   useEffect(() => {
     hydrateCurrencyPreference();
     if (token && !currentUser.default && currentUser.userId) {
       refreshCategories({ force: true });
     }
-  }, [token, currentUser.userId, currentUser.default]);
+  }, [token, currentUser.userId, currentUser.default, dbReady]);
 
   useEffect(() => {
     if (!currentUser.default && currentUser.userId) {
       fetchIncomeCategories(currentUser.userId);
     }
-  }, [currentUser.userId, currentUser.default]);
+  }, [currentUser.userId, currentUser.default, dbReady]);
 
+  // Categories are sourced from SQLite (offline-first). When online we
+  // opportunistically refresh the local cache from the cloud first, then always
+  // read the result back from SQLite so the UI works identically offline.
   const refreshCategories = async (options?: { force?: boolean }) => {
     if (currentUser.default || !currentUser.userId) return;
     if (isCategoryHydrated && !options?.force) return;
 
+    const repo = repositories?.categories;
     setCategoryLoading(true);
 
     try {
-      const response = await apiGateway.categoryService.getExpenseCategories(currentUser.userId);
+      try {
+        const response = await apiGateway.categoryService.getExpenseCategories(
+          currentUser.userId,
+        );
+        if (repo) {
+          for (const c of response) {
+            await repo.upsertFromServer({ ...c, kind: "expense" });
+          }
+        }
+      } catch (error) {
+        // Offline or API error — fall back to whatever SQLite already holds.
+        console.log("category refresh (cloud) skipped", error);
+      }
 
-      const normalized = response
-        .map((c) => ({
-          ...c,
-          icon: normalizeCategoryIcon(c.icon),
-        }))
+      const local = repo ? await repo.getByKind("expense") : [];
+      const source: ExpenseCategoryModel[] = local.length
+        ? local.map((c) => ({
+            id: c.id,
+            name: c.name,
+            icon: c.icon ?? "",
+            color: c.color ?? "",
+            userId: c.userId,
+          }))
+        : FALLBACK_CATEGORIES;
+
+      const normalized = source
+        .map((c) => ({ ...c, icon: normalizeCategoryIcon(c.icon) }))
         .sort((a, b) => {
           const indexA = PRIORITY_ORDER.indexOf(a.name);
           const indexB = PRIORITY_ORDER.indexOf(b.name);
@@ -125,25 +149,35 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
       setCategories(normalized);
       setIsCategoryHydrated(true);
-    } catch (error) {
-      console.log("category error", error);
-      setCategories(FALLBACK_CATEGORIES);
     } finally {
       setCategoryLoading(false);
     }
   };
 
   const fetchIncomeCategories = async (userId: UserId) => {
+    const repo = repositories?.categories;
     setIncomeCategoryLoading(true);
     try {
-      const response = await apiGateway.categoryService.getIncomeCategories(userId);
-      const normalized = response.map((c) => ({
-        ...c,
-        icon: normalizeCategoryIcon(c.icon),
+      try {
+        const response = await apiGateway.categoryService.getIncomeCategories(userId);
+        if (repo) {
+          for (const c of response) {
+            await repo.upsertFromServer({ ...c, kind: "income" });
+          }
+        }
+      } catch (error) {
+        console.log("income category refresh (cloud) skipped", error);
+      }
+
+      const local = repo ? await repo.getByKind("income") : [];
+      const normalized = local.map((c) => ({
+        id: c.id,
+        name: c.name,
+        icon: normalizeCategoryIcon(c.icon ?? ""),
+        color: c.color ?? "",
+        userId: c.userId,
       }));
       setIncomeCategories(normalized);
-    } catch (error) {
-      console.log("income category error", error);
     } finally {
       setIncomeCategoryLoading(false);
     }
@@ -184,20 +218,47 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const addUserToDb = async () => {
-    try {
-      if (!auth0User?.sub) return;
+    if (!auth0User?.sub) return;
 
+    // Offline-first: the Auth0 `sub` IS the userId used everywhere, so derive the
+    // identity from the token immediately. This makes the app fully usable
+    // offline (no network round-trip needed to know who the user is).
+    const localUser: NewUserModel = {
+      userId: UserId(auth0User.sub as string),
+      name: (auth0User.name as string) ?? "",
+      email: (auth0User.email as string) ?? "",
+      profilePicture: URLString((auth0User.picture as string) ?? ""),
+      created: makeUnixTimestampString(0),
+      updated: makeUnixTimestampString(0),
+      default: false,
+    };
+    setCurrentUser(localUser);
+
+    try {
+      await repositories?.users.upsertFromServer({
+        userId: localUser.userId,
+        name: localUser.name,
+        email: localUser.email,
+        profilePicture: localUser.profilePicture,
+      });
+    } catch (error) {
+      console.log("persist local user failed", error);
+    }
+
+    // Reconcile with the server when reachable. On failure (offline) we keep the
+    // token-derived identity — never downgrade back to the default user.
+    try {
       const params: IAddUserParams = {
         userId: UserId(auth0User.sub as string),
         name: auth0User.name as string,
         profilePicture: URLString(auth0User.picture as string),
         email: auth0User.email as string,
       };
-
       const user = await apiGateway.userService.addUser(params);
       setCurrentUser({ ...user, default: false });
-    } catch {
-      Toast.show({ type: "error", text1: "Something went wrong!" });
+      await repositories?.users.upsertFromServer(user);
+    } catch (error) {
+      console.log("user sync (cloud) skipped", error);
     }
   };
 

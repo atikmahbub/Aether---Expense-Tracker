@@ -1,16 +1,15 @@
 import { useIsFocused } from "@react-navigation/native";
-import { MonthlyLimitModel, TransactionModel } from "@trackingPortal/api/models";
-import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
 import {
-  Month,
-  UnixTimeStampString,
-  Year
-} from "@trackingPortal/api/primitives";
-import { offlineService } from "@trackingPortal/api/utils/OfflineService";
+  MonthlyLimitModel,
+  TransactionModel,
+} from "@trackingPortal/api/models";
+import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
+import { Month, Year } from "@trackingPortal/api/primitives";
 import { AnimatedLoader } from "@trackingPortal/components";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import AnalyticsCard from "@trackingPortal/screens/TransactionScreen/components/AnalyticsCard";
 import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
@@ -18,16 +17,29 @@ import { useTransactionInsights } from "@trackingPortal/screens/TransactionScree
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
-import { parseDate, getMonthTimestamp } from "@trackingPortal/utils/date";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated as RNAnimated, InteractionManager, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  InteractionManager,
+  RefreshControl,
+  Animated as RNAnimated,
+  StyleSheet,
+  View,
+} from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-const AnimatedKeyboardAwareScrollView = RNAnimated.createAnimatedComponent(KeyboardAwareScrollView);
+const AnimatedKeyboardAwareScrollView = RNAnimated.createAnimatedComponent(
+  KeyboardAwareScrollView,
+);
 
 export default function TransactionScreen() {
   const { colors } = useAppTheme();
@@ -39,24 +51,25 @@ export default function TransactionScreen() {
     currency,
     isCategoryHydrated,
   } = useStoreContext();
+  const { transactionData } = useDatabase();
 
   const activeUserId = user.userId;
 
   const [openCreationForm, setOpenCreationModal] = useState(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState(false);
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
-  const [typeFilter, setTypeFilter] = useState<'expense' | 'income'>('expense');
+  const [typeFilter, setTypeFilter] = useState<"expense" | "income">("expense");
   const [visibleCount, setVisibleCount] = useState(12);
   const scrollY = useRef(new RNAnimated.Value(0)).current;
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => t.type?.toLowerCase() === typeFilter);
+    return transactions.filter((t) => t.type?.toLowerCase() === typeFilter);
   }, [transactions, typeFilter]);
 
   const handleTypeFilterChange = useCallback((option: string) => {
     setVisibleCount(12);
     InteractionManager.runAfterInteractions(() => {
-      setTypeFilter(option as 'expense' | 'income');
+      setTypeFilter(option as "expense" | "income");
     });
   }, []);
 
@@ -113,18 +126,17 @@ export default function TransactionScreen() {
   } = useRecentCategories();
 
   const fetchSummary = useCallback(async () => {
-    if (!activeUserId) return;
+    if (!activeUserId || !transactionData) return;
     setLoadingSummary(true);
     try {
-      const ts = getMonthTimestamp(dayjs(filterMonth).year(), dayjs(filterMonth).month());
-      const data = await apiGateway.transactionService.getTransactionSummary(user.userId, ts as string);
+      const data = await transactionData.getSummary(activeUserId, filterMonth);
       setSummary(data);
     } catch (error) {
       console.log("Summary fetch failed", error);
     } finally {
       setLoadingSummary(false);
     }
-  }, [activeUserId, apiGateway, user.userId, filterMonth]);
+  }, [activeUserId, transactionData, filterMonth]);
 
   const fetchAnalytics = useCallback(
     (options?: { force?: boolean }) => {
@@ -142,53 +154,33 @@ export default function TransactionScreen() {
   const handleExceedNotification = useCallback(() => {}, []);
 
   const getTransactions = useCallback(async () => {
-    if (!user.userId) return;
+    if (!user.userId || !transactionData) return;
 
     setLoading(true);
 
     try {
-      let serverTransactions: TransactionModel[] = [];
-      try {
-        serverTransactions = await apiGateway.transactionService.getTransactions({
-          userId: user.userId,
-          date: getMonthTimestamp(dayjs(filterMonth).year(), dayjs(filterMonth).month()),
-        });
-      } catch (e) {
-        console.log("Server Transactions fetch failed", e);
-      }
-
-      const queue = await offlineService.getQueue();
-      const currentMonthStr = dayjs(filterMonth).format("YYYY-MM");
-
-      const offlineTransactions: TransactionModel[] = queue
-        .filter(item =>
-          item.type === 'transaction' &&
-          !item.synced &&
-          dayjs(parseDate(item.payload.date)).format("YYYY-MM") === currentMonthStr
-        )
-        .map(item => ({
-          id: item.id as string,
-          type: (item.payload.type || 'expense') as 'expense' | 'income',
-          amount: item.payload.amount,
-          date: item.payload.date as string,
-          description: item.payload.description,
-          category: {
-            name: (item.payload.type === 'income' ? incomeCategories : categories).find(c => c.id === item.payload.categoryId)?.name || 'Other',
-            icon: (item.payload.type === 'income' ? incomeCategories : categories).find(c => c.id === item.payload.categoryId)?.icon || 'receipt',
-            color: (item.payload.type === 'income' ? incomeCategories : categories).find(c => c.id === item.payload.categoryId)?.color || colors.subText,
-          }
-        }));
-
-      setTransactions([...offlineTransactions, ...serverTransactions]);
+      // Offline-first: read the month's transactions straight from SQLite.
+      // Cloud changes land in SQLite via the background sync engine.
+      const localTransactions = await transactionData.getMonthTransactions(
+        user.userId,
+        filterMonth,
+      );
+      setTransactions(localTransactions);
     } catch (error) {
       console.log("transaction error", error);
     } finally {
       setLoading(false);
     }
-  }, [user.userId, apiGateway.transactionService, filterMonth, categories, colors.subText]);
+  }, [user.userId, transactionData, filterMonth]);
 
   const getMonthlyLimit = useCallback(async () => {
     if (!user.userId) return;
+    // Monthly limit is still API-backed; offline we skip it so it can't block
+    // the initial load with a 15s network timeout (the rest reads from SQLite).
+    if (!isOnline) {
+      setLimitLoading(false);
+      return;
+    }
 
     setLimitLoading(true);
 
@@ -206,23 +198,26 @@ export default function TransactionScreen() {
     } finally {
       setLimitLoading(false);
     }
-  }, [user.userId, apiGateway.monthlyLimitService, filterMonth]);
+  }, [user.userId, apiGateway.monthlyLimitService, filterMonth, isOnline]);
 
-  const loadData = useCallback(async (options?: { force?: boolean }) => {
-    setVisibleCount(12);
-    setCombinedLoading(true);
+  const loadData = useCallback(
+    async (options?: { force?: boolean }) => {
+      setVisibleCount(12);
+      setCombinedLoading(true);
 
-    try {
-      await Promise.all([
-        getMonthlyLimit(),
-        fetchAnalytics(options),
-        getTransactions(),
-        fetchSummary(),
-      ]);
-    } finally {
-      setCombinedLoading(false);
-    }
-  }, [getMonthlyLimit, fetchAnalytics, getTransactions, fetchSummary]);
+      try {
+        await Promise.all([
+          getMonthlyLimit(),
+          fetchAnalytics(options),
+          getTransactions(),
+          fetchSummary(),
+        ]);
+      } finally {
+        setCombinedLoading(false);
+      }
+    },
+    [getMonthlyLimit, fetchAnalytics, getTransactions, fetchSummary],
+  );
 
   useEffect(() => {
     if (!isOnline) {
@@ -270,25 +265,37 @@ export default function TransactionScreen() {
   }, [activeUserId, user.default, isCategoryHydrated, filterMonth, loadData]);
 
   useEffect(() => {
-    if (!recentHydrated || recentCategoryIds.length || !transactions.length || !categories.length) return;
+    if (
+      !recentHydrated ||
+      recentCategoryIds.length ||
+      !transactions.length ||
+      !categories.length
+    )
+      return;
 
     const historyIds = transactions
-      .filter(t => t.type === 'expense' && t.category?.name)
+      .filter((t) => t.type === "expense" && t.category?.name)
       .map((t) => {
-        const cat = categories.find(c => c.name === t.category.name);
+        const cat = categories.find((c) => c.name === t.category.name);
         return cat?.id;
       })
       .filter((id): id is string => !!id);
 
     initializeFromHistory(historyIds);
-  }, [transactions, initializeFromHistory, recentCategoryIds, recentHydrated, categories]);
+  }, [
+    transactions,
+    initializeFromHistory,
+    recentCategoryIds,
+    recentHydrated,
+    categories,
+  ]);
 
   const onRefresh = useCallback(async () => {
     if (!isOnline) {
       Toast.show({
-        type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Please connect to refresh data.',
+        type: "offline",
+        text1: "No internet connection",
+        text2: "Please connect to refresh data.",
       });
       return;
     }
@@ -308,88 +315,150 @@ export default function TransactionScreen() {
 
   const totalDisplayValue = useMemo(() => {
     if (loadingSummary || !summary) return null;
-    return typeFilter === 'expense' ? summary.totalExpense : summary.totalIncome;
+    return typeFilter === "expense"
+      ? summary.totalExpense
+      : summary.totalIncome;
   }, [summary, loadingSummary, typeFilter]);
 
   const crossTabTotal = useMemo(() => {
     if (loadingSummary || !summary) return 0;
-    return typeFilter === 'expense' ? summary.totalIncome : summary.totalExpense;
+    return typeFilter === "expense"
+      ? summary.totalIncome
+      : summary.totalExpense;
   }, [summary, loadingSummary, typeFilter]);
 
   const activeTrend = useMemo(() => {
     if (loadingSummary || !summary) return null;
-    const value = typeFilter === 'expense' ? summary.expenseChangePercentage : summary.incomeChangePercentage;
+    const value =
+      typeFilter === "expense"
+        ? summary.expenseChangePercentage
+        : summary.incomeChangePercentage;
     const isIncrease = value > 0;
     const isDecrease = value < 0;
-    const isBetter = typeFilter === 'expense' ? isDecrease : isIncrease;
+    const isBetter = typeFilter === "expense" ? isDecrease : isIncrease;
 
     return {
       percent: Math.abs(value),
       isLower: value < 0,
-      label: value === 0 ? "0% vs last month" : `${isIncrease ? "↑" : "↓"} ${Math.abs(value)}% vs last month`,
-      color: value === 0 ? colors.subText : (isBetter ? colors.primary : colors.error),
-      icon: isIncrease ? 'arrow-top-right' : (isDecrease ? 'arrow-bottom-right' : 'minus'),
+      label:
+        value === 0
+          ? "0% vs last month"
+          : `${isIncrease ? "↑" : "↓"} ${Math.abs(value)}% vs last month`,
+      color:
+        value === 0 ? colors.subText : isBetter ? colors.primary : colors.error,
+      icon: isIncrease
+        ? "arrow-top-right"
+        : isDecrease
+          ? "arrow-bottom-right"
+          : "minus",
     };
   }, [summary, loadingSummary, typeFilter, colors]);
 
-  const headerComponent = useMemo(() => (
-    <View>
-      <View style={styles.topToggleRow}>
-        <TransactionSegmentedControl
-          options={['expense', 'income']}
-          selectedOption={typeFilter}
-          onOptionPress={handleTypeFilterChange}
+  const headerComponent = useMemo(
+    () => (
+      <View>
+        <View style={styles.topToggleRow}>
+          <TransactionSegmentedControl
+            options={["expense", "income"]}
+            selectedOption={typeFilter}
+            onOptionPress={handleTypeFilterChange}
+          />
+        </View>
+
+        <TransactionSummary
+          totalValue={totalDisplayValue ?? 0}
+          type={typeFilter}
+          monthlyIncome={crossTabTotal}
+          filterMonth={filterMonth}
+          monthLimit={monthLimit}
+          getMonthlyLimit={getMonthlyLimit}
+          isLoading={loadingSummary}
+        />
+
+        <AnalyticsCard
+          analytics={
+            typeFilter === "expense" ? expenseAnalytics : incomeAnalytics
+          }
+          monthlyLimit={
+            typeFilter === "expense" ? monthLimit?.limit : undefined
+          }
+          categories={categoryLookup}
+          loading={analyticsLoading || !isCategoryHydrated}
+          error={analyticsError}
+          onRetry={onRetryAnalytics}
+          currency={currency}
+          mode={typeFilter}
+          trend={activeTrend}
+          trendLoading={loadingSummary}
+          totalSpent={totalDisplayValue ?? 0}
+          transactions={filteredTransactions}
         />
       </View>
+    ),
+    [
+      typeFilter,
+      totalDisplayValue,
+      crossTabTotal,
+      activeTrend,
+      loadingSummary,
+      filterMonth,
+      monthLimit,
+      getMonthlyLimit,
+      expenseAnalytics,
+      incomeAnalytics,
+      categoryLookup,
+      analyticsLoading,
+      isCategoryHydrated,
+      analyticsError,
+      onRetryAnalytics,
+      currency,
+      styles,
+    ],
+  );
 
-      <TransactionSummary
-        totalValue={totalDisplayValue ?? 0}
-        type={typeFilter}
-        monthlyIncome={crossTabTotal}
-        filterMonth={filterMonth}
-        monthLimit={monthLimit}
-        getMonthlyLimit={getMonthlyLimit}
-        isLoading={loadingSummary}
+  const footerComponent = useMemo(
+    () => (
+      <TransactionList
+        filteredMonth={filterMonth}
+        setFilteredMonth={setFilterMonth}
+        transactions={visibleData}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        getUserExpenses={getTransactions}
+        categories={typeFilter === "expense" ? categories : incomeCategories}
+        categoriesLoading={
+          typeFilter === "expense" ? categoryLoading : incomeCategoryLoading
+        }
+        refreshCategories={refreshCategories}
+        refreshAnalytics={fetchAnalytics}
+        recentCategoryIds={recentCategoryIds}
+        onCategoryUsed={addRecentCategory}
+        notifyRowOpen={handleNotifyRowOpen}
+        refreshSummary={fetchSummary}
       />
-
-      <AnalyticsCard
-        analytics={typeFilter === 'expense' ? expenseAnalytics : incomeAnalytics}
-        monthlyLimit={typeFilter === 'expense' ? monthLimit?.limit : undefined}
-        categories={categoryLookup}
-        loading={analyticsLoading || !isCategoryHydrated}
-        error={analyticsError}
-        onRetry={onRetryAnalytics}
-        currency={currency}
-        mode={typeFilter}
-        trend={activeTrend}
-        trendLoading={loadingSummary}
-        totalSpent={totalDisplayValue ?? 0}
-        transactions={filteredTransactions}
-      />
-    </View>
-  ), [typeFilter, totalDisplayValue, crossTabTotal, activeTrend, loadingSummary, filterMonth, monthLimit, getMonthlyLimit, expenseAnalytics, incomeAnalytics, categoryLookup, analyticsLoading, isCategoryHydrated, analyticsError, onRetryAnalytics, currency, styles]);
-
-  const footerComponent = useMemo(() => (
-    <TransactionList
-      filteredMonth={filterMonth}
-      setFilteredMonth={setFilterMonth}
-      transactions={visibleData}
-      typeFilter={typeFilter}
-      setTypeFilter={setTypeFilter}
-      getUserExpenses={getTransactions}
-      categories={typeFilter === 'expense' ? categories : incomeCategories}
-      categoriesLoading={typeFilter === 'expense' ? categoryLoading : incomeCategoryLoading}
-      refreshCategories={refreshCategories}
-      refreshAnalytics={fetchAnalytics}
-      recentCategoryIds={recentCategoryIds}
-      onCategoryUsed={addRecentCategory}
-      notifyRowOpen={handleNotifyRowOpen}
-      refreshSummary={fetchSummary}
-    />
-  ), [filterMonth, setFilterMonth, visibleData, getTransactions, categories, categoryLoading, refreshCategories, fetchAnalytics, recentCategoryIds, addRecentCategory, handleNotifyRowOpen, fetchSummary]);
+    ),
+    [
+      filterMonth,
+      setFilterMonth,
+      visibleData,
+      getTransactions,
+      categories,
+      categoryLoading,
+      refreshCategories,
+      fetchAnalytics,
+      recentCategoryIds,
+      addRecentCategory,
+      handleNotifyRowOpen,
+      fetchSummary,
+    ],
+  );
 
   if (
-    (combinedLoading || loading || limitLoading || !isCategoryHydrated || user.default) &&
+    (combinedLoading ||
+      loading ||
+      limitLoading ||
+      !isCategoryHydrated ||
+      user.default) &&
     transactions.length === 0
   ) {
     return <AnimatedLoader />;
@@ -409,7 +478,8 @@ export default function TransactionScreen() {
           {
             useNativeDriver: true,
             listener: (event: any) => {
-              const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+              const { layoutMeasurement, contentOffset, contentSize } =
+                event.nativeEvent;
               const isNearBottom =
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - 200;
@@ -418,7 +488,7 @@ export default function TransactionScreen() {
                 setVisibleCount((prev) => prev + 10);
               }
             },
-          }
+          },
         )}
         style={{ flex: 1 }}
         contentContainerStyle={[
@@ -433,20 +503,24 @@ export default function TransactionScreen() {
           />
         }
       >
-        <RNAnimated.View style={{
-          transform: [{
-            translateY: scrollY.interpolate({
-              inputRange: [-100, 0, 100],
-              outputRange: [50, 0, -20],
-              extrapolate: 'clamp',
-            })
-          }],
-          opacity: scrollY.interpolate({
-            inputRange: [0, 150],
-            outputRange: [1, 0.9],
-            extrapolate: 'clamp',
-          })
-        }}>
+        <RNAnimated.View
+          style={{
+            transform: [
+              {
+                translateY: scrollY.interpolate({
+                  inputRange: [-100, 0, 100],
+                  outputRange: [50, 0, -20],
+                  extrapolate: "clamp",
+                }),
+              },
+            ],
+            opacity: scrollY.interpolate({
+              inputRange: [0, 150],
+              outputRange: [1, 0.9],
+              extrapolate: "clamp",
+            }),
+          }}
+        >
           {headerComponent}
         </RNAnimated.View>
         {footerComponent}
@@ -456,7 +530,7 @@ export default function TransactionScreen() {
         <TransactionCreation
           openCreationModal={openCreationForm}
           setOpenCreationModal={setOpenCreationModal}
-          initialType={typeFilter === 'expense' ? 'Expense' : 'Income'}
+          initialType={typeFilter === "expense" ? "Expense" : "Income"}
           setTransactions={setTransactions}
           getUserExpenses={getTransactions}
           getExceedExpenseNotification={handleExceedNotification}
@@ -476,7 +550,7 @@ export default function TransactionScreen() {
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -488,10 +562,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     topToggleRow: {
       paddingHorizontal: 16,
       marginBottom: 8,
-      alignItems: 'flex-end',
+      alignItems: "flex-end",
     },
     segmentedToggle: {
-      flexDirection: 'row',
+      flexDirection: "row",
       backgroundColor: colors.surfaceAlt,
       borderRadius: 8,
       padding: 2,
@@ -505,7 +579,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     toggleButtonActive: {
       backgroundColor: colors.surface,
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
@@ -514,11 +588,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     toggleText: {
       color: colors.subText,
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     toggleTextActive: {
       color: colors.primary,
-      fontWeight: '700',
+      fontWeight: "700",
     },
   });
 }

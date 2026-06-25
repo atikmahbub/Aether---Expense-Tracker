@@ -82,6 +82,7 @@ export const Auth0ProviderWithHistory = ({
   const refreshPromise = useRef<Promise<string | null> | null>(null);
   const appState = useRef(AppState.currentState);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastProfileSync = useRef<number>(0);
 
   const discovery = AuthSession.useAutoDiscovery(`https://${AUTH0_DOMAIN}`);
 
@@ -247,12 +248,15 @@ export const Auth0ProviderWithHistory = ({
   }, [token, refreshAccessToken]);
 
   const syncProfile = useCallback(async (tokenToUse: string) => {
+    const now = Date.now();
+    if (now - lastProfileSync.current < 30_000) return;
+    lastProfileSync.current = now;
     try {
       const profile = await fetchUserInfo(tokenToUse);
       setUser(profile);
       await authStorage.saveProfile(profile);
     } catch (e) {
-      console.error("❌ Profile sync failed:", e);
+      console.warn("⚠️ Profile sync failed:", e);
     }
   }, []);
 
@@ -308,7 +312,12 @@ export const Auth0ProviderWithHistory = ({
       }
     };
 
-    if (discovery) bootstrap();
+    // Run on mount regardless of `discovery`. Validating a stored, non-expired
+    // token needs no network; `discovery` is only required for the refresh path
+    // (which gracefully returns null when offline). Gating bootstrap on
+    // `discovery` would hang the app forever offline, since `useAutoDiscovery`
+    // can never resolve without a connection.
+    bootstrap();
 
     return () => {
       cancelled = true;

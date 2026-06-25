@@ -1,13 +1,8 @@
 import { EInvestStatus } from "@trackingPortal/api/enums";
 import { InvestModel } from "@trackingPortal/api/models";
-import { offlineService } from "@trackingPortal/api/utils/OfflineService";
 import { AnimatedLoader } from "@trackingPortal/components";
-import {
-  UnixTimeStampString,
-  InvestId,
-  makeUnixTimestampString,
-} from "@trackingPortal/api/primitives";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import InvestCreation from "@trackingPortal/screens/InvestScreen/InvestCreation";
 import InvestList from "@trackingPortal/screens/InvestScreen/InvestList";
 import InvestSummary from "@trackingPortal/screens/InvestScreen/InvestSummary";
@@ -27,7 +22,8 @@ export default function InvestScreen() {
   const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
   const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [invests, setInvests] = useState<InvestModel[]>([]);
-  const { currentUser: user, apiGateway } = useStoreContext();
+  const { currentUser: user } = useStoreContext();
+  const { investData } = useDatabase();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [status, setStatus] = React.useState<EInvestStatus>(
@@ -98,41 +94,12 @@ export default function InvestScreen() {
   }, [user, status]);
 
   const getUserInvestHistory = async () => {
+    if (!user.userId || !investData) return;
     try {
       setLoading(true);
-
-      // 1. Fetch from server
-      let serverInvests: InvestModel[] = [];
-      try {
-        serverInvests = await apiGateway.investService.getInvestByUserId({
-          userId: user.userId,
-          status: status,
-        });
-      } catch (e) {
-        console.log("Server Invest fetch failed", e);
-      }
-
-      // 2. Load from offline queue
-      const queue = await offlineService.getQueue();
-      const offlineInvests: InvestModel[] = queue
-        .filter(item => 
-          item.type === 'invest' && 
-          !item.synced
-        )
-        .map(item => ({
-          id: item.id as unknown as InvestId,
-          name: item.payload.name,
-          amount: item.payload.amount,
-          note: item.payload.note,
-          startDate: item.payload.startDate as UnixTimeStampString,
-          endDate: null,
-          status: EInvestStatus.Active,
-          earned: 0,
-          created: makeUnixTimestampString(item.createdAt),
-          updated: makeUnixTimestampString(item.createdAt),
-        }));
-
-      setInvests([...offlineInvests, ...serverInvests]);
+      // Offline-first: read from SQLite, filtered by the selected status.
+      const localInvests = await investData.getInvests(user.userId, status);
+      setInvests(localInvests);
     } catch (error) {
       console.log("error", error);
       Toast.show({

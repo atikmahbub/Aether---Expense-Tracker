@@ -34,12 +34,11 @@ import TransactionForm from '@trackingPortal/screens/TransactionScreen/Transacti
 import {ExpenseCategoryModel, TransactionModel, TransactionModelV1} from '@trackingPortal/api/models';
 import {
   TransactionId,
-  makeUnixTimestampString,
-  makeUnixTimestampToNumber,
 } from '@trackingPortal/api/primitives';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {useNetwork} from '@trackingPortal/contexts/NetworkProvider';
-import {IUpdateTransactionParams} from '@trackingPortal/api/params';
+import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
+import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
+import {TransactionDataService} from '@trackingPortal/db/services/TransactionDataService';
 import Toast from 'react-native-toast-message';
 import {AnimatedLoader, LoadingButton} from '@trackingPortal/components';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
@@ -105,8 +104,9 @@ const TransactionList: FC<ITransactionList> = ({
   const [openPicker, setOpenPicker] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const {currentUser: user, apiGateway, currency} = useStoreContext();
-  const {isOnline} = useNetwork();
+  const {currentUser: user, currency} = useStoreContext();
+  const {transactionData} = useDatabase();
+  const {syncNow} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const categoryLookup = useMemo(() => {
@@ -159,16 +159,7 @@ const TransactionList: FC<ITransactionList> = ({
     {resetForm}: any,
     id: TransactionId,
   ) => {
-    if (user.default) return;
-
-    if (!isOnline) {
-      Toast.show({
-        type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Please check your connection and try again.',
-      });
-      return;
-    }
+    if (user.default || !transactionData) return;
 
     try {
       setLoading(true);
@@ -177,18 +168,13 @@ const TransactionList: FC<ITransactionList> = ({
       const description =
         values.description?.trim() || categoryName || 'Quick entry';
 
-      const payload: any = {
+      // Offline-first: update SQLite immediately; sync pushes it when online.
+      await transactionData.updateTransaction(id as string, {
         amount: Number(values.amount),
-        date: makeUnixTimestampString(Number(new Date(values.date))),
+        date: TransactionDataService.toTimestamp(new Date(values.date)),
         description,
         categoryId: values.categoryId,
-      };
-
-      if (typeFilter === 'income') {
-        await apiGateway.transactionService.updateIncome(id, payload);
-      } else {
-        await apiGateway.transactionService.updateExpense(id, payload);
-      }
+      });
 
       resetForm();
       setExpandedRowId(null);
@@ -198,60 +184,42 @@ const TransactionList: FC<ITransactionList> = ({
         await refreshAnalytics({force: true});
         await refreshSummary?.();
         triggerSuccessHaptic();
-        if (payload.categoryId) {
-          onCategoryUsed?.(payload.categoryId);
+        if (values.categoryId) {
+          onCategoryUsed?.(values.categoryId);
         }
         Toast.show({
           type: 'success',
           text1: 'Updated successfully!',
         });
+        syncNow();
       });
     } catch (error: any) {
       console.log('Update error', error);
-      let message = 'Failed to update. Please try again.';
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 400) message = 'Invalid data provided.';
-        else if (status === 401) message = 'Session expired.';
-        else if (status === 404) message = 'Entry not found.';
-      }
       Toast.show({
         type: 'error',
-        text1: message,
+        text1: 'Failed to update. Please try again.',
       });
     } finally {
       setLoading(false);
     }
   }, [
-    apiGateway.transactionService,
+    transactionData,
     categoryLookup,
     getUserExpenses,
-    isOnline,
     onCategoryUsed,
     refreshAnalytics,
-    typeFilter,
+    refreshSummary,
+    syncNow,
     user.default,
   ]);
 
   const handleDeleteTransaction = useCallback(async (rowId: any) => {
-    if (!rowId) return;
-
-    if (!isOnline) {
-      Toast.show({
-        type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Cannot delete while offline.',
-      });
-      return;
-    }
+    if (!rowId || !transactionData) return;
 
     try {
       setDeleteLoading(true);
-      if (typeFilter === 'income') {
-        await apiGateway.transactionService.deleteIncome(rowId);
-      } else {
-        await apiGateway.transactionService.deleteExpense(rowId);
-      }
+      // Offline-first: soft-delete locally; the remote delete is queued.
+      await transactionData.deleteTransaction(rowId as string);
 
       setExpandedRowId(null);
 
@@ -264,29 +232,23 @@ const TransactionList: FC<ITransactionList> = ({
           type: 'success',
           text1: 'Deleted successfully!',
         });
+        syncNow();
       });
     } catch (error: any) {
       console.log('Delete error', error);
-      let message = 'Failed to delete. Please try again.';
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 401) message = 'Session expired.';
-        else if (status === 404) message = 'Entry already deleted or not found.';
-      }
       Toast.show({
         type: 'error',
-        text1: message,
+        text1: 'Failed to delete. Please try again.',
       });
     } finally {
       setDeleteLoading(false);
     }
   }, [
-    apiGateway.transactionService,
+    transactionData,
     getUserExpenses,
-    isOnline,
     refreshAnalytics,
-    typeFilter,
     refreshSummary,
+    syncNow,
   ]);
 
   const renderCollapsibleContent = useCallback(
