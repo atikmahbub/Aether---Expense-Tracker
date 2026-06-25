@@ -14,7 +14,8 @@ import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 import {InvestModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {IUpdateInvestParams} from '@trackingPortal/api/params';
+import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
+import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
 import Toast from 'react-native-toast-message';
 import {
   AnimatedLoader,
@@ -70,17 +71,19 @@ const InvestList: FC<IInvestList> = ({
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<InvestId | null>(null);
-  const {currentUser: user, apiGateway, currency} = useStoreContext();
+  const {currentUser: user, currency} = useStoreContext();
+  const {investData} = useDatabase();
+  const {syncNow} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
   const onInvestEdit = async (values: any, {resetForm}: any, id: InvestId) => {
-    if (user.default) return;
+    if (user.default || !investData) return;
 
     try {
       setLoading(true);
-      const params: IUpdateInvestParams = {
-        id: id,
+      // Offline-first: update SQLite; sync pushes it when online.
+      await investData.updateInvest(id as string, {
         amount: Number(values.amount),
         startDate: makeUnixTimestampString(Number(new Date(values.start_date))),
         note: values.note,
@@ -91,15 +94,14 @@ const InvestList: FC<IInvestList> = ({
             ? EInvestStatus.Completed
             : EInvestStatus.Active,
         earned: Number(values.earned),
-      };
-
-      await apiGateway.investService.updateInvest(params);
+      });
       await getUserInvestHistory();
       triggerSuccessHaptic();
       Toast.show({
         type: 'success',
         text1: 'Investment updated successfully!',
       });
+      syncNow();
     } catch (error) {
       console.log('error', error);
       Toast.show({
@@ -114,16 +116,17 @@ const InvestList: FC<IInvestList> = ({
   };
 
   const handleDeleteInvestment = async (rowId: any) => {
-    if (!rowId) return;
+    if (!rowId || !investData) return;
     try {
       setDeleteLoading(true);
-      await apiGateway.investService.deleteInvest(rowId);
+      await investData.deleteInvest(rowId as string);
       await getUserInvestHistory();
       triggerWarningHaptic();
       Toast.show({
         type: 'success',
         text1: 'Deleted Successfully!',
       });
+      syncNow();
     } catch (error) {
       console.log('error', error);
       Toast.show({

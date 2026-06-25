@@ -8,7 +8,8 @@ import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 import {LoanModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {IUpdateLoanParams} from '@trackingPortal/api/params';
+import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
+import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
 import Toast from 'react-native-toast-message';
 import {AnimatedLoader, LoadingButton} from '@trackingPortal/components';
 import {LoanType} from '@trackingPortal/api/enums';
@@ -42,30 +43,31 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
-  const {currentUser: user, apiGateway, currency} = useStoreContext();
+  const {currentUser: user, currency} = useStoreContext();
+  const {loanData} = useDatabase();
+  const {syncNow} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
   const onLoanEdit = async (values: any, {resetForm}: any, id: LoanId) => {
-    if (user.default) return;
+    if (user.default || !loanData) return;
 
     try {
       setLoading(true);
-      const params: IUpdateLoanParams = {
-        id: id,
+      // Offline-first: update SQLite; sync pushes it when online.
+      await loanData.updateLoan(id as string, {
         amount: Number(values.amount),
         deadLine: makeUnixTimestampString(Number(new Date(values.deadLine))),
         note: values.note,
         name: values.name,
-      };
-
-      await apiGateway.loanServices.updateLoan(params);
+      });
       await getUserLoan();
       triggerSuccessHaptic();
       Toast.show({
         type: 'success',
         text1: 'Loan updated successfully!',
       });
+      syncNow();
     } catch (error) {
       console.log('error', error);
       Toast.show({
@@ -80,16 +82,17 @@ const LoanList: FC<ILoanList> = ({notifyRowOpen, loans, getUserLoan}) => {
   };
 
   const handleDeleteLoan = async (rowId: any) => {
-    if (!rowId) return;
+    if (!rowId || !loanData) return;
     try {
       setDeleteLoading(true);
-      await apiGateway.loanServices.deleteLoan(rowId);
+      await loanData.deleteLoan(rowId as string);
       await getUserLoan();
       triggerWarningHaptic();
       Toast.show({
         type: 'success',
         text1: 'Deleted Successfully!',
       });
+      syncNow();
     } catch (error) {
       console.log('error', error);
       Toast.show({

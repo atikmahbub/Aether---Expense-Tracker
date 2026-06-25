@@ -33,7 +33,9 @@ const ScalarSplashScreen: React.FC<ScalarSplashScreenProps> = ({
   const containerOpacity = useSharedValue(1);
   const logoScale = useSharedValue(0.72);
   const logoOpacity = useSharedValue(0);
-  const glowPulse = useSharedValue(0);
+  const ripple1 = useSharedValue(0);
+  const ripple2 = useSharedValue(0);
+  const ripple3 = useSharedValue(0);
   const titleOpacity = useSharedValue(0);
   const titleTranslateY = useSharedValue(14);
   const subtitleOpacity = useSharedValue(0);
@@ -43,14 +45,11 @@ const ScalarSplashScreen: React.FC<ScalarSplashScreenProps> = ({
     logoOpacity.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) });
     logoScale.value = withSpring(1, { damping: 14, stiffness: 120, mass: 0.9 });
 
-    glowPulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
+    // Expanding "sonar" ripple rings, staggered for a continuous outward pulse.
+    const rippleConfig = { duration: 2600, easing: Easing.out(Easing.cubic) };
+    ripple1.value = withRepeat(withTiming(1, rippleConfig), -1, false);
+    ripple2.value = withDelay(866, withRepeat(withTiming(1, rippleConfig), -1, false));
+    ripple3.value = withDelay(1733, withRepeat(withTiming(1, rippleConfig), -1, false));
 
     titleOpacity.value = withDelay(220, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }));
     titleTranslateY.value = withDelay(
@@ -68,7 +67,7 @@ const ScalarSplashScreen: React.FC<ScalarSplashScreenProps> = ({
       -1,
       false,
     );
-  }, [glowPulse, logoOpacity, logoScale, progress, subtitleOpacity, titleOpacity, titleTranslateY]);
+  }, [ripple1, ripple2, ripple3, logoOpacity, logoScale, progress, subtitleOpacity, titleOpacity, titleTranslateY]);
 
   useEffect(() => {
     if (!exiting) return;
@@ -79,9 +78,17 @@ const ScalarSplashScreen: React.FC<ScalarSplashScreenProps> = ({
     opacity: containerOpacity.value,
   }));
 
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(glowPulse.value, [0, 1], [0.45, 1]),
-    transform: [{ scale: interpolate(glowPulse.value, [0, 1], [0.92, 1.08]) }],
+  const ring1Style = useAnimatedStyle(() => ({
+    opacity: interpolate(ripple1.value, [0, 0.1, 1], [0, 0.5, 0]),
+    transform: [{ scale: interpolate(ripple1.value, [0, 1], [0.5, 1.55]) }],
+  }));
+  const ring2Style = useAnimatedStyle(() => ({
+    opacity: interpolate(ripple2.value, [0, 0.1, 1], [0, 0.4, 0]),
+    transform: [{ scale: interpolate(ripple2.value, [0, 1], [0.5, 1.55]) }],
+  }));
+  const ring3Style = useAnimatedStyle(() => ({
+    opacity: interpolate(ripple3.value, [0, 0.1, 1], [0, 0.3, 0]),
+    transform: [{ scale: interpolate(ripple3.value, [0, 1], [0.5, 1.55]) }],
   }));
 
   const logoStyle = useAnimatedStyle(() => ({
@@ -111,7 +118,12 @@ const ScalarSplashScreen: React.FC<ScalarSplashScreenProps> = ({
       onLayout={onLayout}
       pointerEvents={exiting ? 'none' : 'auto'}
     >
-      <Animated.View style={[styles.glow, glowStyle]} />
+      <View style={styles.rippleLayer} pointerEvents="none">
+        <View style={styles.softGlow} />
+        <Animated.View style={[styles.ring, ring1Style]} />
+        <Animated.View style={[styles.ring, ring2Style]} />
+        <Animated.View style={[styles.ring, ring3Style]} />
+      </View>
 
       <View style={styles.content}>
         <Animated.View style={[styles.logoBadge, logoStyle]}>
@@ -153,12 +165,25 @@ function makeStyles(palette: SplashPalette) {
       alignItems: 'center',
       zIndex: 999,
     },
-    glow: {
+    rippleLayer: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    softGlow: {
       position: 'absolute',
       width: glowSize,
       height: glowSize,
       borderRadius: glowSize / 2,
       backgroundColor: palette.glow,
+    },
+    ring: {
+      position: 'absolute',
+      width: glowSize * 0.62,
+      height: glowSize * 0.62,
+      borderRadius: (glowSize * 0.62) / 2,
+      borderWidth: 1.5,
+      borderColor: palette.primary,
     },
     content: {
       alignItems: 'center',

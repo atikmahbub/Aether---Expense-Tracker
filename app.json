@@ -54,7 +54,8 @@
             "backgroundColor": "#09090A"
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "extra": {
       "auth0Domain": "dev-pm0712stgt281lme.us.auth0.com",

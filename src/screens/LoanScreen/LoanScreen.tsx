@@ -1,14 +1,8 @@
 import { LoanType } from "@trackingPortal/api/enums";
 import { LoanModel } from "@trackingPortal/api/models";
-import { offlineService } from "@trackingPortal/api/utils/OfflineService";
-import {
-  UnixTimeStampString,
-  LoanId,
-  makeUnixTimestampString,
-  UserId,
-} from "@trackingPortal/api/primitives";
 import { AnimatedLoader } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import LoanCreation from "@trackingPortal/screens/LoanScreen/LoanCreation";
 import LoanList from "@trackingPortal/screens/LoanScreen/LoanList";
 import LoanSummary from "@trackingPortal/screens/LoanScreen/LoanSummary";
@@ -28,7 +22,8 @@ export default function LoanScreen() {
   const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
   const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [loans, setLoans] = useState<LoanModel[]>([]);
-  const { currentUser: user, apiGateway } = useStoreContext();
+  const { currentUser: user } = useStoreContext();
+  const { loanData } = useDatabase();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
@@ -97,39 +92,12 @@ export default function LoanScreen() {
   }, [user]);
 
   const getUserLoans = async () => {
+    if (!user.userId || !loanData) return;
     try {
       setLoading(true);
-
-      // 1. Fetch from server
-      let serverLoans: LoanModel[] = [];
-      try {
-        serverLoans = await apiGateway.loanServices.getLoanByUserId(
-          user.userId,
-        );
-      } catch (e) {
-        console.log("Server Loan fetch failed", e);
-      }
-
-      // 2. Load from offline queue
-      const queue = await offlineService.getQueue();
-      const offlineLoans: LoanModel[] = queue
-        .filter(item => 
-          item.type === 'loan' && 
-          !item.synced
-        )
-        .map(item => ({
-          id: item.id as unknown as LoanId,
-          userId: item.payload.userId as UserId,
-          name: item.payload.name,
-          amount: item.payload.amount,
-          note: item.payload.note,
-          deadLine: item.payload.deadLine as UnixTimeStampString,
-          loanType: item.payload.loanType,
-          created: makeUnixTimestampString(item.createdAt),
-          updated: makeUnixTimestampString(item.createdAt),
-        }));
-
-      setLoans([...offlineLoans, ...serverLoans]);
+      // Offline-first: read from SQLite. The sync engine keeps it fresh.
+      const localLoans = await loanData.getLoans(user.userId);
+      setLoans(localLoans);
     } catch (error) {
       console.log("error", error);
       Toast.show({

@@ -2,10 +2,9 @@ import {
   TransactionAnalyticsModel,
   ExpenseCategoryModel,
 } from "@trackingPortal/api/models";
-import { UnixTimeStampString } from "@trackingPortal/api/primitives";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import dayjs, { Dayjs } from "dayjs";
-import { getMonthTimestamp } from "@trackingPortal/utils/date";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const useTransactionInsights = ({
@@ -16,7 +15,6 @@ export const useTransactionInsights = ({
   month?: Dayjs;
 }) => {
   const {
-    apiGateway,
     categories,
     categoryLoading,
     isCategoryHydrated,
@@ -24,6 +22,7 @@ export const useTransactionInsights = ({
     incomeCategoryLoading,
     refreshCategories,
   } = useStoreContext();
+  const { transactionData } = useDatabase();
 
   const [expenseAnalytics, setExpenseAnalytics] = useState<TransactionAnalyticsModel | null>(null);
   const [incomeAnalytics, setIncomeAnalytics] = useState<TransactionAnalyticsModel | null>(null);
@@ -41,7 +40,7 @@ export const useTransactionInsights = ({
 
   const refreshAnalytics = useCallback(
     async ({ force }: { force?: boolean } = {}) => {
-      if (!userId || !month) return;
+      if (!userId || !month || !transactionData) return;
 
       const key = `${userId}-${dayjs(month).format("YYYY-MM")}`;
 
@@ -54,14 +53,10 @@ export const useTransactionInsights = ({
       setAnalyticsLoading(true);
       setAnalyticsError(null);
       try {
-        const commonParams = {
-          userId: userId as any,
-          date: getMonthTimestamp(dayjs(month).year(), dayjs(month).month()),
-        };
-
+        // Computed locally from SQLite — works offline.
         const [expenseData, incomeData] = await Promise.all([
-          apiGateway.transactionService.getTransactionAnalytics({ ...commonParams, type: 'expense' }),
-          apiGateway.transactionService.getTransactionAnalytics({ ...commonParams, type: 'income' }),
+          transactionData.getAnalytics(userId, month, 'expense'),
+          transactionData.getAnalytics(userId, month, 'income'),
         ]);
 
         cache.current[`${key}-expense`] = expenseData;
@@ -75,7 +70,7 @@ export const useTransactionInsights = ({
         setAnalyticsLoading(false);
       }
     },
-    [apiGateway, userId, month],
+    [transactionData, userId, month],
   );
 
   useEffect(() => {

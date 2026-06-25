@@ -4,11 +4,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { LoanType } from '@trackingPortal/api/enums';
 import { LoanModel } from '@trackingPortal/api/models';
-import { LoanId, makeUnixTimestampString, UserId } from '@trackingPortal/api/primitives';
-import { IAddLoanParams } from '@trackingPortal/api/params';
+import { makeUnixTimestampString } from '@trackingPortal/api/primitives';
 import { BaseBottomSheet } from '@trackingPortal/components';
 import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
-import { useNetwork } from '@trackingPortal/contexts/NetworkProvider';
+import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
 import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import {
   AddLoanSchema,
@@ -31,9 +30,9 @@ const LoanCreation: React.FC<ILoanCreation> = ({
   setLoans,
   getUserLoans,
 }) => {
-  const {apiGateway} = useStoreContext();
   const {currentUser: user} = useStoreContext();
-  const {isOnline, saveOffline} = useOffline();
+  const {loanData} = useDatabase();
+  const {syncNow} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleClose = useCallback(() => {
@@ -41,75 +40,35 @@ const LoanCreation: React.FC<ILoanCreation> = ({
   }, [setOpenCreationModal]);
 
   const handleAddLoan = useCallback(async (values: INewLoan) => {
-    if (!user.userId) return;
-
-    if (!isOnline) {
-      try {
-        setLoading(true);
-        const params: IAddLoanParams = {
-          userId: user.userId,
-          name: values.name,
-          amount: Number(values.amount),
-          deadLine: makeUnixTimestampString(
-            Number(new Date(Number(values.deadLine))),
-          ),
-          loanType: values.loan_type,
-          note: values.note,
-        };
-        const offlineItem = await saveOffline('loan', params);
-
-        // ✅ Optimistic update
-        const mockLoan: LoanModel = {
-          id: offlineItem.id as unknown as LoanId,
-          userId: user.userId as UserId,
-          name: values.name,
-          amount: Number(values.amount),
-          note: values.note,
-          deadLine: params.deadLine,
-          loanType: values.loan_type,
-          created: makeUnixTimestampString(Date.now()),
-          updated: makeUnixTimestampString(Date.now()),
-        };
-
-        setLoans(prev => [mockLoan, ...prev]);
-        handleClose();
-        return;
-      } catch (error) {
-        console.error('Offline Loan Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
+    if (!user.userId || !loanData) return;
 
     try {
       setLoading(true);
-      const params: IAddLoanParams = {
+      const deadLine = makeUnixTimestampString(
+        Number(new Date(Number(values.deadLine))),
+      );
+
+      // Offline-first: write to SQLite immediately (works online or offline).
+      const newLoan = await loanData.createLoan({
         userId: user.userId,
         name: values.name,
         amount: Number(values.amount),
-        deadLine: makeUnixTimestampString(
-          Number(new Date(Number(values.deadLine))),
-        ),
-        loanType: values.loan_type,
         note: values.note,
-      };
-      
-      const newLoan = await apiGateway.loanServices.addLoan(params);
-      
-      // ✅ OPTIMISTIC UI (Option A)
-      setLoans(prev => [newLoan, ...prev]);
+        deadLine,
+        loanType: values.loan_type,
+      });
 
+      setLoans(prev => [newLoan, ...prev]);
       handleClose();
 
-      // 1. Schedule full refresh & feedback
       requestAnimationFrame(async () => {
         await getUserLoans();
         triggerSuccessHaptic();
-
         Toast.show({
           type: 'success',
           text1: 'Loan added successfully',
         });
+        syncNow();
       });
     } catch (error) {
       console.error('Loan Creation Error:', error);
@@ -120,7 +79,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
     } finally {
       setLoading(false);
     }
-  }, [user.userId, apiGateway.loanServices, handleClose, setLoans, getUserLoans, isOnline, saveOffline]);
+  }, [user.userId, loanData, handleClose, setLoans, getUserLoans, syncNow]);
 
   return (
     <BaseBottomSheet
