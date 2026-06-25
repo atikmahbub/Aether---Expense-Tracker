@@ -15,6 +15,11 @@ export interface SyncResult {
   pulled: number;
 }
 
+export interface SyncProgress {
+  step: string;
+  progress: number; // 0–1
+}
+
 /**
  * Bridges the local SQLite store and the Railway REST API.
  *
@@ -38,11 +43,15 @@ export class SyncEngine {
   ) {}
 
   /** Push then pull, guarded so only one full sync runs at a time. */
-  async syncAll(userId: string): Promise<SyncResult> {
+  async syncAll(
+    userId: string,
+    onProgress?: (p: SyncProgress) => void,
+  ): Promise<SyncResult> {
     if (this.inFlight) return this.inFlight;
     this.inFlight = (async () => {
+      onProgress?.({ step: 'Preparing…', progress: 0 });
       const push = await this.push();
-      const pulled = await this.pull(userId);
+      const pulled = await this.pull(userId, onProgress);
       return { ...push, pulled };
     })();
     try {
@@ -333,25 +342,29 @@ export class SyncEngine {
    * number of server records reconciled. Remote deletes are inferred by diffing
    * the server ids against locally-synced rows within the fetched scope.
    */
-  async pull(userId: string): Promise<number> {
+  async pull(
+    userId: string,
+    onProgress?: (p: SyncProgress) => void,
+  ): Promise<number> {
     let count = 0;
-    // Each entity is pulled independently so one failing endpoint can never
-    // abort the whole sync (which would leave the migration stuck).
-    const steps: (() => Promise<number>)[] = [
-      () => this.pullTransactions(userId, "expense"),
-      () => this.pullTransactions(userId, "income"),
-      () => this.pullCategories(userId, "expense"),
-      () => this.pullCategories(userId, "income"),
-      () => this.pullLoans(userId),
-      () => this.pullInvestments(userId),
+    const steps: { label: string; fn: () => Promise<number> }[] = [
+      { label: 'Syncing expenses', fn: () => this.pullTransactions(userId, 'expense') },
+      { label: 'Syncing income', fn: () => this.pullTransactions(userId, 'income') },
+      { label: 'Syncing expense categories', fn: () => this.pullCategories(userId, 'expense') },
+      { label: 'Syncing income categories', fn: () => this.pullCategories(userId, 'income') },
+      { label: 'Syncing loans', fn: () => this.pullLoans(userId) },
+      { label: 'Syncing investments', fn: () => this.pullInvestments(userId) },
     ];
-    for (const step of steps) {
+    for (let i = 0; i < steps.length; i++) {
+      const { label, fn } = steps[i];
+      onProgress?.({ step: label, progress: i / steps.length });
       try {
-        count += await step();
+        count += await fn();
       } catch (error) {
-        console.log("pull step failed", error);
+        console.log('pull step failed', label, error);
       }
     }
+    onProgress?.({ step: 'Finalizing…', progress: 1 });
     return count;
   }
 

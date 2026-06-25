@@ -5,6 +5,7 @@ import { OfflineSyncService } from '@trackingPortal/api/implementations/OfflineS
 import { useStoreContext } from './StoreProvider';
 import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
 import { eventEmitter, EVENTS } from '@trackingPortal/utils/events';
+import type { SyncProgress } from '@trackingPortal/db/sync/SyncEngine';
 
 const INITIAL_SYNC_DONE_KEY = 'initial_sync_done';
 
@@ -14,6 +15,8 @@ interface OfflineContextType {
   syncInProgress: boolean;
   /** True while the one-time first-launch migration sync is running. */
   isMigrating: boolean;
+  /** Current migration progress (step label + 0–1 fraction). */
+  migrationProgress: SyncProgress | null;
   syncNow: () => Promise<void>;
 }
 
@@ -26,6 +29,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [pendingCount, setPendingCount] = useState(0);
   const [syncInProgress, setSyncInProgress] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState<SyncProgress | null>(null);
   const migratedRef = useRef(false);
 
   const userId = currentUser?.default ? undefined : currentUser?.userId;
@@ -89,7 +93,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setIsMigrating(true);
       try {
-        await syncEngine.syncAll(userId);
+        await syncEngine.syncAll(userId, (p) => setMigrationProgress(p));
         await repositories.settings.set(INITIAL_SYNC_DONE_KEY, 'true');
         migratedRef.current = true;
         await updatePendingCount();
@@ -97,7 +101,10 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } catch (error) {
         console.log('migration sync error', error);
       } finally {
-        if (!cancelled) setIsMigrating(false);
+        if (!cancelled) {
+          setMigrationProgress(null);
+          setIsMigrating(false);
+        }
       }
     })();
 
@@ -111,7 +118,6 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     syncEngine,
     isOnline,
     isInternetReachable,
-    isMigrating,
     syncNow,
     updatePendingCount,
   ]);
@@ -130,6 +136,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
         pendingCount,
         syncInProgress,
         isMigrating,
+        migrationProgress,
         syncNow,
       }}
     >
