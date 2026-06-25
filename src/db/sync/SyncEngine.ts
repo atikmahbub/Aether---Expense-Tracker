@@ -354,6 +354,7 @@ export class SyncEngine {
       { label: 'Syncing income categories', fn: () => this.pullCategories(userId, 'income') },
       { label: 'Syncing loans', fn: () => this.pullLoans(userId) },
       { label: 'Syncing investments', fn: () => this.pullInvestments(userId) },
+      { label: 'Syncing monthly limits', fn: () => this.pullMonthlyLimits(userId) },
     ];
     for (let i = 0; i < steps.length; i++) {
       const { label, fn } = steps[i];
@@ -451,6 +452,36 @@ export class SyncEngine {
       [userId],
     );
     return all.length;
+  }
+
+  private async pullMonthlyLimits(userId: string): Promise<number> {
+    // The limit endpoint is keyed by (month, year), so walk the same history
+    // window and fetch each month's limit individually.
+    let total = 0;
+    const now = dayjs();
+    const localRows = (await this.repos.monthlyLimits.getByUser(userId)) as any[];
+    for (let i = 0; i < TRANSACTION_HISTORY_MONTHS; i++) {
+      const m = now.subtract(i, "month");
+      const month = m.month() + 1;
+      const year = m.year();
+      try {
+        const res: any = await this.apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
+          userId: userId as any,
+          month: month as any,
+          year: year as any,
+        });
+        if (!res?.id) continue; // no limit set for this month
+        // Keep a pending local edit for this period (local wins until pushed).
+        const existing = localRows.find((r) => r.month === month && r.year === year);
+        if (existing && existing.syncStatus === "pending") continue;
+        await this.repos.monthlyLimits.upsertFromServer({ ...res, userId });
+        total += 1;
+      } catch (error) {
+        console.log("pull monthly limit failed", month, year, error);
+      }
+    }
+    await this.repos.monthlyLimits.backfillUserId(userId);
+    return total;
   }
 
   /**

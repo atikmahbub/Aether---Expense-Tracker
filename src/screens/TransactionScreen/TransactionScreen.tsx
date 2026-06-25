@@ -4,7 +4,6 @@ import {
   TransactionModel,
 } from "@trackingPortal/api/models";
 import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
-import { Month, Year } from "@trackingPortal/api/primitives";
 import { AnimatedLoader } from "@trackingPortal/components";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
@@ -47,11 +46,10 @@ export default function TransactionScreen() {
 
   const {
     currentUser: user,
-    apiGateway,
     currency,
     isCategoryHydrated,
   } = useStoreContext();
-  const { transactionData } = useDatabase();
+  const { transactionData, monthlyLimitData } = useDatabase();
 
   const activeUserId = user.userId;
 
@@ -174,31 +172,24 @@ export default function TransactionScreen() {
   }, [user.userId, transactionData, filterMonth]);
 
   const getMonthlyLimit = useCallback(async () => {
-    if (!user.userId) return;
-    // Monthly limit is still API-backed; offline we skip it so it can't block
-    // the initial load with a 15s network timeout (the rest reads from SQLite).
-    if (!isOnline) {
-      setLimitLoading(false);
-      return;
-    }
+    if (!user.userId || !monthlyLimitData) return;
 
     setLimitLoading(true);
 
     try {
-      const response =
-        await apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
-          userId: user.userId,
-          month: (dayjs(filterMonth).month() + 1) as Month,
-          year: dayjs(filterMonth).year() as Year,
-        });
-
+      // Offline-first: read the limit from SQLite (synced from the cloud).
+      const response = await monthlyLimitData.getLimit(
+        user.userId,
+        dayjs(filterMonth).month() + 1,
+        dayjs(filterMonth).year(),
+      );
       setMonthLimit(response);
     } catch (error) {
       console.log("limit error", error);
     } finally {
       setLimitLoading(false);
     }
-  }, [user.userId, apiGateway.monthlyLimitService, filterMonth, isOnline]);
+  }, [user.userId, monthlyLimitData, filterMonth]);
 
   const loadData = useCallback(
     async (options?: { force?: boolean }) => {

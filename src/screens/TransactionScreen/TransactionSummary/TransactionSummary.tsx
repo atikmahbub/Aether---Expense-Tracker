@@ -9,11 +9,12 @@ import FormModal from '@trackingPortal/components/FormModal';
 import dayjs, {Dayjs} from 'dayjs';
 import {MonthlyLimitModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
+import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
+import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {Formik, FormikHelpers} from 'formik';
 import {EMonthlyLimitFields} from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants';
 import Toast from 'react-native-toast-message';
-import {Month, Year} from '@trackingPortal/api/primitives';
 import {withHaptic} from '@trackingPortal/utils/haptic';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { CommonCard, StatCard } from '@trackingPortal/components';
@@ -42,8 +43,10 @@ const TransactionSummary: React.FC<ISummary> = ({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [isLimitModalVisible, setIsLimitModalVisible] =
     useState<boolean>(false);
-  const {apiGateway, currentUser: user} = useStoreContext();
+  const {currentUser: user} = useStoreContext();
   const {currency} = useStoreContext();
+  const {monthlyLimitData} = useDatabase();
+  const {syncNow} = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
 
   const limitValue = monthLimit?.limit ?? 0;
@@ -91,30 +94,24 @@ const TransactionSummary: React.FC<ISummary> = ({
         return;
       }
 
-      if (monthLimit?.id) {
-        await apiGateway.monthlyLimitService.updateMonthlyLimit({
-          id: monthLimit.id,
-          limit: numericLimit,
-        });
-        Toast.show({
-          type: 'success',
-          text1: 'Limit updated successfully',
-        });
-      } else {
-        await apiGateway.monthlyLimitService.addMonthlyLimit({
-          userId: user.userId,
-          limit: numericLimit,
-          month: (filterMonth.month() + 1) as Month,
-          year: filterMonth.year() as Year,
-        });
-        Toast.show({
-          type: 'success',
-          text1: 'Limit added successfully',
-        });
-      }
+      if (!monthlyLimitData) return;
+
+      // Offline-first: write the limit to SQLite (works offline); sync pushes it.
+      await monthlyLimitData.setLimit(
+        user.userId,
+        filterMonth.month() + 1,
+        filterMonth.year(),
+        numericLimit,
+      );
+      Toast.show({
+        type: 'success',
+        text1: monthLimit?.id ? 'Limit updated successfully' : 'Limit added successfully',
+      });
+
       await getMonthlyLimit();
       closeLimitModal();
       resetForm();
+      syncNow();
     } catch (error) {
       console.log(error);
       Toast.show({

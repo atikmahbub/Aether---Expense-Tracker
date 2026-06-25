@@ -13,6 +13,7 @@ import { SyncEngine } from "@trackingPortal/db/sync/SyncEngine";
 import { TransactionDataService } from "@trackingPortal/db/services/TransactionDataService";
 import { LoanDataService } from "@trackingPortal/db/services/LoanDataService";
 import { InvestDataService } from "@trackingPortal/db/services/InvestDataService";
+import { MonthlyLimitDataService } from "@trackingPortal/db/services/MonthlyLimitDataService";
 import {
   createRepositories,
   Repositories,
@@ -28,6 +29,7 @@ interface DatabaseContextValue {
   transactionData: TransactionDataService | null;
   loanData: LoanDataService | null;
   investData: InvestDataService | null;
+  monthlyLimitData: MonthlyLimitDataService | null;
 }
 
 const DatabaseContext = createContext<DatabaseContextValue>({
@@ -39,6 +41,7 @@ const DatabaseContext = createContext<DatabaseContextValue>({
   transactionData: null,
   loanData: null,
   investData: null,
+  monthlyLimitData: null,
 });
 
 /**
@@ -61,6 +64,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({
     transactionData: null,
     loanData: null,
     investData: null,
+    monthlyLimitData: null,
   });
 
   useEffect(() => {
@@ -75,6 +79,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({
         const transactionData = new TransactionDataService(repositories, syncEngine);
         const loanData = new LoanDataService(repositories);
         const investData = new InvestDataService(repositories);
+        const monthlyLimitData = new MonthlyLimitDataService(repositories);
         setValue({
           ready: true,
           db,
@@ -84,6 +89,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({
           transactionData,
           loanData,
           investData,
+          monthlyLimitData,
         });
       } catch (error) {
         console.error("Failed to initialize SQLite database", error);
