@@ -312,7 +312,12 @@ export const Auth0ProviderWithHistory = ({
       }
     };
 
-    if (discovery) bootstrap();
+    // Run on mount regardless of `discovery`. Validating a stored, non-expired
+    // token needs no network; `discovery` is only required for the refresh path
+    // (which gracefully returns null when offline). Gating bootstrap on
+    // `discovery` would hang the app forever offline, since `useAutoDiscovery`
+    // can never resolve without a connection.
+    bootstrap();
 
     return () => {
       cancelled = true;

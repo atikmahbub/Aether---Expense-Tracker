@@ -13,7 +13,8 @@ const OfflineBanner: React.FC = () => {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-100)).current;
+  // Anchored to the bottom, so it slides up from below.
+  const translateY = useRef(new Animated.Value(100)).current;
 
   const shouldShow = !isOnline || pendingCount > 0;
 
@@ -40,7 +41,7 @@ const OfflineBanner: React.FC = () => {
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
-          toValue: -100,
+          toValue: 100,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -55,7 +56,7 @@ const OfflineBanner: React.FC = () => {
         {
           opacity,
           transform: [{ translateY }],
-          top: insets.top + 8
+          bottom: insets.bottom + 96
         }
       ]}
     >

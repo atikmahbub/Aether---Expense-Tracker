@@ -7,7 +7,7 @@ import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
 import { eventEmitter, EVENTS } from '@trackingPortal/utils/events';
 import type { SyncProgress } from '@trackingPortal/db/sync/SyncEngine';
 
-const INITIAL_SYNC_DONE_KEY = 'initial_sync_done';
+const INITIAL_SYNC_PREFIX = 'initial_sync_done_';
 
 interface OfflineContextType {
   isOnline: boolean;
@@ -31,8 +31,10 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState<SyncProgress | null>(null);
   const migratedRef = useRef(false);
+  const prevUserIdRef = useRef<string | undefined>(undefined);
 
   const userId = currentUser?.default ? undefined : currentUser?.userId;
+  const syncKey = userId ? `${INITIAL_SYNC_PREFIX}${userId}` : null;
 
   // Legacy AsyncStorage queue — still used by Loan/Invest creation until those
   // screens are migrated to the SQLite repositories.
@@ -71,15 +73,22 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // First-launch migration: existing users open the new build with an empty
   // SQLite. The very first sync downloads their cloud data into SQLite; we show
   // a one-time migration screen while it runs (see MigrationOverlay). A flag is
-  // persisted so this only ever happens once. If offline at first launch, we
-  // wait and retry automatically when connectivity returns.
+  // persisted per user so this only ever happens once per account. If offline at
+  // first launch, we wait and retry automatically when connectivity returns.
   useEffect(() => {
-    if (!dbReady || !repositories || !userId || !syncEngine) return;
-    if (migratedRef.current || isMigrating) return;
+    if (!dbReady || !repositories || !userId || !syncEngine || !syncKey) return;
+    if (isMigrating) return;
+
+    if (prevUserIdRef.current !== userId) {
+      migratedRef.current = false;
+      prevUserIdRef.current = userId;
+    }
+
+    if (migratedRef.current) return;
 
     let cancelled = false;
     (async () => {
-      const done = await repositories.settings.get(INITIAL_SYNC_DONE_KEY);
+      const done = await repositories.settings.get(syncKey);
       if (cancelled) return;
 
       if (done === 'true') {
@@ -94,7 +103,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsMigrating(true);
       try {
         await syncEngine.syncAll(userId, (p) => setMigrationProgress(p));
-        await repositories.settings.set(INITIAL_SYNC_DONE_KEY, 'true');
+        await repositories.settings.set(syncKey, 'true');
         migratedRef.current = true;
         await updatePendingCount();
         eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
@@ -115,6 +124,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     dbReady,
     repositories,
     userId,
+    syncKey,
     syncEngine,
     isOnline,
     isInternetReachable,

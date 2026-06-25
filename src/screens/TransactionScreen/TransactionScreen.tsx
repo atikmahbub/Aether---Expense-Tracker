@@ -175,6 +175,12 @@ export default function TransactionScreen() {
 
   const getMonthlyLimit = useCallback(async () => {
     if (!user.userId) return;
+    // Monthly limit is still API-backed; offline we skip it so it can't block
+    // the initial load with a 15s network timeout (the rest reads from SQLite).
+    if (!isOnline) {
+      setLimitLoading(false);
+      return;
+    }
 
     setLimitLoading(true);
 
@@ -192,7 +198,7 @@ export default function TransactionScreen() {
     } finally {
       setLimitLoading(false);
     }
-  }, [user.userId, apiGateway.monthlyLimitService, filterMonth]);
+  }, [user.userId, apiGateway.monthlyLimitService, filterMonth, isOnline]);
 
   const loadData = useCallback(
     async (options?: { force?: boolean }) => {
