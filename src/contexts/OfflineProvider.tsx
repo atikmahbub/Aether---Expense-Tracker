@@ -4,6 +4,7 @@ import { offlineService } from '@trackingPortal/api/utils/OfflineService';
 import { OfflineSyncService } from '@trackingPortal/api/implementations/OfflineSyncService';
 import { useStoreContext } from './StoreProvider';
 import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
+import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import { eventEmitter, EVENTS } from '@trackingPortal/utils/events';
 import type { SyncProgress } from '@trackingPortal/db/sync/SyncEngine';
 
@@ -26,6 +27,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { isOnline, isInternetReachable } = useNetwork();
   const { apiGateway, currentUser } = useStoreContext();
   const { syncEngine, outbox, repositories, ready: dbReady } = useDatabase();
+  const { getValidToken } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
   const [syncInProgress, setSyncInProgress] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -100,6 +102,15 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // First-ever sync still needed — requires internet.
       if (!isOnline || !isInternetReachable) return;
 
+      // CRITICAL: ensure we actually have a valid access token before the first
+      // cloud pull. On a fresh install the stored token may be expired and the
+      // background refresh may not have completed yet — pulling now would 401 on
+      // every entity and, because the pull is resilient, still finish and mark
+      // migration "done" with EMPTY data (the "expense 0" bug). Wait for a valid
+      // token; the effect re-runs once one is available (getValidToken is in deps).
+      const validToken = await getValidToken();
+      if (cancelled || !validToken) return;
+
       setIsMigrating(true);
       try {
         await syncEngine.syncAll(userId, (p) => setMigrationProgress(p));
@@ -128,6 +139,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     syncEngine,
     isOnline,
     isInternetReachable,
+    getValidToken,
     syncNow,
     updatePendingCount,
   ]);

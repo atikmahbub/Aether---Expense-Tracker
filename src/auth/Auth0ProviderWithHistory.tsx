@@ -284,6 +284,13 @@ export const Auth0ProviderWithHistory = ({
 
   /* ================= RESTORE SESSION ================= */
 
+  // Safety net: the loading gate must never hang. If bootstrap hasn't resolved
+  // within 6s (e.g. an unexpected stall), stop loading so the UI can proceed.
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -292,18 +299,39 @@ export const Auth0ProviderWithHistory = ({
         const cachedProfile = await authStorage.getProfile();
         if (!cancelled && cachedProfile) setUser(cachedProfile);
 
-        const validToken = await getValidToken();
-        if (!cancelled) {
-          if (validToken) {
-            setIsAuthenticated(true);
-            setRefreshFailed(false);
-            scheduleProactiveRefresh(validToken);
-            syncProfile(validToken);
-          } else {
-            const hasSession = await authStorage.hasSession();
-            setRefreshFailed(hasSession);
-            setIsAuthenticated(false);
-          }
+        // Offline-first: a stored session is enough to ENTER the app — reads come
+        // from local SQLite and need no live token. We only await fast local
+        // keychain reads here; the token refresh happens in the BACKGROUND so
+        // startup can never hang on the network (this was the infinite-loader).
+        const storedAccess = await authStorage.getAccessToken();
+        const storedRefresh = await authStorage.getRefreshToken();
+        const hasSession = !!(storedAccess || storedRefresh);
+
+        if (cancelled) return;
+
+        if (hasSession) {
+          if (storedAccess) setToken(storedAccess);
+          setIsAuthenticated(true);
+          setRefreshFailed(false);
+
+          // Renew the token in the background (non-blocking). Valid → cheap;
+          // expired + online → renews; offline/stalled → silently deferred and
+          // retried later. A genuinely revoked refresh token triggers logout
+          // inside refreshAccessToken (invalid_grant), not here.
+          void (async () => {
+            try {
+              const fresh = await getValidToken();
+              if (!cancelled && fresh) {
+                scheduleProactiveRefresh(fresh);
+                syncProfile(fresh);
+              }
+            } catch (e) {
+              console.warn("⚠️ Background token refresh failed (will retry):", e);
+            }
+          })();
+        } else {
+          setIsAuthenticated(false);
+          setRefreshFailed(false);
         }
       } catch (e) {
         console.error("❌ Bootstrap error:", e);
