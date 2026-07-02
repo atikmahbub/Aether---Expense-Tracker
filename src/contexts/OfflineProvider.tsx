@@ -112,20 +112,41 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (cancelled || !validToken) return;
 
       setIsMigrating(true);
+
+      // Watchdog: the migration overlay must never hang. If it hasn't dismissed
+      // within 30s, force it off — the sync (if still running) continues in the
+      // background and will persist the flag when it finishes.
+      const watchdog = setTimeout(() => {
+        console.warn('migration watchdog fired — dismissing overlay');
+        // Prevent the effect from re-entering and flashing the overlay back
+        // while the (slow) sync keeps running in the background.
+        migratedRef.current = true;
+        setMigrationProgress(null);
+        setIsMigrating(false);
+      }, 30000);
+
       try {
         await syncEngine.syncAll(userId, (p) => setMigrationProgress(p));
+        // Only the flag persistence is essential before dismissing the overlay.
         await repositories.settings.set(syncKey, 'true');
         migratedRef.current = true;
-        await updatePendingCount();
-        eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
       } catch (error) {
         console.log('migration sync error', error);
       } finally {
+        clearTimeout(watchdog);
         if (!cancelled) {
           setMigrationProgress(null);
           setIsMigrating(false);
         }
       }
+
+      // Housekeeping runs AFTER the overlay is dismissed and never blocks it —
+      // a stall here (SQLite/AsyncStorage contention) was what pinned the
+      // overlay on "Finalizing…".
+      try {
+        eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
+      } catch {}
+      void updatePendingCount().catch(() => {});
     })();
 
     return () => {
