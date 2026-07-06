@@ -1,3 +1,4 @@
+import { AppState } from 'react-native';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNetwork } from './NetworkProvider';
 import { offlineService } from '@trackingPortal/api/utils/OfflineService';
@@ -171,6 +172,19 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       syncNow();
     }
   }, [isOnline, isInternetReachable, pendingCount, syncInProgress, isMigrating, syncNow]);
+
+  // Re-sync whenever the app returns to the foreground. Without this, a device
+  // with nothing of its own pending (pendingCount === 0) never learns about
+  // writes another device already pushed to the cloud — it would otherwise
+  // only catch up on its next cold launch.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && isOnline && isInternetReachable && !isMigrating) {
+        syncNow();
+      }
+    });
+    return () => subscription.remove();
+  }, [isOnline, isInternetReachable, isMigrating, syncNow]);
 
   return (
     <OfflineContext.Provider
