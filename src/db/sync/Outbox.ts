@@ -67,6 +67,27 @@ export class Outbox {
     return row?.n ?? 0;
   }
 
+  /**
+   * Items that exhausted retries and were parked by {@link push} — they stop
+   * being retried AND stop counting toward {@link count}, so without this
+   * they'd silently vanish from the UI while never having reached the server.
+   */
+  async failedCount(): Promise<number> {
+    const row = await this.db.getFirstAsync<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM outbox WHERE retryCount >= ?",
+      [Outbox.MAX_RETRIES],
+    );
+    return row?.n ?? 0;
+  }
+
+  /** Un-parks failed items so the next {@link push} retries them. */
+  async retryFailed(): Promise<void> {
+    await this.db.runAsync(
+      "UPDATE outbox SET retryCount = 0, lastError = NULL WHERE retryCount >= ?",
+      [Outbox.MAX_RETRIES],
+    );
+  }
+
   async markDone(id: string): Promise<void> {
     await this.db.runAsync("DELETE FROM outbox WHERE id = ?", [id]);
   }

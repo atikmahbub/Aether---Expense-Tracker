@@ -14,12 +14,16 @@ const INITIAL_SYNC_PREFIX = 'initial_sync_done_';
 interface OfflineContextType {
   isOnline: boolean;
   pendingCount: number;
+  /** Items that exhausted retries and were parked — pushed nowhere, not counted in pendingCount. */
+  failedCount: number;
   syncInProgress: boolean;
   /** True while the one-time first-launch migration sync is running. */
   isMigrating: boolean;
   /** Current migration progress (step label + 0–1 fraction). */
   migrationProgress: SyncProgress | null;
   syncNow: () => Promise<void>;
+  /** Un-parks failed outbox items and immediately retries them. */
+  retryFailed: () => Promise<void>;
 }
 
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
@@ -30,6 +34,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { syncEngine, outbox, repositories, ready: dbReady } = useDatabase();
   const { getValidToken } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
   const [syncInProgress, setSyncInProgress] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState<SyncProgress | null>(null);
@@ -47,6 +52,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const legacy = (await offlineService.getQueue()).filter(item => !item.synced).length;
     const outboxCount = outbox ? await outbox.count() : 0;
     setPendingCount(legacy + outboxCount);
+    setFailedCount(outbox ? await outbox.failedCount() : 0);
   }, [outbox]);
 
   const syncNow = useCallback(async () => {
@@ -67,6 +73,13 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setSyncInProgress(false);
     }
   }, [syncInProgress, syncEngine, userId, legacySyncService, updatePendingCount]);
+
+  const retryFailed = useCallback(async () => {
+    if (!outbox) return;
+    await outbox.retryFailed();
+    await updatePendingCount();
+    await syncNow();
+  }, [outbox, updatePendingCount, syncNow]);
 
   // Initial count update once the DB is ready.
   useEffect(() => {
@@ -191,10 +204,12 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         isOnline,
         pendingCount,
+        failedCount,
         syncInProgress,
         isMigrating,
         migrationProgress,
         syncNow,
+        retryFailed,
       }}
     >
       {children}

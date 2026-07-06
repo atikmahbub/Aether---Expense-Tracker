@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, {
   Easing,
@@ -19,7 +19,7 @@ import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
  * nothing once the app is online and fully synced.
  */
 const SyncStatusIndicator: React.FC = () => {
-  const { isOnline, pendingCount, syncInProgress } = useOffline();
+  const { isOnline, pendingCount, failedCount, syncInProgress, retryFailed } = useOffline();
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -61,7 +61,7 @@ const SyncStatusIndicator: React.FC = () => {
     opacity: pulse.value,
   }));
 
-  if (isOnline && !syncInProgress && pendingCount === 0) {
+  if (isOnline && !syncInProgress && pendingCount === 0 && failedCount === 0) {
     return null;
   }
 
@@ -69,6 +69,7 @@ const SyncStatusIndicator: React.FC = () => {
   let label: string;
   let tint: string;
   let animatedStyle = {};
+  let onPress: (() => void) | undefined;
 
   if (!isOnline) {
     icon = 'cloud-off-outline';
@@ -80,6 +81,13 @@ const SyncStatusIndicator: React.FC = () => {
     label = 'Syncing';
     tint = colors.primary;
     animatedStyle = spinStyle;
+  } else if (failedCount > 0) {
+    // Gave up retrying — surfaced distinctly instead of silently vanishing,
+    // with a tap-to-retry so the write isn't stuck unpushed forever.
+    icon = 'cloud-alert-outline';
+    label = `${failedCount} failed`;
+    tint = colors.error;
+    onPress = retryFailed;
   } else {
     icon = 'cloud-upload-outline';
     label = `${pendingCount} pending`;
@@ -87,14 +95,14 @@ const SyncStatusIndicator: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <Pressable style={styles.container} onPress={onPress} disabled={!onPress}>
       <Animated.View style={animatedStyle}>
         <MaterialCommunityIcons name={icon} size={16} color={tint} />
       </Animated.View>
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         {label}
       </Text>
-    </View>
+    </Pressable>
   );
 };
 
