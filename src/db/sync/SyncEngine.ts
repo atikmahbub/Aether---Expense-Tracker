@@ -6,8 +6,10 @@ import type { Outbox } from "@trackingPortal/db/sync/Outbox";
 import type { BaseRepository } from "@trackingPortal/db/repositories/BaseRepository";
 import type { EntityName, OutboxItem } from "@trackingPortal/db/types";
 
-/** How many months of transaction history to pull on sync. */
+/** How many months of transaction history to pull on a full (migration) sync. */
 const TRANSACTION_HISTORY_MONTHS = 12;
+/** How many months to re-check on a routine sync (post-add, connectivity-restored). */
+const QUICK_SYNC_MONTHS = 2;
 
 export interface SyncResult {
   pushed: number;
@@ -42,16 +44,25 @@ export class SyncEngine {
     private outbox: Outbox,
   ) {}
 
-  /** Push then pull, guarded so only one full sync runs at a time. */
+  /**
+   * Push then pull, guarded so only one full sync runs at a time.
+   *
+   * By default this is a "quick" sync — it re-checks only the most recent
+   * months of history, which is all a single new entry or a reconnect needs.
+   * Pass `full: true` for the one-time migration pull that must reconstruct
+   * the entire local history window.
+   */
   async syncAll(
     userId: string,
     onProgress?: (p: SyncProgress) => void,
+    opts?: { full?: boolean },
   ): Promise<SyncResult> {
     if (this.inFlight) return this.inFlight;
+    const months = opts?.full ? TRANSACTION_HISTORY_MONTHS : QUICK_SYNC_MONTHS;
     this.inFlight = (async () => {
       onProgress?.({ step: 'Preparing…', progress: 0 });
       const push = await this.push();
-      const pulled = await this.pull(userId, onProgress);
+      const pulled = await this.pull(userId, onProgress, months);
       return { ...push, pulled };
     })();
     try {
@@ -345,26 +356,35 @@ export class SyncEngine {
   async pull(
     userId: string,
     onProgress?: (p: SyncProgress) => void,
+    months: number = TRANSACTION_HISTORY_MONTHS,
   ): Promise<number> {
-    let count = 0;
     const steps: { label: string; fn: () => Promise<number> }[] = [
-      { label: 'Syncing expenses', fn: () => this.pullTransactions(userId, 'expense') },
-      { label: 'Syncing income', fn: () => this.pullTransactions(userId, 'income') },
+      { label: 'Syncing expenses', fn: () => this.pullTransactions(userId, 'expense', months) },
+      { label: 'Syncing income', fn: () => this.pullTransactions(userId, 'income', months) },
       { label: 'Syncing expense categories', fn: () => this.pullCategories(userId, 'expense') },
       { label: 'Syncing income categories', fn: () => this.pullCategories(userId, 'income') },
       { label: 'Syncing loans', fn: () => this.pullLoans(userId) },
       { label: 'Syncing investments', fn: () => this.pullInvestments(userId) },
-      { label: 'Syncing monthly limits', fn: () => this.pullMonthlyLimits(userId) },
+      { label: 'Syncing monthly limits', fn: () => this.pullMonthlyLimits(userId, months) },
     ];
-    for (let i = 0; i < steps.length; i++) {
-      const { label, fn } = steps[i];
-      onProgress?.({ step: label, progress: i / steps.length });
-      try {
-        count += await fn();
-      } catch (error) {
-        console.log('pull step failed', label, error);
-      }
-    }
+    // Steps are independent entities (different tables, different endpoints),
+    // so run them concurrently instead of one-network-round-trip-at-a-time —
+    // sequential awaits here were the reason a single-entry sync took ~1
+    // minute (7 steps x up to 12 sequential month-requests each).
+    let completed = 0;
+    let count = 0;
+    await Promise.all(
+      steps.map(async ({ label, fn }) => {
+        try {
+          count += await fn();
+        } catch (error) {
+          console.log('pull step failed', label, error);
+        } finally {
+          completed++;
+          onProgress?.({ step: label, progress: completed / steps.length });
+        }
+      }),
+    );
     onProgress?.({ step: 'Finalizing…', progress: 1 });
     return count;
   }
@@ -372,33 +392,37 @@ export class SyncEngine {
   private async pullTransactions(
     userId: string,
     type: "expense" | "income",
+    months: number,
   ): Promise<number> {
     // The list endpoint requires a `date` and returns a single month, so walk
     // back over a window of months to build local history. Each month is
-    // isolated so one bad response doesn't drop the rest.
-    let total = 0;
+    // fetched concurrently (they're independent requests) and isolated so one
+    // bad response doesn't drop the rest.
     const now = dayjs();
-    for (let i = 0; i < TRANSACTION_HISTORY_MONTHS; i++) {
-      const month = now.subtract(i, "month");
-      const date = getMonthTimestamp(month.year(), month.month());
-      try {
-        const list = await this.apiGateway.transactionService.getTransactionsByUser({
-          userId: userId as any,
-          type,
-          date,
-        } as any);
-        for (const model of list) {
-          await this.repos.transactions.upsertFromServer({ ...model, type });
+    const counts = await Promise.all(
+      Array.from({ length: months }, (_, i) => i).map(async (i) => {
+        const month = now.subtract(i, "month");
+        const date = getMonthTimestamp(month.year(), month.month());
+        try {
+          const list = await this.apiGateway.transactionService.getTransactionsByUser({
+            userId: userId as any,
+            type,
+            date,
+          } as any);
+          for (const model of list) {
+            await this.repos.transactions.upsertFromServer({ ...model, type });
+          }
+          return list.length;
+        } catch (error) {
+          console.log("pull transactions month failed", type, String(date), error);
+          return 0;
         }
-        total += list.length;
-      } catch (error) {
-        console.log("pull transactions month failed", type, String(date), error);
-      }
-    }
+      }),
+    );
     // NOTE: remote-delete inference is intentionally NOT applied to transactions
     // (per-month scope makes a full-set diff unsafe). Loans/investments below
     // use full-list endpoints and still reconcile deletes safely.
-    return total;
+    return counts.reduce((a, b) => a + b, 0);
   }
 
   private async pullCategories(
@@ -432,13 +456,18 @@ export class SyncEngine {
 
   private async pullInvestments(userId: string): Promise<number> {
     // The invest list endpoint filters by status, so fetch both to mirror the
-    // full set the app shows (Active + Completed).
+    // full set the app shows (Active + Completed). The two statuses are
+    // independent requests — fetch them concurrently.
+    const lists = await Promise.all(
+      [1, 2].map((status) =>
+        this.apiGateway.investService.getInvestByUserId({
+          userId: userId as any,
+          status: status as any,
+        } as any),
+      ),
+    );
     const all: any[] = [];
-    for (const status of [1, 2]) {
-      const list = await this.apiGateway.investService.getInvestByUserId({
-        userId: userId as any,
-        status: status as any,
-      } as any);
+    for (const list of lists) {
       for (const model of list) {
         await this.repos.investments.upsertFromServer({ ...model, userId });
       }
@@ -454,34 +483,37 @@ export class SyncEngine {
     return all.length;
   }
 
-  private async pullMonthlyLimits(userId: string): Promise<number> {
+  private async pullMonthlyLimits(userId: string, months: number): Promise<number> {
     // The limit endpoint is keyed by (month, year), so walk the same history
-    // window and fetch each month's limit individually.
-    let total = 0;
+    // window and fetch each month's limit — concurrently, since each is an
+    // independent request.
     const now = dayjs();
     const localRows = (await this.repos.monthlyLimits.getByUser(userId)) as any[];
-    for (let i = 0; i < TRANSACTION_HISTORY_MONTHS; i++) {
-      const m = now.subtract(i, "month");
-      const month = m.month() + 1;
-      const year = m.year();
-      try {
-        const res: any = await this.apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
-          userId: userId as any,
-          month: month as any,
-          year: year as any,
-        });
-        if (!res?.id) continue; // no limit set for this month
-        // Keep a pending local edit for this period (local wins until pushed).
-        const existing = localRows.find((r) => r.month === month && r.year === year);
-        if (existing && existing.syncStatus === "pending") continue;
-        await this.repos.monthlyLimits.upsertFromServer({ ...res, userId });
-        total += 1;
-      } catch (error) {
-        console.log("pull monthly limit failed", month, year, error);
-      }
-    }
+    const results = await Promise.all(
+      Array.from({ length: months }, (_, i) => i).map(async (i) => {
+        const m = now.subtract(i, "month");
+        const month = m.month() + 1;
+        const year = m.year();
+        try {
+          const res: any = await this.apiGateway.monthlyLimitService.getMonthlyLimitByUserId({
+            userId: userId as any,
+            month: month as any,
+            year: year as any,
+          });
+          if (!res?.id) return 0; // no limit set for this month
+          // Keep a pending local edit for this period (local wins until pushed).
+          const existing = localRows.find((r) => r.month === month && r.year === year);
+          if (existing && existing.syncStatus === "pending") return 0;
+          await this.repos.monthlyLimits.upsertFromServer({ ...res, userId });
+          return 1;
+        } catch (error) {
+          console.log("pull monthly limit failed", month, year, error);
+          return 0;
+        }
+      }) as Promise<number>[],
+    );
     await this.repos.monthlyLimits.backfillUserId(userId);
-    return total;
+    return results.reduce((a, b) => a + b, 0);
   }
 
   /**

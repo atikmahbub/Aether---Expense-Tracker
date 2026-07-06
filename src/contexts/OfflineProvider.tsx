@@ -126,7 +126,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }, 30000);
 
       try {
-        await syncEngine.syncAll(userId, (p) => setMigrationProgress(p));
+        await syncEngine.syncAll(userId, (p) => setMigrationProgress(p), { full: true });
         // Only the flag persistence is essential before dismissing the overlay.
         await repositories.settings.set(syncKey, 'true');
         migratedRef.current = true;

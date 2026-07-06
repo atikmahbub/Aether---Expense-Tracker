@@ -30,7 +30,6 @@ import {
 import { authStorage } from "@trackingPortal/auth/authStorage";
 import { AnimatedLoader } from "@trackingPortal/components";
 import MigrationOverlay from "@trackingPortal/components/MigrationOverlay";
-import OfflineBanner from "@trackingPortal/components/OfflineBanner";
 import ScalarSplashGate from "@trackingPortal/components/ScalarSplashGate";
 import toastConfig from "@trackingPortal/components/ToastConfig";
 import { NetworkProvider } from "@trackingPortal/contexts/NetworkProvider";
@@ -232,13 +231,11 @@ function ThemedApp() {
                         style={{ flex: 1, backgroundColor: colors.background }}
                       >
                         <NavigationBoundary />
-                        <OfflineBanner />
                         <MigrationOverlay />
                       </KeyboardAvoidingView>
                     ) : (
                       <>
                         <NavigationBoundary />
-                        <OfflineBanner />
                         <MigrationOverlay />
                       </>
                     )}

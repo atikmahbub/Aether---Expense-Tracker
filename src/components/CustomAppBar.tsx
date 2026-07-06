@@ -18,6 +18,7 @@ import Animated, {
   FadeInRight
 } from 'react-native-reanimated';
 import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
+import SyncStatusIndicator from '@trackingPortal/components/SyncStatusIndicator';
 
 const AVATAR_SIZE = 54;
 
@@ -92,6 +93,8 @@ const CustomAppBar: React.FC = () => {
           <Text style={styles.greetingText}>{greeting}, <Text style={styles.userNameText}>{userName}</Text></Text>
         </View>
       </Animated.View>
+
+      <SyncStatusIndicator />
 
       <TouchableOpacity
         activeOpacity={0.85}
