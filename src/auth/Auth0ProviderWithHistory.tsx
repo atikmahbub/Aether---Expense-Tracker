@@ -38,7 +38,7 @@ type UserProfile = Record<string, unknown> | null;
 type AuthContextType = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  getValidToken: () => Promise<string | null>;
+  getValidToken: (forceRefresh?: boolean) => Promise<string | null>;
   retrySession: () => Promise<void>;
   token: string | null;
   user: UserProfile;
@@ -149,10 +149,14 @@ export const Auth0ProviderWithHistory = ({
     if (refreshPromise.current) return refreshPromise.current;
 
     refreshPromise.current = (async () => {
-      if (!discovery?.tokenEndpoint) {
-        console.warn("⚠️ Auth discovery not ready for refresh");
-        return null;
-      }
+      // Auth0's token endpoint is deterministic, so never gate refresh on
+      // useAutoDiscovery having resolved — it needs the network and is usually
+      // NOT ready when the first refresh fires during cold-start bootstrap.
+      // (The old early-return here also skipped the `finally` below, leaving a
+      // permanently-cached null promise: every later refresh short-circuited to
+      // null and all API calls 401'd until the app was killed.)
+      const tokenEndpoint =
+        discovery?.tokenEndpoint ?? `https://${AUTH0_DOMAIN}/oauth/token`;
 
       try {
         console.log("🔄 Attempting to refresh access token...");
@@ -165,7 +169,7 @@ export const Auth0ProviderWithHistory = ({
               ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
             },
           },
-          { tokenEndpoint: discovery.tokenEndpoint }
+          { tokenEndpoint }
         );
 
         if (tokenResponse.accessToken) {
@@ -223,17 +227,22 @@ export const Auth0ProviderWithHistory = ({
 
   refreshAccessTokenRef.current = refreshAccessToken;
 
-  const getValidToken = useCallback(async (): Promise<string | null> => {
-    if (token && !isTokenExpired(token)) {
-      setIsAuthenticated(true);
-      return token;
-    }
+  const getValidToken = useCallback(async (forceRefresh = false): Promise<string | null> => {
+    // `forceRefresh` is set by the API layer after a 401: the server rejected a
+    // token the local expiry check still considers valid (clock skew,
+    // revocation), so returning the same token again would just 401 forever.
+    if (!forceRefresh) {
+      if (token && !isTokenExpired(token)) {
+        setIsAuthenticated(true);
+        return token;
+      }
 
-    const storedToken = await authStorage.getAccessToken();
-    if (storedToken && !isTokenExpired(storedToken)) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
-      return storedToken;
+      const storedToken = await authStorage.getAccessToken();
+      if (storedToken && !isTokenExpired(storedToken)) {
+        setToken(storedToken);
+        setIsAuthenticated(true);
+        return storedToken;
+      }
     }
 
     const storedRefreshToken = await authStorage.getRefreshToken();

@@ -6,7 +6,7 @@ import {
 
 export class AxiosAjaxUtils implements IAxiosAjaxUtils {
   private axiosInstance: AxiosInstance;
-  private tokenProvider: (() => Promise<string | null>) | null = null;
+  private tokenProvider: ((forceRefresh?: boolean) => Promise<string | null>) | null = null;
   private accessToken: string | null = null;
 
   constructor() {
@@ -54,10 +54,12 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
           this.tokenProvider
         ) {
           originalRequest._retry = true;
-          
+
           try {
-            // This will trigger a refresh if needed, using the mutex in AuthProvider
-            const token = await this.tokenProvider();
+            // Force a refresh: the server just rejected the current token, so
+            // re-reading it (even if it looks unexpired locally) is pointless.
+            // The refresh mutex in AuthProvider dedupes concurrent 401 retries.
+            const token = await this.tokenProvider(true);
             if (token) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
               return this.axiosInstance(originalRequest);
@@ -78,7 +80,7 @@ export class AxiosAjaxUtils implements IAxiosAjaxUtils {
     this.accessToken = token;
   }
 
-  public setTokenProvider(provider: () => Promise<string | null>) {
+  public setTokenProvider(provider: (forceRefresh?: boolean) => Promise<string | null>) {
     this.tokenProvider = provider;
   }
 

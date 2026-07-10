@@ -304,22 +304,29 @@ export default function TransactionScreen() {
     setRefreshing(false);
   }, [isOnline, loadData, fetchAnalytics, refreshCategories, fetchSummary]);
 
+  // Stale-while-revalidate: keep rendering the last summary while a refetch is
+  // in flight. Background syncs re-run fetchSummary; gating these on
+  // `loadingSummary` blanked the amounts to "…"/0 on every sync, which read as
+  // the digits flickering. Only the very first load (summary === null) shows a
+  // placeholder.
+  const summaryInitialLoading = loadingSummary && !summary;
+
   const totalDisplayValue = useMemo(() => {
-    if (loadingSummary || !summary) return null;
+    if (!summary) return null;
     return typeFilter === "expense"
       ? summary.totalExpense
       : summary.totalIncome;
-  }, [summary, loadingSummary, typeFilter]);
+  }, [summary, typeFilter]);
 
   const crossTabTotal = useMemo(() => {
-    if (loadingSummary || !summary) return 0;
+    if (!summary) return 0;
     return typeFilter === "expense"
       ? summary.totalIncome
       : summary.totalExpense;
-  }, [summary, loadingSummary, typeFilter]);
+  }, [summary, typeFilter]);
 
   const activeTrend = useMemo(() => {
-    if (loadingSummary || !summary) return null;
+    if (!summary) return null;
     const value =
       typeFilter === "expense"
         ? summary.expenseChangePercentage
@@ -343,7 +350,7 @@ export default function TransactionScreen() {
           ? "arrow-bottom-right"
           : "minus",
     };
-  }, [summary, loadingSummary, typeFilter, colors]);
+  }, [summary, typeFilter, colors]);
 
   const headerComponent = useMemo(
     () => (
@@ -363,7 +370,7 @@ export default function TransactionScreen() {
           filterMonth={filterMonth}
           monthLimit={monthLimit}
           getMonthlyLimit={getMonthlyLimit}
-          isLoading={loadingSummary}
+          isLoading={summaryInitialLoading}
         />
 
         <AnalyticsCard
@@ -380,7 +387,7 @@ export default function TransactionScreen() {
           currency={currency}
           mode={typeFilter}
           trend={activeTrend}
-          trendLoading={loadingSummary}
+          trendLoading={summaryInitialLoading}
           totalSpent={totalDisplayValue ?? 0}
           transactions={filteredTransactions}
         />
@@ -391,7 +398,7 @@ export default function TransactionScreen() {
       totalDisplayValue,
       crossTabTotal,
       activeTrend,
-      loadingSummary,
+      summaryInitialLoading,
       filterMonth,
       monthLimit,
       getMonthlyLimit,
