@@ -1,12 +1,9 @@
-import {View, StyleSheet, InteractionManager, Animated} from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
-import React, {useState, useMemo, useCallback, useEffect, useRef} from 'react';
+import {View, StyleSheet} from 'react-native';
+import React, {useState, useMemo, useCallback} from 'react';
 import {Text} from 'react-native-paper';
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
-import {FormikTextInput} from '@trackingPortal/components';
+import {FormikTextInput, CommonCard, StatCard, HeroGlow} from '@trackingPortal/components';
 import FormModal from '@trackingPortal/components/FormModal';
-import dayjs, {Dayjs} from 'dayjs';
+import {Dayjs} from 'dayjs';
 import {MonthlyLimitModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
@@ -17,7 +14,6 @@ import {EMonthlyLimitFields} from '@trackingPortal/screens/TransactionScreen/Tra
 import Toast from 'react-native-toast-message';
 import {withHaptic} from '@trackingPortal/utils/haptic';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import { CommonCard, StatCard } from '@trackingPortal/components';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface ISummary {
@@ -39,7 +35,7 @@ const TransactionSummary: React.FC<ISummary> = ({
   getMonthlyLimit,
   isLoading,
 }) => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [isLimitModalVisible, setIsLimitModalVisible] =
     useState<boolean>(false);
@@ -137,20 +133,7 @@ const TransactionSummary: React.FC<ISummary> = ({
         style={styles.heroCard}
         padding={20}
       >
-        {isDark && (
-          <View pointerEvents="none" style={styles.heroAmbient}>
-            <Svg width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="balanceAmbient" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor={colors.primary} stopOpacity="0.18" />
-                  <Stop offset="0.48" stopColor={colors.primary} stopOpacity="0.035" />
-                  <Stop offset="1" stopColor={colors.cardBg} stopOpacity="0" />
-                </LinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#balanceAmbient)" />
-            </Svg>
-          </View>
-        )}
+        <HeroGlow />
         <View style={styles.topSection}>
           <View style={styles.headerRow}>
             <View style={styles.headingRow}>
@@ -296,9 +279,6 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     heroCard: {
       marginBottom: 20,
       borderColor: colors.primarySoft,
-    },
-    heroAmbient: {
-      ...StyleSheet.absoluteFillObject,
     },
     headerRow: {
       flexDirection: 'row',

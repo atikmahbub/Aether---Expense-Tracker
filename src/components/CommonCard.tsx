@@ -34,17 +34,19 @@ export const CommonCard: React.FC<CommonCardProps> = ({
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: boolean) {
   return StyleSheet.create({
+    // No overflow:'hidden' here — it clips the iOS shadow. Content is padded, so
+    // nothing bleeds past the rounded corners.
     card: {
       backgroundColor: colors.cardBg,
-      borderRadius: isDark ? designTokens.radius.lg : 16,
+      borderRadius: designTokens.radius.xl,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: isDark ? 4 : 1 },
-      shadowOpacity: isDark ? 0.32 : 0.04,
-      shadowRadius: isDark ? 16 : 2,
-      elevation: isDark ? 5 : 0,
-      overflow: 'hidden',
+      borderColor: isDark ? 'rgba(255,255,255,0.055)' : 'rgba(15,17,23,0.04)',
+      borderTopColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,17,23,0.04)',
+      shadowColor: isDark ? '#000' : '#1B2437',
+      shadowOffset: { width: 0, height: isDark ? 12 : 10 },
+      shadowOpacity: isDark ? 0.45 : 0.08,
+      shadowRadius: isDark ? 24 : 20,
+      elevation: isDark ? 7 : 3,
     },
     topHighlight: {
       position: 'absolute',
@@ -52,7 +54,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
       left: 18,
       right: 18,
       height: 1,
-      backgroundColor: 'rgba(255,255,255,0.12)',
+      backgroundColor: 'rgba(255,255,255,0.14)',
     },
   });
 }

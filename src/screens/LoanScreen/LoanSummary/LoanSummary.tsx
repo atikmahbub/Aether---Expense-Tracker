@@ -4,7 +4,7 @@ import {Text} from 'react-native-paper';
 import {formatCurrency} from '@trackingPortal/utils/utils';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import { CommonCard, StatCard } from '@trackingPortal/components';
+import { CommonCard, StatCard, HeroGlow } from '@trackingPortal/components';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface ISummary {
@@ -24,6 +24,7 @@ const LoanSummary: React.FC<ISummary> = ({
   return (
     <View style={styles.mainContainer}>
       <CommonCard style={styles.heroCard} padding={24}>
+        <HeroGlow />
         <View style={styles.headingRow}>
           <MaterialCommunityIcons name="scale-balance" size={14} color={colors.primary} />
           <Text style={styles.headingLabel}>NET POSITION</Text>
@@ -69,6 +70,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     heroCard: {
       marginBottom: 20,
+      borderColor: colors.primarySoft,
     },
     headingRow: {
       flexDirection: 'row',

@@ -6,7 +6,7 @@ import {InvestModel} from '@trackingPortal/api/models';
 import {EInvestStatus} from '@trackingPortal/api/enums';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import { CommonCard, StatCard } from '@trackingPortal/components';
+import { CommonCard, StatCard, HeroGlow } from '@trackingPortal/components';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface ISummary {
@@ -63,6 +63,7 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
   return (
     <View style={styles.mainContainer}>
       <CommonCard style={styles.heroCard} padding={24}>
+        <HeroGlow />
         <View style={styles.headingRow}>
           <MaterialCommunityIcons name="chart-pie" size={14} color={colors.primary} />
           <Text style={styles.headingLabel}>INVESTMENT SNAPSHOT</Text>
@@ -111,6 +112,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     heroCard: {
       marginBottom: 20,
+      borderColor: colors.primarySoft,
     },
     headingRow: {
       flexDirection: 'row',

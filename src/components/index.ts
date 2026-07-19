@@ -18,6 +18,7 @@ import OnboardingSlide from '@trackingPortal/components/OnboardingSlide';
 import BaseBottomSheet from './BaseBottomSheet';
 import { CommonCard } from './CommonCard';
 import { StatCard } from './StatCard';
+import HeroGlow from './HeroGlow';
 
 export {
   CustomAppBar,
@@ -39,4 +40,5 @@ export {
   BaseBottomSheet,
   CommonCard,
   StatCard,
+  HeroGlow,
 };

@@ -71,7 +71,19 @@ const GlassCard: React.FC<GlassCardProps> = ({
   };
 
   const containerBg = isDark ? 'rgba(22, 23, 27, 0.72)' : 'rgba(255, 255, 255, 0.7)';
-  const borderColor = isDark ? 'rgba(255, 255, 255, 0.11)' : 'rgba(0, 0, 0, 0.06)';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.045)';
+  const borderTopColor = isDark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(0, 0, 0, 0.045)';
+
+  // iOS shadows live on the un-clipped Pressable wrapper: the container's
+  // overflow:'hidden' (required for the blur) would clip them. Android uses
+  // elevation on the container, which is drawn by the parent and never clipped.
+  const iosShadow =
+    Platform.OS === 'ios'
+      ? isDark
+        ? { shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 26, shadowOffset: { width: 0, height: 14 } }
+        : { shadowColor: '#1B2437', shadowOpacity: 0.1, shadowRadius: 22, shadowOffset: { width: 0, height: 10 } }
+      : null;
+  const androidElevation = Platform.OS === 'android' ? { elevation: isDark ? 9 : 4 } : null;
 
   const gradientOverlay = (
     <View style={StyleSheet.absoluteFill}>
@@ -94,7 +106,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
       onPressOut={handlePressOut}
       onPress={handleMainPress}
       disabled={!onPress}
-      style={wrapperStyle}
+      style={[wrapperStyle, iosShadow]}
     >
       {Platform.OS === "ios" ? (
         <AnimatedBlurView
@@ -103,8 +115,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
           tint={isDark ? "dark" : "light"}
           style={[
             styles.container,
-            styles.shadow,
-            { backgroundColor: containerBg, borderColor },
+            { backgroundColor: containerBg, borderColor, borderTopColor },
+            androidElevation,
             style,
             animatedStyle,
           ]}
@@ -118,8 +130,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
           entering={FadeIn.duration(400)}
           style={[
             styles.container,
-            styles.shadow,
-            { backgroundColor: containerBg, borderColor },
+            { backgroundColor: containerBg, borderColor, borderTopColor },
+            androidElevation,
             style,
             animatedStyle,
           ]}
@@ -136,7 +148,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 24,
-    borderWidth: 1.5,
+    borderWidth: 1,
     overflow: "hidden",
   },
   inner: {
@@ -144,15 +156,8 @@ const styles = StyleSheet.create({
   },
   innerHighlight: {
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.03)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 24,
-  },
-  shadow: {
-    shadowColor: "rgba(0, 0, 0, 0.5)",
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
   },
 });
 
