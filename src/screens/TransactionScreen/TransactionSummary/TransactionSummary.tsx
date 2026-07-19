@@ -39,7 +39,7 @@ const TransactionSummary: React.FC<ISummary> = ({
   getMonthlyLimit,
   isLoading,
 }) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [isLimitModalVisible, setIsLimitModalVisible] =
     useState<boolean>(false);
@@ -137,6 +137,20 @@ const TransactionSummary: React.FC<ISummary> = ({
         style={styles.heroCard}
         padding={20}
       >
+        {isDark && (
+          <View pointerEvents="none" style={styles.heroAmbient}>
+            <Svg width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="balanceAmbient" x1="0" y1="0" x2="1" y2="1">
+                  <Stop offset="0" stopColor={colors.primary} stopOpacity="0.18" />
+                  <Stop offset="0.48" stopColor={colors.primary} stopOpacity="0.035" />
+                  <Stop offset="1" stopColor={colors.cardBg} stopOpacity="0" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#balanceAmbient)" />
+            </Svg>
+          </View>
+        )}
         <View style={styles.topSection}>
           <View style={styles.headerRow}>
             <View style={styles.headingRow}>
@@ -281,6 +295,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     heroCard: {
       marginBottom: 20,
+      borderColor: colors.primarySoft,
+    },
+    heroAmbient: {
+      ...StyleSheet.absoluteFillObject,
     },
     headerRow: {
       flexDirection: 'row',
@@ -301,17 +319,17 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     topSection: {},
     amountRow: {
-      marginTop: 8,
+      marginTop: 14,
     },
     amountContainer: {
       width: '100%',
     },
     totalValueText: {
       color: colors.text,
-      fontSize: 52,
+      fontSize: 54,
       fontWeight: '800',
-      fontFamily: 'Manrope',
-      letterSpacing: -2.5,
+      fontFamily: 'Manrope_800ExtraBold',
+      letterSpacing: -2.8,
       includeFontPadding: false,
       flexShrink: 1,
     },
@@ -319,7 +337,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.muted,
       fontSize: 12,
       fontWeight: '600',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_600SemiBold',
     },
     summaryFooter: {
       flexDirection: 'row',
@@ -346,7 +364,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     netValue: {
       fontSize: 12,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
     },
     percentageContainer: {
       paddingHorizontal: 8,
@@ -358,7 +376,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     percentageInline: {
       fontSize: 10,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
     },
     percentageSub: {
       fontSize: 10,

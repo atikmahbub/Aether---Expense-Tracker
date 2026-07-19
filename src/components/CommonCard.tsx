@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface CommonCardProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export const CommonCard: React.FC<CommonCardProps> = ({
       onPress={onPress}
       style={[styles.card, { padding }, style]}
     >
+      {isDark && <View pointerEvents="none" style={styles.topHighlight} />}
       {children}
     </CardContainer>
   );
@@ -34,14 +36,23 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
   return StyleSheet.create({
     card: {
       backgroundColor: colors.cardBg,
-      borderRadius: 16,
+      borderRadius: isDark ? designTokens.radius.lg : 16,
       borderWidth: 1,
       borderColor: colors.glassBorder,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: isDark ? 4 : 1 },
-      shadowOpacity: isDark ? 0.2 : 0.04,
-      shadowRadius: isDark ? 8 : 2,
-      elevation: isDark ? 4 : 0,
+      shadowOpacity: isDark ? 0.32 : 0.04,
+      shadowRadius: isDark ? 16 : 2,
+      elevation: isDark ? 5 : 0,
+      overflow: 'hidden',
+    },
+    topHighlight: {
+      position: 'absolute',
+      top: 0,
+      left: 18,
+      right: 18,
+      height: 1,
+      backgroundColor: 'rgba(255,255,255,0.12)',
     },
   });
 }

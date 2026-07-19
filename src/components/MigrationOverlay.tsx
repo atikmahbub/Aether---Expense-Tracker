@@ -76,7 +76,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 20,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       letterSpacing: -0.4,
       marginTop: 8,
       textAlign: 'center',
@@ -84,7 +84,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     step: {
       color: colors.subText,
       fontSize: 13,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_400Regular',
       textAlign: 'center',
       marginTop: 4,
     },
@@ -104,7 +104,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     pct: {
       color: colors.subText,
       fontSize: 12,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_600SemiBold',
       fontWeight: '600',
       marginTop: 4,
     },

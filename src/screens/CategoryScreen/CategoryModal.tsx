@@ -163,7 +163,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 24,
       fontWeight: '800',
       color: colors.text,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_400Regular',
       marginBottom: 24,
       letterSpacing: -0.5,
     },
@@ -227,7 +227,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: '#000',
       fontSize: 16,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
     },
   });
 }

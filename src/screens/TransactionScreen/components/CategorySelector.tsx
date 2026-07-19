@@ -127,7 +127,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.warning,
       fontSize: 12,
       marginTop: 6,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_600SemiBold',
       fontWeight: '600',
     },
   });

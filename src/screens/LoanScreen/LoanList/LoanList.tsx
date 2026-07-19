@@ -206,7 +206,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 20,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       letterSpacing: -0.5,
     },
     viewAllText: {

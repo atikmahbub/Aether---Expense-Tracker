@@ -87,7 +87,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 24,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       letterSpacing: -0.5,
     },
     subtitle: {

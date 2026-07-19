@@ -29,8 +29,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   onOptionPress,
   containerStyle,
 }) => {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const containerPadding = 4;
@@ -114,28 +114,32 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   );
 };
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: boolean) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
-      height: 44,
-      backgroundColor: colors.surfaceAlt,
-      borderRadius: 12,
+      height: 42,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.045)' : 'rgba(0, 0, 0, 0.04)',
+      borderRadius: 999,
       padding: 4,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
       position: 'relative',
-      overflow: 'hidden',
     },
     activeIndicator: {
       position: 'absolute',
       top: 4,
       bottom: 4,
       left: 4,
-      backgroundColor: colors.background,
-      borderRadius: 8,
+      backgroundColor: isDark ? '#20232A' : '#FFFFFF',
+      borderRadius: 999,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.04)',
+      shadowColor: '#000',
+      shadowOpacity: isDark ? 0.35 : 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
     },
     segment: {
       flex: 1,
@@ -147,11 +151,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     label: {
       fontSize: 13,
       fontWeight: '700',
-      fontFamily: 'Manrope',
-      letterSpacing: 0.2,
+      fontFamily: 'Manrope_700Bold',
+      letterSpacing: 0.3,
     },
     activeLabel: {
-      color: colors.primaryText,
+      color: colors.text,
     },
     inactiveLabel: {
       color: colors.muted,

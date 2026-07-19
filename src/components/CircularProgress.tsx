@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '800',
-    fontFamily: 'Manrope',
+    fontFamily: 'Manrope_800ExtraBold',
   },
 });
 

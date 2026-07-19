@@ -260,6 +260,7 @@ const InvestList: FC<IInvestList> = ({
             </Text>
           </View>
           <TwMenu
+            compact
             containerStyle={styles.menuContainer}
             onSelect={value => {
               setStatus(value);
@@ -313,13 +314,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 20,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       letterSpacing: -0.5,
     },
     subtitle: {
       color: colors.subText,
       fontSize: 13,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_400Regular',
       lineHeight: 18,
       maxWidth: 240,
     },
@@ -332,15 +333,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     menuContainer: {
       alignSelf: 'flex-start',
-      marginTop: 4,
+      marginTop: 2,
+      marginLeft: 10,
     },
     statusButton: {
       backgroundColor: colors.surface,
-      borderRadius: 12,
+      borderRadius: 10,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
     },
     actionRow: {
       flexDirection: 'row',

@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface ILoadingButtonProps {
   onPress: (event: GestureResponderEvent) => void;
@@ -31,6 +32,7 @@ const LoadingButton: React.FC<ILoadingButtonProps> = ({
       style={[styles.buttonContainer, style]}
       onPress={onPress}
       disabled={loading}
+      activeOpacity={0.78}
     >
       <Text style={[styles.buttonText, textStyle]}>{label}</Text>
       {loading && (
@@ -50,18 +52,23 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     buttonContainer: {
       backgroundColor: colors.primary,
-      paddingVertical: 12,
+      paddingVertical: 13,
       paddingHorizontal: 16,
-      borderRadius: 12,
+      borderRadius: designTokens.radius.md,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 48,
+      minHeight: designTokens.controlHeight,
+      shadowColor: colors.primary,
+      shadowOffset: {width: 0, height: 6},
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 4,
     },
     buttonText: {
       color: colors.background,
-      fontWeight: '700',
-      fontSize: 16,
+      fontWeight: '800',
+      fontSize: 15,
       textAlign: 'center',
     },
     loader: {

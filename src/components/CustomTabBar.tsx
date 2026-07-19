@@ -119,14 +119,15 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         tab={tab}
         isFocused={isFocused}
         onPress={() => handlePress(route.name)}
-        colors={colors}
+        activeColor={colors.primaryText}
+        inactiveColor={colors.muted}
         styles={styles}
       />
     );
   }
 }
 
-const TabButton = ({ tab, isFocused, onPress, colors, styles }: any) => {
+const TabButton = ({ tab, isFocused, onPress, activeColor, inactiveColor, styles }: any) => {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -137,9 +138,9 @@ const TabButton = ({ tab, isFocused, onPress, colors, styles }: any) => {
       <MaterialCommunityIcons
         name={tab.icon}
         size={isFocused ? 23 : 22}
-        color={isFocused ? colors.primaryText : colors.muted}
+        color={isFocused ? activeColor : inactiveColor}
       />
-      <Text style={[styles.label, { color: isFocused ? colors.primaryText : colors.muted }]}>
+      <Text style={[styles.label, { color: isFocused ? activeColor : inactiveColor }]}>
         {tab.label}
       </Text>
     </TouchableOpacity>
@@ -166,12 +167,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
       }),
     },
     container: {
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: isDark ? 'rgba(18, 18, 20, 0.82)' : 'rgba(250, 251, 254, 0.88)',
+      height: 74,
+      borderRadius: 28,
+      backgroundColor: isDark ? 'rgba(14, 15, 17, 0.93)' : 'rgba(250, 251, 254, 0.88)',
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.glassBorder,
-      borderTopColor: isDark ? 'rgba(255, 255, 255, 0.10)' : colors.glassBorder,
+      borderTopColor: isDark ? 'rgba(255, 255, 255, 0.14)' : colors.glassBorder,
       overflow: 'hidden',
     },
     tabContainer: {
@@ -193,21 +194,21 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
     },
     label: {
       fontSize: 10,
-      fontWeight: "800",
-      fontFamily: 'Manrope',
+      fontWeight: '700',
+      fontFamily: 'Manrope_700Bold',
       marginTop: 4,
       letterSpacing: -0.2,
     },
     activePill: {
       position: 'absolute',
-      top: 10,
-      bottom: 10,
-      left: 0,
-      right: 0,
-      backgroundColor: 'rgba(34, 197, 94, 0.08)',
-      borderRadius: 16,
+      top: 9,
+      bottom: 9,
+      left: 2,
+      right: 2,
+      backgroundColor: 'rgba(53, 210, 118, 0.10)',
+      borderRadius: 14,
       borderWidth: 1,
-      borderColor: 'rgba(34, 197, 94, 0.12)',
+      borderColor: 'rgba(91, 227, 145, 0.16)',
     },
     centerButton: {
       position: "absolute",
@@ -216,13 +217,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
       zIndex: 110,
     },
     plusButtonInner: {
-      width: 66,
-      height: 66,
-      borderRadius: 33,
+      width: 62,
+      height: 62,
+      borderRadius: 31,
       backgroundColor: colors.primary,
       justifyContent: "center",
       alignItems: "center",
-      borderWidth: 4,
+      borderWidth: 5,
       borderColor: colors.background,
       shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 6 },

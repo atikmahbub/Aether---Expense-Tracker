@@ -20,7 +20,7 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
   autoFocus,
   ...props
 }) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [field, meta] = useField(name);
   const inputRef = React.useRef<any>(null);
@@ -47,6 +47,11 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
         multiline={multiline}
         numberOfLines={multiline ? minRows : undefined}
         style={[styles.input, multiline && {height: minRows * 20}]}
+        outlineColor={colors.glassBorder}
+        activeOutlineColor={colors.primary}
+        textColor={colors.text}
+        placeholderTextColor={colors.placeholder}
+        theme={{colors: {background: isDark ? colors.surface : colors.cardBg}}}
         {...props}
       />
       {meta.touched && meta.error && (
@@ -63,6 +68,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     input: {
       fontSize: 16,
+      backgroundColor: colors.surface,
     },
     errorText: {
       color: colors.error,

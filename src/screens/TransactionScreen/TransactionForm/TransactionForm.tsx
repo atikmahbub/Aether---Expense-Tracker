@@ -198,7 +198,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     amountInput: {
       backgroundColor: 'transparent',
       fontSize: 56,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       fontWeight: '800',
       textAlign: 'center',
       height: 80,

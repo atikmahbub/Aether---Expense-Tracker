@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0f1418',
+    backgroundColor: '#121316',
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',

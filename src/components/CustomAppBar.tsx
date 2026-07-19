@@ -147,7 +147,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 10,
       fontWeight: '800',
       letterSpacing: 1.5,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_400Regular',
     },
     greetingRow: {
       flexDirection: 'row',
@@ -155,14 +155,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     greetingText: {
       color: colors.subText,
       fontSize: 20,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_400Regular',
       fontWeight: '400',
       letterSpacing: -0.3,
     },
     userNameText: {
       color: colors.text,
       fontSize: 20,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_700Bold',
       fontWeight: '700',
       letterSpacing: -0.3,
     },
@@ -208,7 +208,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 18,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
     },
   });
 }

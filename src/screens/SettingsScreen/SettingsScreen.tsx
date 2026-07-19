@@ -399,7 +399,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 16,
       fontWeight: '700',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_700Bold',
     },
     themeToggleRow: {
       flexDirection: 'row',
@@ -461,7 +461,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 16,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
     },
     logoutHint: {
       color: colors.muted,

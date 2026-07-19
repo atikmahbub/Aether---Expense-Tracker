@@ -442,7 +442,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 16,
       fontWeight: '700',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.2,
     },
     typeBadge: {

@@ -6,6 +6,7 @@ import Svg, { Rect, Defs, LinearGradient as SvgGradient, Stop } from 'react-nati
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import CardWaves from '@trackingPortal/components/CardWaves';
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -69,8 +70,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
     marginVertical: flattenedStyle?.marginVertical,
   };
 
-  const containerBg = isDark ? 'rgba(27, 32, 38, 0.4)' : 'rgba(255, 255, 255, 0.7)';
-  const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+  const containerBg = isDark ? 'rgba(22, 23, 27, 0.72)' : 'rgba(255, 255, 255, 0.7)';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.11)' : 'rgba(0, 0, 0, 0.06)';
 
   const gradientOverlay = (
     <View style={StyleSheet.absoluteFill}>
@@ -78,11 +79,12 @@ const GlassCard: React.FC<GlassCardProps> = ({
         <Defs>
           <SvgGradient id="grad" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor="white" stopOpacity="0.02" />
-            <Stop offset="1" stopColor="black" stopOpacity="0.2" />
+            <Stop offset="1" stopColor="black" stopOpacity="0.1" />
           </SvgGradient>
         </Defs>
         <Rect width="100%" height="100%" fill="url(#grad)" />
       </Svg>
+      {isDark && <CardWaves />}
     </View>
   );
 

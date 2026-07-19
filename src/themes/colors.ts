@@ -1,32 +1,32 @@
 export const colors = {
-  // 🔴 Neutral Dark Base (FIXED — no blue tint)
-  background: '#09090A',
-  cardBg: '#161618',
-  surface: '#1E1E21',
-  surfaceAlt: '#26262B',
-  deepest: '#050505',
+  // 🌑 Neutral Graphite Base (rich black, zero color cast — green lives only in accents)
+  background: '#0A0A0C',
+  cardBg: '#121316',
+  surface: '#16171B',
+  surfaceAlt: '#1C1E23',
+  deepest: '#050506',
 
   // Icon/Utility Backgrounds
-  iconBg: '#1C1C20',
-  inactiveIcon: '#2A2A30',
+  iconBg: '#17191D',
+  inactiveIcon: '#26282E',
 
   // 🟢 Accent (kept — your identity)
-  primary: '#22C55E',
-  primaryMid: '#16A34A',
+  primary: '#35D276',
+  primaryMid: '#22B963',
   primaryDark: '#15803D',
-  primaryText: '#22C55E',
-  primarySoft: 'rgba(34,197,94,0.12)',
-  badgeBg: 'rgba(34,197,94,0.15)',
+  primaryText: '#5BE391',
+  primarySoft: 'rgba(53,210,118,0.11)',
+  badgeBg: 'rgba(53,210,118,0.14)',
 
-  // ✍️ Text (more premium contrast)
-  text: '#F5F5F5',
-  subText: '#A1A1AA',
-  muted: '#71717A',
+  // ✍️ Text (bright hierarchy — must stay readable on mobile at low brightness)
+  text: '#FAFAFB',
+  subText: '#C2C6CD',
+  muted: '#8B9098',
 
-  // 🧊 Borders (more subtle = more premium)
-  glassBorder: 'rgba(255,255,255,0.08)',
-  dashedLine: '#2A2A2F',
-  chartFloor: '#141417',
+  // 🧊 Borders (visible hairlines for edge definition)
+  glassBorder: 'rgba(255,255,255,0.11)',
+  dashedLine: '#34373D',
+  chartFloor: '#111216',
 
   // ⚠️ Utility
   warning: '#F59E0B',
@@ -34,13 +34,13 @@ export const colors = {
   errorSoft: 'rgba(248,113,113,0.12)',
 
   // Overlay
-  overlay: 'rgba(10,10,11,0.9)',
+  overlay: 'rgba(5,5,6,0.9)',
 
   // extras
   accent: '#22C55E',
   secondary: '#38BDF8',
-  disabled: '#3A3A3F',
-  placeholder: '#71717A',
+  disabled: '#4A4C52',
+  placeholder: '#8A8E96',
   success: '#22C55E',
   badgePositiveBg: 'rgba(34,197,94,0.12)',
   badgeNegativeBg: 'rgba(248,113,113,0.10)',

@@ -148,7 +148,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 20,
       fontWeight: '800',
       color: colors.text,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_400Regular',
       letterSpacing: -0.5,
     },
     segmentedControl: {

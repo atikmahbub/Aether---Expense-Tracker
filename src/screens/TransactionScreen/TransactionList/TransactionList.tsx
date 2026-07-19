@@ -473,21 +473,21 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.subText,
       fontSize: 11,
       fontWeight: '700',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.5,
     },
     chipLabelActive: {
       color: colors.primary,
       fontSize: 11,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       letterSpacing: 0.5,
     },
     title: {
       color: colors.text,
       fontSize: 20,
       fontWeight: '800',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_800ExtraBold',
       letterSpacing: -0.5,
     },
     viewAllText: {
@@ -508,7 +508,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 13,
       fontWeight: '700',
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_700Bold',
     },
     tableContainer: {
       marginTop: 4,

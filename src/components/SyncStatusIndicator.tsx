@@ -120,7 +120,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     label: {
       fontSize: 10,
-      fontFamily: 'Manrope',
+      fontFamily: 'Manrope_700Bold',
       fontWeight: '700',
       letterSpacing: 0.3,
     },

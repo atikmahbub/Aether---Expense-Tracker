@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '700',
-    fontFamily: 'Manrope',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.2,
   },
 });
