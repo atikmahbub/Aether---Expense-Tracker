@@ -26,7 +26,6 @@ export const CommonCard: React.FC<CommonCardProps> = ({
       onPress={onPress}
       style={[styles.card, { padding }, style]}
     >
-      {isDark && <View pointerEvents="none" style={styles.topHighlight} />}
       {children}
     </CardContainer>
   );
@@ -41,20 +40,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
       borderRadius: designTokens.radius.xl,
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.055)' : 'rgba(15,17,23,0.04)',
-      borderTopColor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(15,17,23,0.04)',
+      borderTopColor: isDark ? 'rgba(255,255,255,0.11)' : 'rgba(15,17,23,0.04)',
       shadowColor: isDark ? '#000' : '#1B2437',
       shadowOffset: { width: 0, height: isDark ? 12 : 10 },
       shadowOpacity: isDark ? 0.45 : 0.08,
       shadowRadius: isDark ? 24 : 20,
       elevation: isDark ? 7 : 3,
-    },
-    topHighlight: {
-      position: 'absolute',
-      top: 0,
-      left: 18,
-      right: 18,
-      height: 1,
-      backgroundColor: 'rgba(255,255,255,0.14)',
     },
   });
 }

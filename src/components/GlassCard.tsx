@@ -72,7 +72,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
 
   const containerBg = isDark ? 'rgba(22, 23, 27, 0.72)' : 'rgba(255, 255, 255, 0.7)';
   const borderColor = isDark ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.045)';
-  const borderTopColor = isDark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(0, 0, 0, 0.045)';
+  const borderTopColor = isDark ? 'rgba(255, 255, 255, 0.13)' : 'rgba(0, 0, 0, 0.045)';
 
   // iOS shadows live on the un-clipped Pressable wrapper: the container's
   // overflow:'hidden' (required for the blur) would clip them. Android uses
