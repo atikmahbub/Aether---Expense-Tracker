@@ -24,6 +24,7 @@ export default function CustomTabBar({
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const isSettings = state.routes[state.index]?.name === "settings";
 
   const handleTabPress = useCallback(
     (routeName: string) => {
@@ -77,18 +78,20 @@ export default function CustomTabBar({
         {renderTab("transactions")}
         {renderTab("loan")}
         <Pressable
-          accessibilityLabel="Add entry"
+          accessibilityLabel={isSettings ? "Settings" : "Add entry"}
           accessibilityRole="button"
           onPress={handlePlusPress}
+          disabled={isSettings}
           style={({ pressed }) => [
             styles.addButton,
-            pressed && styles.addButtonPressed,
+            isSettings && styles.addButtonDisabled,
+            pressed && !isSettings && styles.addButtonPressed,
           ]}
         >
           <MaterialCommunityIcons
-            name="plus"
-            size={28}
-            color={colors.onBrand}
+            name={isSettings ? "book-open-page-variant-outline" : "plus"}
+            size={isSettings ? 23 : 28}
+            color={isSettings ? colors.textTertiary : colors.onBrand}
           />
         </Pressable>
         {renderTab("investment")}
@@ -157,6 +160,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     addButtonPressed: {
       backgroundColor: colors.brandText,
+    },
+    addButtonDisabled: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSunken,
     },
   });
 }
