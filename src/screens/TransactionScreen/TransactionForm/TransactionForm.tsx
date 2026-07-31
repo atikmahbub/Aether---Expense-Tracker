@@ -54,6 +54,7 @@ export default function TransactionForm({
   } = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [purposeFocused, setPurposeFocused] = useState(false);
+  const [amountFocused, setAmountFocused] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
   const { currency } = useStoreContext();
   const dateValue = values[EAddTransactionFields.DATE];
@@ -128,23 +129,26 @@ export default function TransactionForm({
                 text.replace(/[^0-9.]/g, ""),
               )
             }
-            onBlur={() =>
-              setFieldTouched(EAddTransactionFields.AMOUNT, true)
-            }
+            onBlur={() => {
+              setAmountFocused(false);
+              setFieldTouched(EAddTransactionFields.AMOUNT, true);
+            }}
             keyboardType="decimal-pad"
-            showSoftInputOnFocus={showShortcutKeypad ? false : undefined}
+            showSoftInputOnFocus={!showShortcutKeypad}
             onFocus={() => {
+              setAmountFocused(true);
               setPurposeFocused(false);
-              if (showShortcutKeypad) Keyboard.dismiss();
             }}
             style={styles.amountInput}
             placeholder="0"
             placeholderTextColor={colors.textTertiary}
             selectionColor={colors.brand}
+            caretHidden={false}
             maxLength={12}
           />
         </View>
-        {touched[EAddTransactionFields.AMOUNT] &&
+        {!amountFocused &&
+          touched[EAddTransactionFields.AMOUNT] &&
           errors[EAddTransactionFields.AMOUNT] && (
             <Text style={styles.errorText}>
               {String(errors[EAddTransactionFields.AMOUNT])}
