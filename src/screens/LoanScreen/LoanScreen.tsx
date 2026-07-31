@@ -9,9 +9,8 @@ import LoanSummary from "@trackingPortal/screens/LoanScreen/LoanSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { FlatList, StyleSheet, View, Platform } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useIsFocused } from "@react-navigation/native";
@@ -20,13 +19,11 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 export default function LoanScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
-  const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [loans, setLoans] = useState<LoanModel[]>([]);
   const { currentUser: user } = useStoreContext();
   const { loanData } = useDatabase();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const { isOnline } = useNetwork();
   const wasOfflineRef = useRef(false);
@@ -144,7 +141,7 @@ export default function LoanScreen() {
 
   const footerComponent = useMemo(() => (
     <LoanList
-      notifyRowOpen={(value) => setHideFabIcon(value)}
+      notifyRowOpen={() => {}}
       loans={loans}
       getUserLoan={getUserLoans}
     />
@@ -167,7 +164,7 @@ export default function LoanScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 120, flexGrow: 1 }
+          { paddingBottom: 20, flexGrow: 1 }
         ]}
       >
         {headerComponent}
@@ -191,7 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   listContent: {
-    paddingBottom: 180,
-    paddingTop: 8,
+    paddingBottom: 20,
+    paddingTop: 0,
   },
 });

@@ -1,46 +1,38 @@
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { EInvestStatus } from "@trackingPortal/api/enums";
+import { InvestModel } from "@trackingPortal/api/models";
+import {
+  InvestId,
+  makeUnixTimestampString,
+  makeUnixTimestampToNumber,
+} from "@trackingPortal/api/primitives";
+import ScalarListRow from "@trackingPortal/components/ScalarListRow";
+import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
+import InvestForm from "@trackingPortal/screens/InvestScreen/InvestForm";
+import {
+  AddInvestSchema,
+  EAddInvestFormFields,
+} from "@trackingPortal/screens/InvestScreen";
+import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
+import { designTokens } from "@trackingPortal/themes/designTokens";
+import {
+  triggerSuccessHaptic,
+  triggerWarningHaptic,
+} from "@trackingPortal/utils/haptic";
+import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
+import dayjs from "dayjs";
+import { Formik } from "formik";
 import React, {
   FC,
   SetStateAction,
   useCallback,
   useMemo,
   useState,
-} from 'react';
-import {Text} from 'react-native-paper';
-
-import DataTable from '@trackingPortal/components/DataTable';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-
-import {InvestModel} from '@trackingPortal/api/models';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
-import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
-import Toast from 'react-native-toast-message';
-import {
-  AnimatedLoader,
-  LoadingButton,
-  TwMenu,
-} from '@trackingPortal/components';
-import dayjs from 'dayjs';
-import {
-  InvestId,
-  makeUnixTimestampString,
-  makeUnixTimestampToNumber,
-} from '@trackingPortal/api/primitives';
-import {
-  EAddInvestFormFields,
-  AddInvestSchema,
-  filterInvestByStatusMenu,
-} from '@trackingPortal/screens/InvestScreen';
-import {Formik} from 'formik';
-import InvestForm from '@trackingPortal/screens/InvestScreen/InvestForm';
-import {EInvestStatus} from '@trackingPortal/api/enums';
-import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
-import {
-  triggerSuccessHaptic,
-  triggerWarningHaptic,
-} from '@trackingPortal/utils/haptic';
+} from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Toast from "react-native-toast-message";
 
 interface IInvestList {
   notifyRowOpen: (value: boolean) => void;
@@ -49,17 +41,6 @@ interface IInvestList {
   status: EInvestStatus;
   setStatus: React.Dispatch<SetStateAction<EInvestStatus>>;
 }
-
-const headers = ['Date', 'Purpose', 'Amount'];
-
-const tintFromHex = (hex: string, alpha = 0.12) => {
-  const sanitized = hex.replace('#', '');
-  const bigint = parseInt(sanitized, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 const InvestList: FC<IInvestList> = ({
   notifyRowOpen,
@@ -71,220 +52,180 @@ const InvestList: FC<IInvestList> = ({
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<InvestId | null>(null);
-  const {currentUser: user, currency} = useStoreContext();
-  const {investData} = useDatabase();
-  const {syncNow} = useOffline();
-  const [loading, setLoading] = useState<boolean>(false);
-  const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
+  const { currentUser: user, currency } = useStoreContext();
+  const { investData } = useDatabase();
+  const { syncNow } = useOffline();
+  const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const onInvestEdit = async (values: any, {resetForm}: any, id: InvestId) => {
-    if (user.default || !investData) return;
-
-    try {
-      setLoading(true);
-      // Offline-first: update SQLite; sync pushes it when online.
-      await investData.updateInvest(id as string, {
-        amount: Number(values.amount),
-        startDate: makeUnixTimestampString(Number(new Date(values.start_date))),
-        note: values.note,
-        name: values.name,
-        endDate: makeUnixTimestampString(Number(new Date(values.end_date))),
-        status:
-          values.status === true
+  const onInvestEdit = useCallback(
+    async (values: any, { resetForm }: any, id: InvestId) => {
+      if (user.default || !investData) return;
+      try {
+        setLoading(true);
+        await investData.updateInvest(id as string, {
+          amount: Number(values.amount),
+          startDate: makeUnixTimestampString(Number(new Date(values.start_date))),
+          note: values.note,
+          name: values.name,
+          endDate: makeUnixTimestampString(Number(new Date(values.end_date))),
+          status: values.status
             ? EInvestStatus.Completed
             : EInvestStatus.Active,
-        earned: Number(values.earned),
-      });
-      await getUserInvestHistory();
-      triggerSuccessHaptic();
-      Toast.show({
-        type: 'success',
-        text1: 'Investment updated successfully!',
-      });
-      syncNow();
-    } catch (error) {
-      console.log('error', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Something went wrong!',
-      });
-    } finally {
-      resetForm();
-      setExpandedRowId(null);
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteInvestment = async (rowId: any) => {
-    if (!rowId || !investData) return;
-    try {
-      setDeleteLoading(true);
-      await investData.deleteInvest(rowId as string);
-      await getUserInvestHistory();
-      triggerWarningHaptic();
-      Toast.show({
-        type: 'success',
-        text1: 'Deleted Successfully!',
-      });
-      syncNow();
-    } catch (error) {
-      console.log('error', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Something went wrong!',
-      });
-    } finally {
-      setDeleteLoading(false);
-      setExpandedRowId(null);
-    }
-  };
-
-  const renderCollapsibleContent = useCallback(
-    (item: InvestModel) => {
-      const selectedItem = invests.find(invest => invest.id === item.id);
-      if (!selectedItem) return null;
-      const currentRowId = selectedItem.id;
-
-      return (
-        <Formik
-          enableReinitialize={true}
-          initialValues={{
-            id: selectedItem.id,
-            [EAddInvestFormFields.START_DATE]: new Date(
-              Number(selectedItem.startDate) * 1000,
-            ),
-            [EAddInvestFormFields.END_DATE]: selectedItem.endDate
-              ? new Date(Number(selectedItem.endDate) * 1000)
-              : new Date(),
-            [EAddInvestFormFields.NOTE]: selectedItem.note || '',
-            [EAddInvestFormFields.AMOUNT]: formatNumber(selectedItem.amount, {
-              useGrouping: false,
-              maximumFractionDigits: 2,
-            }),
-            [EAddInvestFormFields.NAME]: selectedItem.name,
-            [EAddInvestFormFields.EARNED]:
-              selectedItem.earned !== undefined &&
-              selectedItem.earned !== null
-                ? formatNumber(selectedItem.earned, {
-                    useGrouping: false,
-                    maximumFractionDigits: 2,
-                  })
-                : '',
-            [EAddInvestFormFields.STATUS]:
-              item.status === EInvestStatus.Active ? false : true,
-          }}
-          onSubmit={(values, formikHelpers) =>
-            onInvestEdit(values, formikHelpers, currentRowId)
-          }
-          validationSchema={AddInvestSchema}>
-          {({handleSubmit}) => {
-            return (
-              <View style={styles.collapsibleContent}>
-                <InvestForm
-                  update
-                  onSubmit={handleSubmit}
-                  onCancel={() => setExpandedRowId(null)}
-                  loading={loading}
-                />
-              </View>
-            );
-          }}
-        </Formik>
-      );
+          earned: Number(values.earned),
+        });
+        await getUserInvestHistory();
+        triggerSuccessHaptic();
+        Toast.show({
+          type: "success",
+          text1: "Investment updated successfully!",
+        });
+        syncNow();
+      } catch {
+        Toast.show({ type: "error", text1: "Something went wrong!" });
+      } finally {
+        resetForm();
+        setExpandedRowId(null);
+        setLoading(false);
+      }
     },
-    [invests, setExpandedRowId, onInvestEdit, loading],
+    [getUserInvestHistory, investData, syncNow, user.default],
   );
 
-  const getProfit = (capital: number, totalEarned: number | null) => {
-    if (!totalEarned || capital === 0) return 'N/A';
-    const profit = totalEarned - capital;
-    const profitPercentage = (profit / capital) * 100;
-    return formatNumber(profitPercentage, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-      suffix: '%',
-    });
-  };
-
-  const tableData = useMemo(
-    () =>
-      invests.map(invest => {
-        const profitLabel =
-          invest.status === EInvestStatus.Completed
-            ? getProfit(invest.amount, invest.earned ?? null)
-            : null;
-        const statusLabel =
-          invest.status === EInvestStatus.Completed ? 'MATURED' : 'ACTIVE';
-        const categoryName =
-          profitLabel && profitLabel !== 'N/A'
-            ? `${statusLabel} • ${profitLabel}`
-            : statusLabel;
-        const palette =
-          invest.status === EInvestStatus.Completed
-            ? {color: '#b6f700', icon: 'check-circle-outline'}
-            : {color: '#8cafff', icon: 'timeline-clock-outline'};
-
-        return {
-          id: invest.id,
-          Date: dayjs(
-            makeUnixTimestampToNumber(Number(invest.startDate)),
-          ).format('MMM D, YYYY'),
-          Purpose: invest.name,
-          Amount: invest.amount,
-          DisplayAmount: formatCurrency(invest.amount, currency),
-          CategoryName: categoryName,
-          CategoryColor: palette.color,
-          IconName: palette.icon,
-          IconColor: palette.color,
-          IconBackground: tintFromHex(palette.color, 0.16),
-        };
-      }),
-    [invests, currency],
+  const handleDelete = useCallback(
+    async (id: InvestId) => {
+      if (!investData) return;
+      try {
+        setDeleteLoading(true);
+        await investData.deleteInvest(id as string);
+        await getUserInvestHistory();
+        triggerWarningHaptic();
+        Toast.show({ type: "success", text1: "Deleted successfully!" });
+        syncNow();
+      } catch {
+        Toast.show({ type: "error", text1: "Something went wrong!" });
+      } finally {
+        setDeleteLoading(false);
+        setExpandedRowId(null);
+      }
+    },
+    [getUserInvestHistory, investData, syncNow],
   );
 
-  if (deleteLoading) {
-    return <AnimatedLoader />;
-  }
+  const renderEditor = useCallback(
+    (item: InvestModel) => (
+      <Formik
+        enableReinitialize
+        initialValues={{
+          id: item.id,
+          [EAddInvestFormFields.START_DATE]: new Date(
+            Number(item.startDate) * 1000,
+          ),
+          [EAddInvestFormFields.END_DATE]: item.endDate
+            ? new Date(Number(item.endDate) * 1000)
+            : new Date(),
+          [EAddInvestFormFields.NOTE]: item.note || "",
+          [EAddInvestFormFields.AMOUNT]: formatNumber(item.amount, {
+            useGrouping: false,
+            maximumFractionDigits: 2,
+          }),
+          [EAddInvestFormFields.NAME]: item.name,
+          [EAddInvestFormFields.EARNED]:
+            item.earned == null
+              ? ""
+              : formatNumber(item.earned, {
+                  useGrouping: false,
+                  maximumFractionDigits: 2,
+                }),
+          [EAddInvestFormFields.STATUS]:
+            item.status === EInvestStatus.Completed,
+        }}
+        onSubmit={(values, helpers) =>
+          onInvestEdit(values, helpers, item.id as InvestId)
+        }
+        validationSchema={AddInvestSchema}
+      >
+        {({ handleSubmit }) => (
+          <View style={styles.editor}>
+            <InvestForm
+              update
+              onSubmit={handleSubmit}
+              onCancel={() => setExpandedRowId(null)}
+              loading={loading}
+            />
+            <Pressable
+              disabled={deleteLoading}
+              onPress={() => handleDelete(item.id as InvestId)}
+              style={styles.deleteButton}
+            >
+              <Text style={styles.deleteText}>
+                {deleteLoading ? "Deleting…" : "Delete investment"}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </Formik>
+    ),
+    [deleteLoading, handleDelete, loading, onInvestEdit, styles],
+  );
+
+  const active = status === EInvestStatus.Active;
 
   return (
-    <View style={styles.mainContainer}>
-      <View style={styles.listCard}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerTextBlock}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <MaterialCommunityIcons name="chart-timeline-variant" size={20} color={colors.primary} />
-              <Text style={styles.title}>Investment History</Text>
-            </View>
-            <Text style={styles.subtitle}>
-              Monitor allocations, returns, and close out wins.
-            </Text>
-          </View>
-          <TwMenu
-            compact
-            containerStyle={styles.menuContainer}
-            onSelect={value => {
-              setStatus(value);
-            }}
-            buttonStyle={styles.statusButton}
-            buttonLabel={
-              filterInvestByStatusMenu.find(item => item.value === status)
-                ?.label || 'Status'
-            }
-            options={filterInvestByStatusMenu}
-          />
-        </View>
-
-        <View style={styles.tableContainer}>
-          <DataTable
-            headers={headers}
-            data={tableData}
-            onDelete={handleDeleteInvestment}
-            isAnyRowOpen={notifyRowOpen}
-            expandedRowId={expandedRowId}
-            setExpandedRowId={setExpandedRowId}
-            renderCollapsibleContent={renderCollapsibleContent}
-          />
-        </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>Investment History</Text>
+      <TransactionSegmentedControl
+        options={["Active", "Completed"]}
+        selectedOption={active ? "Active" : "Completed"}
+        onOptionPress={(option) =>
+          setStatus(
+            option === "Active"
+              ? EInvestStatus.Active
+              : EInvestStatus.Completed,
+          )
+        }
+      />
+      <View style={styles.card}>
+        {invests.length ? (
+          invests.map((invest, index) => {
+            const completed = invest.status === EInvestStatus.Completed;
+            const open = expandedRowId === invest.id;
+            const returnLabel =
+              completed && invest.earned != null && invest.amount > 0
+                ? ` · ${formatNumber(
+                    ((invest.earned - invest.amount) / invest.amount) * 100,
+                    { maximumFractionDigits: 1, suffix: "%" },
+                  )}`
+                : "";
+            return (
+              <View key={invest.id}>
+                <ScalarListRow
+                  title={invest.name}
+                  meta={`${completed ? "Completed" : "Active"}${returnLabel} · ${dayjs(
+                    makeUnixTimestampToNumber(Number(invest.startDate)),
+                  ).format("D MMM YYYY")}`}
+                  amount={formatCurrency(invest.amount, currency, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
+                  icon={completed ? "check-bold" : "chart-bar"}
+                  categoryColor={completed ? colors.positive : colors.secondary}
+                  showDivider={index < invests.length - 1 || open}
+                  onPress={() => {
+                    const next = open ? null : invest.id;
+                    setExpandedRowId(next);
+                    notifyRowOpen(Boolean(next));
+                  }}
+                />
+                {open && renderEditor(invest)}
+              </View>
+            );
+          })
+        ) : (
+          <Text style={styles.empty}>
+            No {active ? "active" : "completed"} investments
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -292,71 +233,42 @@ const InvestList: FC<IInvestList> = ({
 
 export default React.memo(InvestList);
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    mainContainer: {
-      paddingHorizontal: 20,
-      paddingTop: 20,
-    },
-    listCard: {
-      marginTop: 0,
-    },
-    headerRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: 8,
-    },
-    headerTextBlock: {
-      flex: 1,
-    },
+    container: { paddingHorizontal: 20, paddingTop: 28, gap: 12 },
     title: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
-      letterSpacing: -0.5,
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      ...designTokens.typography.section,
     },
-    subtitle: {
-      color: colors.subText,
-      fontSize: 13,
-      fontFamily: 'Manrope_400Regular',
-      lineHeight: 18,
-      maxWidth: 240,
-    },
-    tableContainer: {
-      marginTop: 0,
-    },
-    collapsibleContent: {
-      gap: 16,
-      paddingBottom: 20,
-    },
-    menuContainer: {
-      alignSelf: 'flex-start',
-      marginTop: 2,
-      marginLeft: 10,
-    },
-    statusButton: {
-      backgroundColor: colors.surface,
-      borderRadius: 10,
+    card: {
+      overflow: "hidden",
+      borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    actionRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: 10,
-      gap: 10,
+    editor: { gap: 12, padding: 16, backgroundColor: colors.bg },
+    deleteButton: {
+      height: 48,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.full,
+      borderWidth: 1.5,
+      borderColor: colors.negative,
     },
-    cancelButton: {
-      backgroundColor: 'transparent',
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: 999,
+    deleteText: {
+      color: colors.negative,
+      fontFamily: designTokens.font.bold,
+      fontSize: 15,
+      fontWeight: "700",
     },
-    cancelButtonText: {
-      color: colors.subText,
-      fontWeight: '600',
+    empty: {
+      padding: 20,
+      textAlign: "center",
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.medium,
     },
   });
 }

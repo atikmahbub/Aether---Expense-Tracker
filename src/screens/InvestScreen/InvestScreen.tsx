@@ -9,9 +9,8 @@ import InvestSummary from "@trackingPortal/screens/InvestScreen/InvestSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { FlatList, StyleSheet, View, Platform } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useIsFocused } from "@react-navigation/native";
@@ -20,7 +19,6 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 export default function InvestScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
-  const [hideFabIcon, setHideFabIcon] = useState<boolean>(false);
   const [invests, setInvests] = useState<InvestModel[]>([]);
   const { currentUser: user } = useStoreContext();
   const { investData } = useDatabase();
@@ -29,7 +27,6 @@ export default function InvestScreen() {
   const [status, setStatus] = React.useState<EInvestStatus>(
     EInvestStatus.Active,
   );
-  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const { isOnline } = useNetwork();
   const wasOfflineRef = useRef(false);
@@ -134,7 +131,7 @@ export default function InvestScreen() {
     <InvestList
       invests={invests}
       getUserInvestHistory={getUserInvestHistory}
-      notifyRowOpen={(value) => setHideFabIcon(value)}
+      notifyRowOpen={() => {}}
       status={status}
       setStatus={setStatus}
     />
@@ -157,7 +154,7 @@ export default function InvestScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 120, flexGrow: 1 }
+          { paddingBottom: 20, flexGrow: 1 }
         ]}
       >
         {headerComponent}
@@ -181,7 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   listContent: {
-    paddingBottom: 180,
-    paddingTop: 8,
+    paddingBottom: 20,
+    paddingTop: 0,
   },
 });

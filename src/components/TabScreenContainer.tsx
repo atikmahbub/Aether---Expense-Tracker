@@ -1,20 +1,16 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Easing,
+  FadeInDown,
+} from "react-native-reanimated";
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
 
 import { CustomAppBar } from "@trackingPortal/components";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
-import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
 
 const TAB_CONTENT_BOTTOM_PADDING = 24; // slightly increased
-
-import Animated, {
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  Easing
-} from "react-native-reanimated";
 
 type Props = {
   children: React.ReactNode;
@@ -68,7 +64,7 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
               styles.content,
               {
                 backgroundColor: isDark ? 'transparent' : colors.background,
-                paddingBottom: insets.bottom + 90,
+                paddingBottom: 0,
               },
             ]}
           >
@@ -82,7 +78,7 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
             styles.content,
             {
               backgroundColor: isDark ? 'transparent' : colors.background,
-              paddingBottom: 100,
+              paddingBottom: 0,
             },
           ]}
         >

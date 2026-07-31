@@ -8,8 +8,8 @@ import {AnimatedLoader} from '@trackingPortal/components';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+import {useScalarAlert} from '@trackingPortal/components/ScalarAlert';
 import {
-  Alert,
   Modal,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
@@ -27,6 +27,7 @@ const DEFAULT_AVATAR =
 
 const ProfileScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {logout, user, loading} = useAuth();
   const {currentUser, apiGateway} = useStoreContext();
@@ -39,10 +40,11 @@ const ProfileScreen: React.FC = () => {
   }
 
   const handleInitialDeleteTap = () => {
-    Alert.alert(
-      "Delete Account?",
-      "Are you sure you want to proceed with account deletion? This will erase all your data.",
-      [
+    showAlert({
+      title: "Delete Account?",
+      message:
+        "Are you sure you want to proceed with account deletion? This will erase all your data.",
+      buttons: [
         { text: "Cancel", style: "cancel" },
         {
           text: "Proceed",
@@ -52,8 +54,8 @@ const ProfileScreen: React.FC = () => {
             setDeleteModalVisible(true);
           }
         }
-      ]
-    );
+      ],
+    });
   };
 
   const handleDeleteAccount = async () => {

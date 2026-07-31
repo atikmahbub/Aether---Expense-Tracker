@@ -1,16 +1,20 @@
-import {View, StyleSheet} from 'react-native';
-import React, { useMemo } from 'react';
-import {Text} from 'react-native-paper';
-import {formatCurrency} from '@trackingPortal/utils/utils';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import { CommonCard, StatCard, HeroGlow } from '@trackingPortal/components';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { designTokens } from "@trackingPortal/themes/designTokens";
+import { formatCurrency } from "@trackingPortal/utils/utils";
+import React, { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 interface ISummary {
   totalGiven: number;
   totalBorrowed: number;
 }
+
+const moneyOptions = {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+} as const;
 
 const LoanSummary: React.FC<ISummary> = ({
   totalGiven = 0,
@@ -18,95 +22,122 @@ const LoanSummary: React.FC<ISummary> = ({
 }) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const {currency} = useStoreContext();
+  const { currency } = useStoreContext();
   const netPosition = totalGiven - totalBorrowed;
 
   return (
-    <View style={styles.mainContainer}>
-      <CommonCard style={styles.heroCard} padding={24}>
-        <HeroGlow />
-        <View style={styles.headingRow}>
-          <MaterialCommunityIcons name="scale-balance" size={14} color={colors.primary} />
-          <Text style={styles.headingLabel}>NET POSITION</Text>
-        </View>
-        <View style={styles.heroRow}>
-          <View style={styles.totalValueColumn}>
-            <Text
-              style={styles.totalValueText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.7}>
-              {formatCurrency(Math.abs(netPosition), currency)}
-            </Text>
-          </View>
-        </View>
-      </CommonCard>
-
-      <View style={styles.metricsRow}>
-        <StatCard
-          icon="arrow-top-right"
-          label="Total Given"
-          value={formatCurrency(totalGiven, currency)}
+    <View style={styles.container}>
+      <View style={styles.hero}>
+        <Text style={styles.label}>NET POSITION</Text>
+        <ScalarAmountText
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+          numberOfLines={1}
+          style={styles.heroAmount}
+        >
+          {formatCurrency(Math.abs(netPosition), currency, moneyOptions)}
+        </ScalarAmountText>
+        <Text style={styles.heroFooter}>
+          {netPosition === 0
+            ? "Given and borrowed are balanced"
+            : netPosition > 0
+              ? "More given than borrowed"
+              : "More borrowed than given"}
+        </Text>
+      </View>
+      <View style={styles.metrics}>
+        <Metric
+          label="TOTAL GIVEN"
+          amount={`+${formatCurrency(totalGiven, currency, moneyOptions)}`}
+          positive
+          styles={styles}
         />
-
-        <StatCard
-          icon="arrow-bottom-left"
-          label="Total Borrowed"
-          value={formatCurrency(totalBorrowed, currency)}
+        <Metric
+          label="TOTAL BORROWED"
+          amount={`−${formatCurrency(totalBorrowed, currency, moneyOptions)}`}
+          styles={styles}
         />
       </View>
     </View>
   );
 };
 
+function Metric({
+  label,
+  amount,
+  positive,
+  styles,
+}: {
+  label: string;
+  amount: string;
+  positive?: boolean;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <View style={styles.metricCard}>
+      <Text style={styles.label}>{label}</Text>
+      <ScalarAmountText
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={[styles.metricAmount, positive && styles.positive]}
+      >
+        {amount}
+      </ScalarAmountText>
+    </View>
+  );
+}
+
 export default LoanSummary;
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    mainContainer: {
-      paddingHorizontal: 20,
-      paddingTop: 20,
-      marginBottom: 20,
+    container: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+    hero: {
+      gap: 10,
+      padding: 16,
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    heroCard: {
-      marginBottom: 20,
-      borderColor: colors.primarySoft,
+    label: {
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      ...designTokens.typography.caps,
     },
-    headingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 16,
+    heroAmount: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+      ...designTokens.typography.heroAmount,
+      lineHeight: 48,
     },
-    headingLabel: {
-      color: colors.muted,
-      fontSize: 10,
-      letterSpacing: 1,
-      fontWeight: '700',
+    heroFooter: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.medium,
+      fontWeight: "500",
+      ...designTokens.typography.caption,
     },
-    heroRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 16,
-    },
-    totalValueColumn: {
+    metrics: { flexDirection: "row", gap: 12 },
+    metricCard: {
       flex: 1,
       minWidth: 0,
+      gap: 8,
+      padding: 16,
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    totalValueText: {
-      color: colors.text,
-      fontSize: 52,
-      fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
-      letterSpacing: -2,
-      lineHeight: 60,
-      flexShrink: 1,
-      includeFontPadding: false,
+    metricAmount: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+      ...designTokens.typography.metric,
     },
-    metricsRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
+    positive: { color: colors.positive },
   });
 }

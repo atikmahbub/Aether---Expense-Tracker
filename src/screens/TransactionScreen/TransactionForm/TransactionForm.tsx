@@ -1,16 +1,22 @@
-import {View, Pressable, StyleSheet, Text, TouchableOpacity, Keyboard} from 'react-native';
-import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {useFormikContext} from 'formik';
-import {EAddTransactionFields} from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants';
-import {TextInput} from 'react-native-paper';
-import {FormikTextInput} from '@trackingPortal/components';
-import DatePicker from 'react-native-date-picker';
-import dayjs from 'dayjs';
-import {ExpenseCategoryModel} from '@trackingPortal/api/models';
-import CategorySelector from '@trackingPortal/screens/TransactionScreen/components/CategorySelector';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import {LoadingButton} from '@trackingPortal/components';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { ExpenseCategoryModel } from "@trackingPortal/api/models";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { EAddTransactionFields } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
+import CategorySelector from "@trackingPortal/screens/TransactionScreen/components/CategorySelector";
+import { designTokens } from "@trackingPortal/themes/designTokens";
+import dayjs from "dayjs";
+import { useFormikContext } from "formik";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import ScalarCalendar from "@trackingPortal/components/ScalarCalendar";
 
 interface TransactionFormProps {
   categories: ExpenseCategoryModel[];
@@ -22,6 +28,7 @@ interface TransactionFormProps {
   onSubmit: () => void;
   onCancel: () => void;
   loading: boolean;
+  showShortcutKeypad?: boolean;
 }
 
 export default function TransactionForm({
@@ -34,88 +41,155 @@ export default function TransactionForm({
   onSubmit,
   onCancel,
   loading,
+  showShortcutKeypad = false,
 }: TransactionFormProps) {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const {values, setFieldValue} = useFormikContext<any>();
+  const {
+    values,
+    errors,
+    touched,
+    setFieldTouched,
+    setFieldValue,
+  } = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
-  const amountInputRef = useRef<any>(null);
-  const {currency} = useStoreContext();
+  const [purposeFocused, setPurposeFocused] = useState(false);
+  const amountInputRef = useRef<TextInput>(null);
+  const { currency } = useStoreContext();
   const dateValue = values[EAddTransactionFields.DATE];
   const categoryValue = values[EAddTransactionFields.CATEGORY_ID];
-  const currencyLabel = `${currency.code} - ${currency.name}`;
+  const amountValue = values[EAddTransactionFields.AMOUNT] || "";
 
   const currentDate = useMemo(() => {
-    if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+    if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
       return dateValue;
     }
     const parsed = new Date(dateValue);
-    return isNaN(parsed.getTime()) ? new Date() : parsed;
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   }, [dateValue]);
 
+  const isToday = dayjs(currentDate).isSame(dayjs(), "day");
+  const canSave =
+    Number(amountValue) > 0 && Boolean(categoryValue) && !loading;
+
   useEffect(() => {
-    if (!categories.length) {
-      return;
-    }
+    if (!categories.length) return;
     const fallbackId =
       defaultCategoryId &&
-      categories.some(category => category.id === defaultCategoryId)
+      categories.some((category) => category.id === defaultCategoryId)
         ? defaultCategoryId
         : categories[0].id;
     const categoryExists = categories.some(
-      category => category.id === categoryValue,
+      (category) => category.id === categoryValue,
     );
     if (!categoryValue || !categoryExists) {
       setFieldValue(EAddTransactionFields.CATEGORY_ID, fallbackId);
     }
   }, [categoryValue, categories, defaultCategoryId, setFieldValue]);
 
-  const openDatePicker = useCallback(() => {
-    setPickerVisible(true);
-  }, []);
+  const openDatePicker = useCallback(() => setPickerVisible(true), []);
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      const current = String(amountValue);
+      if (key === "backspace") {
+        setFieldValue(EAddTransactionFields.AMOUNT, current.slice(0, -1));
+        return;
+      }
+      if (key === "." && current.includes(".")) return;
+      if (key === "." && !current) {
+        setFieldValue(EAddTransactionFields.AMOUNT, "0.");
+        return;
+      }
+      if (current === "0" && key !== ".") {
+        setFieldValue(EAddTransactionFields.AMOUNT, key);
+        return;
+      }
+      setFieldValue(EAddTransactionFields.AMOUNT, `${current}${key}`);
+    },
+    [amountValue, setFieldValue],
+  );
 
   return (
-    <View style={{gap: 24}}>
-      <View style={styles.amountContainer}>
-        <Text style={styles.amountLabel}>TRANSACTION AMOUNT</Text>
-        <TextInput
-          mode="flat"
-          value={values[EAddTransactionFields.AMOUNT] || ''}
-          onChangeText={text => setFieldValue(EAddTransactionFields.AMOUNT, text)}
-          keyboardType="numeric"
-          ref={amountInputRef}
-          style={styles.amountInput}
-          placeholder="0.00"
-          placeholderTextColor={colors.placeholder}
-          textColor={colors.text}
-          underlineColor="transparent"
-          activeUnderlineColor="transparent"
-          left={
-            <TextInput.Affix
-              text={`${currency.symbol} `}
-              textStyle={styles.amountCurrency}
-            />
-          }
-        />
-        <View style={styles.currencyPill}>
-          <Text style={styles.currencyPillText}>{currencyLabel}</Text>
+    <View style={styles.form}>
+      <Pressable
+        onPress={() => amountInputRef.current?.focus()}
+        style={styles.amountContainer}
+      >
+        <Text style={styles.capsLabel}>AMOUNT · {currency.code}</Text>
+        <View style={styles.amountRow}>
+          <Text style={styles.currencySymbol}>{currency.symbol}</Text>
+          <TextInput
+            ref={amountInputRef}
+            accessibilityLabel="Amount"
+            value={amountValue}
+            onChangeText={(text) =>
+              setFieldValue(
+                EAddTransactionFields.AMOUNT,
+                text.replace(/[^0-9.]/g, ""),
+              )
+            }
+            onBlur={() =>
+              setFieldTouched(EAddTransactionFields.AMOUNT, true)
+            }
+            keyboardType="decimal-pad"
+            showSoftInputOnFocus={showShortcutKeypad ? false : undefined}
+            onFocus={() => {
+              setPurposeFocused(false);
+              if (showShortcutKeypad) Keyboard.dismiss();
+            }}
+            style={styles.amountInput}
+            placeholder="0"
+            placeholderTextColor={colors.textTertiary}
+            selectionColor={colors.brand}
+            maxLength={12}
+          />
         </View>
-      </View>
+        {touched[EAddTransactionFields.AMOUNT] &&
+          errors[EAddTransactionFields.AMOUNT] && (
+            <Text style={styles.errorText}>
+              {String(errors[EAddTransactionFields.AMOUNT])}
+            </Text>
+          )}
+      </Pressable>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>PURPOSE</Text>
-        <FormikTextInput
-          name={EAddTransactionFields.DESCRIPTION}
+        <Text style={styles.capsLabel}>PURPOSE</Text>
+        <TextInput
+          accessibilityLabel="Purpose"
+          value={values[EAddTransactionFields.DESCRIPTION] || ""}
+          onChangeText={(text) =>
+            setFieldValue(EAddTransactionFields.DESCRIPTION, text)
+          }
+          onBlur={() =>
+            {
+              setFieldTouched(EAddTransactionFields.DESCRIPTION, true);
+              setPurposeFocused(false);
+            }
+          }
+          onFocus={() => setPurposeFocused(true)}
           placeholder="What is this for?"
+          placeholderTextColor={colors.textTertiary}
+          selectionColor={colors.brand}
+          style={styles.purposeInput}
+          multiline={false}
+          maxLength={120}
         />
+        {touched[EAddTransactionFields.DESCRIPTION] &&
+          errors[EAddTransactionFields.DESCRIPTION] && (
+            <Text style={styles.errorText}>
+              {String(errors[EAddTransactionFields.DESCRIPTION])}
+            </Text>
+          )}
       </View>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>CATEGORY</Text>
+        <Text style={styles.capsLabel}>CATEGORY</Text>
         <CategorySelector
           categories={categories}
           selectedCategoryId={categoryValue}
-          onSelect={id => setFieldValue(EAddTransactionFields.CATEGORY_ID, id)}
+          onSelect={(id) =>
+            setFieldValue(EAddTransactionFields.CATEGORY_ID, id)
+          }
           loading={categoriesLoading}
           error={categoryError || undefined}
           onRetry={refreshCategories}
@@ -124,31 +198,63 @@ export default function TransactionForm({
       </View>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>SELECT DATE</Text>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            mode="flat"
-            value={dayjs(currentDate).format('MMMM D, YYYY')}
-            editable={false}
-            pointerEvents="none"
-            style={styles.dateInput}
-            underlineColor="transparent"
-            activeUnderlineColor="transparent"
-          />
+        <Text style={styles.capsLabel}>DATE</Text>
+        <View style={styles.dateRow}>
           <Pressable
-            style={StyleSheet.absoluteFillObject}
+            onPress={() =>
+              setFieldValue(EAddTransactionFields.DATE, new Date())
+            }
+            style={({ pressed }) => [
+              styles.dateButton,
+              isToday && styles.dateButtonActive,
+              pressed && styles.pressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="calendar-today"
+              size={17}
+              color={isToday ? colors.brandText : colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.dateButtonText,
+                isToday && styles.dateButtonTextActive,
+              ]}
+            >
+              Today · {dayjs().format("D MMM")}
+            </Text>
+          </Pressable>
+          <Pressable
             onPress={openDatePicker}
-          />
+            style={({ pressed }) => [
+              styles.dateButton,
+              !isToday && styles.dateButtonActive,
+              pressed && styles.pressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="calendar-month"
+              size={17}
+              color={!isToday ? colors.brandText : colors.textSecondary}
+            />
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.dateButtonText,
+                !isToday && styles.dateButtonTextActive,
+              ]}
+            >
+              {isToday ? "Pick a date" : dayjs(currentDate).format("D MMM")}
+            </Text>
+          </Pressable>
         </View>
       </View>
 
-      <DatePicker
-        modal
-        mode="date"
-        open={pickerVisible}
+      <ScalarCalendar
+        visible={pickerVisible}
         date={currentDate}
-        theme={isDark ? 'dark' : 'light'}
-        onConfirm={selectedDate => {
+        title="Transaction date"
+        onConfirm={(selectedDate) => {
           setFieldValue(EAddTransactionFields.DATE, selectedDate);
           setPickerVisible(false);
         }}
@@ -156,118 +262,225 @@ export default function TransactionForm({
       />
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.cancelButton}
+        <Pressable
+          style={({ pressed }) => [
+            styles.cancelButton,
+            pressed && styles.pressed,
+          ]}
           onPress={() => {
             Keyboard.dismiss();
             onCancel();
           }}
-          activeOpacity={0.7}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-
-        <View style={styles.saveButtonWrapper}>
-          <LoadingButton
-            label="Save Entry"
-            loading={loading}
-            onPress={() => {
-              Keyboard.dismiss();
-              onSubmit();
-            }}
-          />
-        </View>
+        </Pressable>
+        <Pressable
+          accessibilityState={{ disabled: !canSave }}
+          disabled={!canSave}
+          style={({ pressed }) => [
+            styles.saveButton,
+            !canSave && styles.saveButtonDisabled,
+            pressed && styles.saveButtonPressed,
+          ]}
+          onPress={() => {
+            Keyboard.dismiss();
+            onSubmit();
+          }}
+        >
+          <Text style={styles.saveButtonText}>
+            {loading ? "Saving…" : "Save Entry"}
+          </Text>
+        </Pressable>
       </View>
+
+      {showShortcutKeypad && !purposeFocused && (
+        <View style={styles.keypad}>
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "backspace"].map(
+            (key) => (
+              <Pressable
+                accessibilityLabel={
+                  key === "backspace" ? "Delete digit" : `Digit ${key}`
+                }
+                key={key}
+                onPress={() => handleKeyPress(key)}
+                style={({ pressed }) => [
+                  styles.key,
+                  pressed && styles.keyPressed,
+                ]}
+              >
+                {key === "backspace" ? (
+                  <MaterialCommunityIcons
+                    name="backspace"
+                    size={22}
+                    color={colors.textPrimary}
+                  />
+                ) : (
+                  <Text style={styles.keyText}>{key}</Text>
+                )}
+              </Pressable>
+            ),
+          )}
+        </View>
+      )}
     </View>
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
+    form: { gap: 14 },
     amountContainer: {
-      alignItems: 'center',
-      marginBottom: 8,
+      alignItems: "center",
+      gap: 6,
+      paddingVertical: 2,
     },
-    amountLabel: {
-      color: colors.muted,
-      fontSize: 12,
-      fontWeight: '700',
-      letterSpacing: 1.5,
-      textTransform: 'uppercase',
+    capsLabel: {
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      ...designTokens.typography.caps,
+    },
+    amountRow: {
+      minHeight: 66,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    currencySymbol: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.bengali,
+      fontSize: 30,
+      lineHeight: 44,
+      fontWeight: "700",
     },
     amountInput: {
-      backgroundColor: 'transparent',
-      fontSize: 56,
-      fontFamily: 'Manrope_800ExtraBold',
-      fontWeight: '800',
-      textAlign: 'center',
-      height: 80,
-      width: '100%',
+      width: 220,
+      maxWidth: "75%",
+      padding: 0,
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontSize: 48,
+      lineHeight: 62,
+      fontWeight: "700",
+      letterSpacing: -1.44,
+      textAlign: "center",
+      fontVariant: ["tabular-nums"],
+      paddingTop: 4,
     },
-    amountCurrency: {
-      color: colors.primary,
-      fontSize: 32,
-      fontWeight: '400',
-    },
-    currencyPill: {
-      backgroundColor: colors.surface,
+    fieldSection: { gap: 8 },
+    purposeInput: {
+      height: 52,
       paddingHorizontal: 16,
-      paddingVertical: 6,
-      borderRadius: 20,
-      marginTop: 8,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-    },
-    currencyPillText: {
-      color: colors.subText,
-      fontSize: 12,
-      fontWeight: '600',
-    },
-    fieldSection: {
-      gap: 8,
-    },
-    sectionLabel: {
-      color: colors.muted,
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 1.5,
-    },
-    inputWrapper: {
-      position: 'relative',
+      paddingVertical: 0,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: designTokens.radius.md,
       backgroundColor: colors.surface,
-      borderRadius: 12,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.medium,
+      fontSize: 16,
+      lineHeight: 20,
+      textAlignVertical: "center",
+      includeFontPadding: false,
     },
-    dateInput: {
-      backgroundColor: 'transparent',
+    dateRow: { flexDirection: "row", gap: 10 },
+    dateButton: {
+      flex: 1,
+      height: 48,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7,
+      paddingHorizontal: 10,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: designTokens.radius.md,
+      backgroundColor: colors.surface,
+    },
+    dateButtonActive: {
+      borderColor: colors.brand,
+      backgroundColor: colors.brandWash,
+    },
+    dateButtonText: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    dateButtonTextActive: {
+      color: colors.brandText,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
     },
     footer: {
-      flexDirection: 'row',
-      gap: 12,
-      marginTop: 24,
-      marginBottom: 16,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
+      flexDirection: "row",
+      gap: 10,
+      alignItems: "center",
     },
     cancelButton: {
-      paddingHorizontal: 20,
-      height: 48,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: 12,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
+      height: 54,
+      paddingHorizontal: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1.5,
+      borderColor: colors.borderStrong,
+      borderRadius: designTokens.radius.full,
     },
     cancelButtonText: {
-      color: colors.subText,
-      fontSize: 15,
-      fontWeight: '600',
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 16,
+      fontWeight: "600",
     },
-    saveButtonWrapper: {
-      minWidth: 140,
+    saveButton: {
+      flex: 1,
+      height: 54,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.full,
+      backgroundColor: colors.brand,
+    },
+    saveButtonDisabled: { opacity: 0.4 },
+    saveButtonPressed: { backgroundColor: colors.brandText },
+    saveButtonText: {
+      color: colors.onBrand,
+      fontFamily: designTokens.font.bold,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    keypad: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    key: {
+      width: "31.7%",
+      height: 52,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    keyPressed: {
+      backgroundColor: colors.surfaceRaised,
+      borderColor: colors.borderStrong,
+    },
+    keyText: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 21,
+      lineHeight: 27,
+      fontWeight: "600",
+      fontVariant: ["tabular-nums"],
+    },
+    pressed: { backgroundColor: colors.surfaceSunken },
+    errorText: {
+      color: colors.negative,
+      fontFamily: designTokens.font.medium,
+      fontSize: 12,
     },
   });
 }

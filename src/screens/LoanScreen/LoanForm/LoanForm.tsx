@@ -3,12 +3,11 @@ import React, {useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddLoanFields} from '@trackingPortal/screens/LoanScreen';
 import {TextInput} from 'react-native-paper';
-import {FormikTextInput} from '@trackingPortal/components';
-import DatePicker from 'react-native-date-picker';
+import {FormikTextInput, LoadingButton} from '@trackingPortal/components';
+import ScalarCalendar from '@trackingPortal/components/ScalarCalendar';
 import dayjs from 'dayjs';
 import {LoanType} from '@trackingPortal/api/enums';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import {LoadingButton} from '@trackingPortal/components';
 
 const LOAN_TYPE_OPTIONS = [
   {
@@ -30,7 +29,7 @@ interface LoanFormProps {
 }
 
 export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -118,12 +117,10 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
           numberOfLines={4}
         />
       </View>
-      <DatePicker
-        modal
-        mode="date"
-        open={pickerVisible}
+      <ScalarCalendar
+        visible={pickerVisible}
         date={currentDeadline}
-        theme={isDark ? 'dark' : 'light'}
+        title="Loan deadline"
         onConfirm={selectedDate => {
           setFieldValue(EAddLoanFields.DEADLINE, selectedDate);
           setPickerVisible(false);

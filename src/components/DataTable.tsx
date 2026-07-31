@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   Pressable,
-  Alert,
   Platform,
 } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
@@ -15,6 +14,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {Image} from 'react-native';
 import {formatNumber} from '@trackingPortal/utils/utils';
+import {useScalarAlert} from '@trackingPortal/components/ScalarAlert';
 
 const tintHex = (hex?: string, alpha = 0.15) => {
   if (!hex) {
@@ -245,6 +245,7 @@ const DataTable: React.FC<DataTableProps> = ({
   renderSwipeActions,
 }) => {
   const { colors } = useAppTheme();
+  const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const swipeableRefs = useRef<Record<string, any>>({});
 
@@ -288,12 +289,20 @@ const DataTable: React.FC<DataTableProps> = ({
   const handleDelete = useCallback(
     (id: number) => {
       swipeableRefs.current[id]?.close();
-      Alert.alert("Delete Row", "Are you sure?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", onPress: () => onDelete(id) },
-      ]);
+      showAlert({
+        title: "Delete Row",
+        message: "Are you sure?",
+        buttons: [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => onDelete(id),
+          },
+        ],
+      });
     },
-    [onDelete],
+    [onDelete, showAlert],
   );
 
   const defaultSwipeActions = useCallback(

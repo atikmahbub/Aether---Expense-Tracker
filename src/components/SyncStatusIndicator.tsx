@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, {
   Easing,
@@ -12,6 +12,7 @@ import Animated, {
 
 import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { RollingDigit } from '@trackingPortal/components/ScalarLoadingMarks';
 
 /**
  * Compact replacement for the old bottom-of-screen offline/sync banners —
@@ -23,22 +24,7 @@ const SyncStatusIndicator: React.FC = () => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const spin = useSharedValue(0);
   const pulse = useSharedValue(1);
-
-  useEffect(() => {
-    if (syncInProgress) {
-      spin.value = withRepeat(
-        withTiming(1, { duration: 900, easing: Easing.linear }),
-        -1,
-        false,
-      );
-    } else {
-      cancelAnimation(spin);
-      spin.value = 0;
-    }
-    return () => cancelAnimation(spin);
-  }, [syncInProgress, spin]);
 
   useEffect(() => {
     if (!isOnline) {
@@ -54,9 +40,6 @@ const SyncStatusIndicator: React.FC = () => {
     return () => cancelAnimation(pulse);
   }, [isOnline, pulse]);
 
-  const spinStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spin.value * 360}deg` }],
-  }));
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: pulse.value,
   }));
@@ -77,10 +60,9 @@ const SyncStatusIndicator: React.FC = () => {
     tint = colors.error;
     animatedStyle = pulseStyle;
   } else if (syncInProgress) {
-    icon = 'cloud-sync-outline';
+    icon = '';
     label = 'Syncing';
     tint = colors.primary;
-    animatedStyle = spinStyle;
   } else if (failedCount > 0) {
     // Gave up retrying — surfaced distinctly instead of silently vanishing,
     // with a tap-to-retry so the write isn't stuck unpushed forever.
@@ -96,9 +78,13 @@ const SyncStatusIndicator: React.FC = () => {
 
   return (
     <Pressable style={styles.container} onPress={onPress} disabled={!onPress}>
-      <Animated.View style={animatedStyle}>
-        <MaterialCommunityIcons name={icon} size={16} color={tint} />
-      </Animated.View>
+      {syncInProgress ? (
+        <RollingDigit color={tint} duration={700} />
+      ) : (
+        <Animated.View style={animatedStyle}>
+          <MaterialCommunityIcons name={icon} size={16} color={tint} />
+        </Animated.View>
+      )}
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         {label}
       </Text>

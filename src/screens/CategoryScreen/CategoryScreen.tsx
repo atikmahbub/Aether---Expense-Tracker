@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, FAB } from 'react-native-paper';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -9,9 +9,11 @@ import CategoryModal from '@trackingPortal/screens/CategoryScreen/CategoryModal'
 import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/models';
 import { useNavigation } from 'expo-router';
 import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
+import { useScalarAlert } from '@trackingPortal/components/ScalarAlert';
 
 const CategoryScreen = () => {
   const { colors } = useAppTheme();
+  const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
   const [selectedType, setSelectedType] = useState<CategoryType>('expense');
@@ -27,7 +29,10 @@ const CategoryScreen = () => {
 
   const handleEdit = (category: ExpenseCategoryModel | IncomeCategoryModel) => {
     if (category.userId === null) {
-      Alert.alert('System Category', 'This is a system default category and cannot be edited.');
+      showAlert({
+        title: 'System Category',
+        message: 'This is a system default category and cannot be edited.',
+      });
       return;
     }
     setEditingCategory(category);
@@ -36,22 +41,25 @@ const CategoryScreen = () => {
 
   const handleDelete = (item: ExpenseCategoryModel | IncomeCategoryModel) => {
     if (item.userId === null) {
-      Alert.alert('System Category', 'Default categories cannot be deleted.');
+      showAlert({
+        title: 'System Category',
+        message: 'Default categories cannot be deleted.',
+      });
       return;
     }
 
-    Alert.alert(
-      'Delete Category',
-      `Are you sure you want to delete "${item.name}"?`,
-      [
+    showAlert({
+      title: 'Delete Category',
+      message: `Are you sure you want to delete "${item.name}"?`,
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => deleteCategory(item.id)
         },
-      ]
-    );
+      ],
+    });
   };
 
   const renderItem = ({ item }: { item: ExpenseCategoryModel | IncomeCategoryModel }) => (

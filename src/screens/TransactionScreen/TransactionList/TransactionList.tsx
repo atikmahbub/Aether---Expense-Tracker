@@ -5,10 +5,10 @@ import {
   ScrollView,
   Modal,
   InteractionManager,
-} from 'react-native';
+  Text,
+Dimensions} from 'react-native';
 import React, {
   FC,
-  Fragment,
   SetStateAction,
   useCallback,
   useEffect,
@@ -16,14 +16,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {Dimensions} from 'react-native';
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-import {Button, Text} from 'react-native-paper';
 import dayjs, {Dayjs} from 'dayjs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import DatePicker from 'react-native-date-picker';
-import DataTable from '@trackingPortal/components/DataTable';
+import ScalarListRow from '@trackingPortal/components/ScalarListRow';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {Formik} from 'formik';
 import {
@@ -31,7 +27,7 @@ import {
   EAddTransactionFields,
 } from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants';
 import TransactionForm from '@trackingPortal/screens/TransactionScreen/TransactionForm';
-import {ExpenseCategoryModel, TransactionModel, TransactionModelV1} from '@trackingPortal/api/models';
+import {ExpenseCategoryModel, TransactionModel} from '@trackingPortal/api/models';
 import {
   TransactionId,
 } from '@trackingPortal/api/primitives';
@@ -40,7 +36,6 @@ import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
 import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
 import {TransactionDataService} from '@trackingPortal/db/services/TransactionDataService';
 import Toast from 'react-native-toast-message';
-import {AnimatedLoader, LoadingButton} from '@trackingPortal/components';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {
   triggerSuccessHaptic,
@@ -48,6 +43,8 @@ import {
 } from '@trackingPortal/utils/haptic';
 import {normalizeCategoryIcon} from '@trackingPortal/screens/TransactionScreen/TransactionScreen.constants';
 import {parseDate} from '@trackingPortal/utils/date';
+import {designTokens} from '@trackingPortal/themes/designTokens';
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 interface ITransactionList {
   notifyRowOpen: (value: boolean) => void;
@@ -66,20 +63,6 @@ interface ITransactionList {
   onCategoryUsed?: (categoryId: string) => void;
   refreshSummary?: () => Promise<void> | void;
 }
-
-const headers = ['Date', 'Purpose', 'Amount'];
-
-const tintFromHex = (hex?: string, alpha = 0.12) => {
-  if (!hex) {
-    return `rgba(255,255,255,${alpha})`;
-  }
-  const normalized = hex.replace('#', '');
-  const bigint = parseInt(normalized, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 const TransactionList: FC<ITransactionList> = ({
   notifyRowOpen,
@@ -100,7 +83,7 @@ const TransactionList: FC<ITransactionList> = ({
 }) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -118,16 +101,6 @@ const TransactionList: FC<ITransactionList> = ({
       {},
     );
   }, [categories]);
-
-  const handleDateConfirm = useCallback(
-    (selectedDate: Date) => {
-      setOpenPicker(false);
-      if (selectedDate) {
-        setFilteredMonth(dayjs(selectedDate).startOf('month'));
-      }
-    },
-    [setFilteredMonth],
-  );
 
   const scrollToActiveMonth = useCallback((monthIndex: number, animated = true) => {
     if (!scrollRef.current) return;
@@ -286,6 +259,17 @@ const TransactionList: FC<ITransactionList> = ({
                 onCancel={() => setExpandedRowId(null)}
                 loading={loading}
               />
+              <Pressable
+                disabled={deleteLoading}
+                onPress={() => handleDeleteTransaction(currentRowId)}
+                style={({pressed}) => [
+                  styles.deleteButton,
+                  pressed && styles.deleteButtonPressed,
+                ]}>
+                <Text style={styles.deleteButtonText}>
+                  {deleteLoading ? 'Deleting…' : 'Delete transaction'}
+                </Text>
+              </Pressable>
             </View>
           )}
         </Formik>
@@ -300,50 +284,50 @@ const TransactionList: FC<ITransactionList> = ({
       refreshCategories,
       recentCategoryIds,
       loading,
+      deleteLoading,
+      handleDeleteTransaction,
       onTransactionEdit,
-      typeFilter,
+      styles,
     ],
   );
 
-  const tableData = useMemo(() => {
-    return transactions.map(item => {
-      const formattedAmount = formatCurrency(item.amount, currency);
-
-      return {
-        id: item.id,
-        Date: dayjs(parseDate(item.date)).format('MMM D, YYYY'),
-        Purpose: item.description,
-        Amount: item.amount,
-        DisplayAmount: formattedAmount,
-        CategoryName: item.category?.name || 'Uncategorized',
-        CategoryColor: item.category?.color,
-        IconName: normalizeCategoryIcon(item.category?.icon),
-        IconColor: item.category?.color,
-        IconBackground: tintFromHex(item.category?.color, 0.16),
-        IsIncome: item.type === 'income',
-      };
-    });
-  }, [transactions, currency]);
+  const groupedDays = useMemo(() => {
+    const groups = new Map<string, TransactionModel[]>();
+    [...transactions]
+      .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
+      .forEach(item => {
+        const key = dayjs(parseDate(item.date)).format('YYYY-MM-DD');
+        groups.set(key, [...(groups.get(key) || []), item]);
+      });
+    return Array.from(groups.entries()).map(([date, items]) => ({
+      date,
+      items,
+      net: items.reduce(
+        (sum, item) =>
+          sum + (item.type === 'income' ? Math.abs(item.amount) : -Math.abs(item.amount)),
+        0,
+      ),
+    }));
+  }, [transactions]);
 
   return (
     <View style={styles.mainContainer}>
       <View style={styles.listCard}>
         <View style={styles.timelineRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MaterialCommunityIcons name="calendar-month-outline" size={20} color={colors.primary} />
-            <Text style={styles.title}>Timeline</Text>
-          </View>
-
-          <Button
-            mode="text"
-            icon="chevron-down"
-            contentStyle={{flexDirection: 'row-reverse'}}
-            uppercase={false}
-            style={styles.monthButton}
-            labelStyle={styles.monthButtonLabel}
-            onPress={openYearPicker}>
-            {dayjs(filteredMonth).format('YYYY')}
-          </Button>
+          <Text style={styles.title}>Timeline</Text>
+          <Pressable
+            onPress={openYearPicker}
+            style={({pressed}) => [
+              styles.yearButton,
+              pressed && styles.controlPressed,
+            ]}>
+            <Text style={styles.yearButtonText}>{filteredMonth.format('YYYY')}</Text>
+            <MaterialCommunityIcons
+              name="chevron-down"
+              size={16}
+              color={colors.textSecondary}
+            />
+          </Pressable>
         </View>
         <ScrollView
           ref={scrollRef}
@@ -355,34 +339,85 @@ const TransactionList: FC<ITransactionList> = ({
             (m, idx) => {
               const isActive = filteredMonth.month() === m.month();
               return (
-                <Button
+                <Pressable
                   key={idx}
-                  mode="outlined"
-                  compact
-                  contentStyle={{ paddingHorizontal: 0, height: 40 }}
-                  style={[styles.chip, isActive && styles.chipActive]}
-                  labelStyle={
-                    isActive ? styles.chipLabelActive : styles.chipLabel
-                  }
                   onPress={() =>
                     setFilteredMonth(dayjs(filteredMonth).month(m.month()))
-                  }>
-                  {m.format('MMM').toUpperCase()}
-                </Button>
+                  }
+                  style={({pressed}) => [
+                    styles.chip,
+                    isActive && styles.chipActive,
+                    pressed && styles.controlPressed,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.chipLabel,
+                      isActive && styles.chipLabelActive,
+                    ]}>
+                    {m.format('MMM')}
+                  </Text>
+                </Pressable>
               );
             },
           )}
         </ScrollView>
-        <View style={styles.tableContainer}>
-          <DataTable
-            headers={headers}
-            data={tableData}
-            onDelete={handleDeleteTransaction}
-            isAnyRowOpen={notifyRowOpen}
-            expandedRowId={expandedRowId}
-            setExpandedRowId={setExpandedRowId}
-            renderCollapsibleContent={renderCollapsibleContent}
-          />
+        <View style={styles.dayGroups}>
+          {groupedDays.map(group => (
+            <View key={group.date} style={styles.dayGroup}>
+              <View style={styles.dayHeader}>
+                <Text style={styles.dayLabel}>
+                  {dayjs(group.date).format('ddd D MMM').toUpperCase()}
+                </Text>
+                <Text
+                  style={[
+                    styles.dayNet,
+                    group.net > 0 && styles.dayNetPositive,
+                  ]}>
+                  {`${group.net > 0 ? '+' : '−'}${formatCurrency(
+                    Math.abs(group.net),
+                    currency,
+                    {minimumFractionDigits: 0, maximumFractionDigits: 0},
+                  )}`}
+                </Text>
+              </View>
+              <View style={styles.rowsCard}>
+                {group.items.map((item, index) => {
+                  const category = item.category?.name || 'Uncategorized';
+                  const positive = item.type === 'income';
+                  const open = expandedRowId === item.id;
+                  return (
+                    <View key={item.id}>
+                      <ScalarListRow
+                        title={item.description || category}
+                        meta={`${category} · ${dayjs(parseDate(item.date)).format('h:mm a')}`}
+                        amount={`${positive ? '+' : '−'}${formatCurrency(
+                          Math.abs(item.amount),
+                          currency,
+                          {minimumFractionDigits: 0, maximumFractionDigits: 0},
+                        )}`}
+                        positive={positive}
+                        icon={normalizeCategoryIcon(item.category?.icon) as any}
+                        categoryName={category}
+                        categoryColor={item.category?.color}
+                        showDivider={index < group.items.length - 1 || open}
+                        onPress={() => {
+                          const next = open ? null : item.id;
+                          setExpandedRowId(next);
+                          notifyRowOpen(Boolean(next));
+                        }}
+                      />
+                      {open && renderCollapsibleContent(item)}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+          {!groupedDays.length && (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No {typeFilter} entries this month</Text>
+            </View>
+          )}
         </View>
       </View>
       <Modal
@@ -436,7 +471,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     mainContainer: {
       paddingHorizontal: 20,
-      paddingTop: 20,
+      paddingTop: 28,
       flex: 1,
     },
     listCard: {
@@ -444,13 +479,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     chipsScroll: {
       flexGrow: 0,
-      marginBottom: 12,
+      marginBottom: 16,
     },
     timelineRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 12,
     },
     chipsRow: {
       flexDirection: 'row',
@@ -458,100 +493,145 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       paddingRight: 20,
     },
     chip: {
-      borderColor: colors.glassBorder,
-      borderRadius: 14,
-      height: 42,
+      width: 64,
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderColor: colors.border,
+      borderRadius: designTokens.radius.md,
       backgroundColor: colors.surface,
       borderWidth: 1,
-      width: 75,
     },
     chipActive: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primarySoft,
+      borderColor: colors.brand,
+      backgroundColor: colors.brand,
     },
     chipLabel: {
-      color: colors.subText,
-      fontSize: 11,
-      fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
-      letterSpacing: 0.5,
+      color: colors.textSecondary,
+      fontSize: 14,
+      fontWeight: '600',
+      fontFamily: designTokens.font.semibold,
     },
     chipLabelActive: {
-      color: colors.primary,
-      fontSize: 11,
-      fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
-      letterSpacing: 0.5,
+      color: colors.onBrand,
+      fontWeight: '700',
+      fontFamily: designTokens.font.bold,
     },
     title: {
-      color: colors.text,
+      color: colors.textPrimary,
       fontSize: 20,
-      fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
-      letterSpacing: -0.5,
-    },
-    viewAllText: {
-      color: colors.primary,
-      fontSize: 12,
+      lineHeight: 26,
       fontWeight: '700',
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
+      fontFamily: designTokens.font.bold,
+      letterSpacing: -0.4,
     },
-    monthButton: {
+    yearButton: {
+      height: 36,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 12,
       backgroundColor: colors.surface,
-      borderRadius: 12,
+      borderRadius: designTokens.radius.full,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
-      paddingHorizontal: 4,
+      borderColor: colors.border,
     },
-    monthButtonLabel: {
-      color: colors.text,
-      fontSize: 13,
+    yearButtonText: {
+      color: colors.textPrimary,
+      fontSize: 14,
       fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
+      fontFamily: designTokens.font.bold,
     },
-    tableContainer: {
-      marginTop: 4,
+    controlPressed: {
+      backgroundColor: colors.surfaceSunken,
+    },
+    dayGroups: {
+      gap: 20,
+    },
+    dayGroup: {
+      gap: 8,
+    },
+    dayHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    dayLabel: {
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: '700',
+      ...designTokens.typography.caps,
+    },
+    dayNet: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.bold,
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
+    },
+    dayNetPositive: {
+      color: colors.positive,
+    },
+    rowsCard: {
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: designTokens.radius.lg,
+      backgroundColor: colors.surface,
     },
     collapsibleContent: {
-      gap: 16,
-      paddingBottom: 20,
+      gap: 12,
+      padding: 16,
+      backgroundColor: colors.bg,
     },
-    actionRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: 10,
-      paddingBottom: 20,
-      gap: 10,
-    },
-    cancelButton: {
-      backgroundColor: 'transparent',
-      paddingVertical: 10,
+    deleteButton: {
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
       paddingHorizontal: 16,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderRadius: designTokens.radius.full,
+      borderWidth: 1.5,
+      borderColor: colors.negative,
     },
-    cancelButtonText: {
-      color: colors.subText,
-      fontWeight: '600',
+    deleteButtonPressed: {
+      backgroundColor: colors.surfaceSunken,
+    },
+    deleteButtonText: {
+      color: colors.negative,
+      fontFamily: designTokens.font.bold,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    emptyCard: {
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: designTokens.radius.lg,
+      backgroundColor: colors.surface,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.medium,
+      textAlign: 'center',
+      ...designTokens.typography.body,
     },
     yearPickerOverlay: {
       flex: 1,
-      backgroundColor: colors.overlay,
+      backgroundColor: colors.backdrop,
       justifyContent: 'center',
       alignItems: 'center',
     },
     yearPickerContent: {
-      backgroundColor: colors.surfaceAlt,
-      borderRadius: 24,
+      backgroundColor: colors.surfaceRaised,
+      borderRadius: designTokens.radius.lg,
       padding: 24,
       width: 240,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     yearPickerTitle: {
-      color: colors.text,
+      color: colors.textPrimary,
       fontSize: 16,
       fontWeight: '700',
       marginBottom: 16,
@@ -562,12 +642,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       alignItems: 'center',
     },
     yearOptionText: {
-      color: colors.subText,
+      color: colors.textSecondary,
       fontSize: 18,
       fontWeight: '500',
     },
     yearOptionTextActive: {
-      color: colors.primary,
+      color: colors.brandText,
       fontWeight: '700',
     },
   });

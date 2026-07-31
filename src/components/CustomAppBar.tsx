@@ -13,7 +13,6 @@ import Animated, {
   withSequence,
   withTiming,
   useSharedValue,
-  withDelay,
   FadeInLeft,
   FadeInRight
 } from 'react-native-reanimated';

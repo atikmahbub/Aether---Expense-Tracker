@@ -1,101 +1,78 @@
-import {View, StyleSheet} from 'react-native';
-import React, { useMemo } from 'react';
-import {Text} from 'react-native-paper';
-import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
-import {InvestModel} from '@trackingPortal/api/models';
-import {EInvestStatus} from '@trackingPortal/api/enums';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import { CommonCard, StatCard, HeroGlow } from '@trackingPortal/components';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { EInvestStatus } from "@trackingPortal/api/enums";
+import { InvestModel } from "@trackingPortal/api/models";
+import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { designTokens } from "@trackingPortal/themes/designTokens";
+import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
+import React, { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 interface ISummary {
   investList: InvestModel[];
   status: EInvestStatus;
 }
 
-const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
+const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { currency } = useStoreContext();
   const isActive = status === EInvestStatus.Active;
-  const {currency} = useStoreContext();
-
-  const totalItems = investList.length;
-  const totalAmountInvested = investList.reduce(
-    (acc, crr) => acc + crr.amount,
-    0,
-  );
-
-  const totalActiveAmount = isActive ? totalAmountInvested : 0;
-  const totalCompletedAmount = !isActive ? totalAmountInvested : 0;
-
-  const totalProfit = !isActive
-    ? investList.reduce((acc, crr) => {
-        if (!crr.earned) {
-          return acc;
-        }
-        return acc + ((crr.earned - crr.amount) / crr.amount) * 100;
-      }, 0)
+  const totalAmount = investList.reduce((sum, item) => sum + item.amount, 0);
+  const completedReturns = investList
+    .filter((item) => item.earned != null && item.amount > 0)
+    .map((item) => (((item.earned ?? 0) - item.amount) / item.amount) * 100);
+  const averageReturn = completedReturns.length
+    ? completedReturns.reduce((sum, value) => sum + value, 0) /
+      completedReturns.length
     : 0;
 
-  const averageReturn =
-    !isActive && totalItems > 0 ? totalProfit / totalItems : 0;
-
-  const averageReturnLabel = formatNumber(
-    !isActive ? averageReturn : 0,
-    {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-      suffix: '%',
-    },
-  );
-
-  const assetClassCountLabel = formatNumber(
-    Math.max(1, Math.min(investList.length, 9)),
-    {
-      minimumIntegerDigits: 2,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-      useGrouping: false,
-    },
-  );
-
   return (
-    <View style={styles.mainContainer}>
-      <CommonCard style={styles.heroCard} padding={24}>
-        <HeroGlow />
-        <View style={styles.headingRow}>
-          <MaterialCommunityIcons name="chart-pie" size={14} color={colors.primary} />
-          <Text style={styles.headingLabel}>INVESTMENT SNAPSHOT</Text>
+    <View style={styles.container}>
+      <View style={styles.hero}>
+        <Text style={styles.label}>
+          {isActive ? "ACTIVE INVESTMENTS" : "COMPLETED INVESTMENTS"}
+        </Text>
+        <ScalarAmountText
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+          numberOfLines={1}
+          style={styles.heroAmount}
+        >
+          {formatCurrency(totalAmount, currency, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          })}
+        </ScalarAmountText>
+        <Text style={styles.heroFooter}>
+          {investList.length} {investList.length === 1 ? "asset" : "assets"}
+        </Text>
+      </View>
+      <View style={styles.metrics}>
+        <View style={styles.metricCard}>
+          <Text style={styles.label}>AVERAGE RETURN</Text>
+          <Text
+            style={[
+              styles.metricValue,
+              averageReturn > 0 && styles.positive,
+            ]}
+          >
+            {formatNumber(averageReturn, {
+              maximumFractionDigits: 1,
+              minimumFractionDigits: 1,
+              suffix: "%",
+            })}
+          </Text>
         </View>
-        <View style={styles.heroRow}>
-          <View style={styles.totalValueColumn}>
-            <Text
-              style={styles.totalValueText}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.7}>
-              {formatCurrency(
-                isActive ? totalActiveAmount : totalCompletedAmount,
-                currency,
-              )}
-            </Text>
-          </View>
+        <View style={styles.metricCard}>
+          <Text style={styles.label}>ASSET COUNT</Text>
+          <Text style={styles.metricValue}>
+            {formatNumber(investList.length, {
+              maximumFractionDigits: 0,
+              useGrouping: false,
+            })}
+          </Text>
         </View>
-      </CommonCard>
-
-      <View style={styles.metricsRow}>
-        <StatCard
-          icon="chart-line-variant"
-          label="Annualized Return"
-          value={averageReturnLabel}
-        />
-
-        <StatCard
-          icon="wallet-outline"
-          label="Asset Classes"
-          value={assetClassCountLabel}
-        />
       </View>
     </View>
   );
@@ -103,52 +80,54 @@ const InvestSummary: React.FC<ISummary> = ({investList, status}) => {
 
 export default InvestSummary;
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    mainContainer: {
-      paddingHorizontal: 20,
-      paddingTop: 20,
-      marginBottom: 20,
+    container: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+    hero: {
+      gap: 10,
+      padding: 16,
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    heroCard: {
-      marginBottom: 20,
-      borderColor: colors.primarySoft,
+    label: {
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      ...designTokens.typography.caps,
     },
-    headingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 16,
+    heroAmount: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+      ...designTokens.typography.heroAmount,
+      lineHeight: 48,
     },
-    headingLabel: {
-      color: colors.muted,
-      fontSize: 10,
-      letterSpacing: 1,
-      fontWeight: '700',
+    heroFooter: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.medium,
+      ...designTokens.typography.caption,
     },
-    heroRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 16,
-    },
-    totalValueColumn: {
+    metrics: { flexDirection: "row", gap: 12 },
+    metricCard: {
       flex: 1,
       minWidth: 0,
+      gap: 8,
+      padding: 16,
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    totalValueText: {
-      color: colors.text,
-      fontSize: 52,
-      fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
-      letterSpacing: -2,
-      lineHeight: 60,
-      flexShrink: 1,
-      includeFontPadding: false,
+    metricValue: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+      ...designTokens.typography.metric,
     },
-    metricsRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
+    positive: { color: colors.positive },
   });
 }

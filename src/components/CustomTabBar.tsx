@@ -1,48 +1,33 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { designTokens } from "@trackingPortal/themes/designTokens";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import React, { ComponentProps, useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Dimensions,
-  LayoutChangeEvent,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Animated, {
-  FadeIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
-import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
+import React, { ComponentProps, useCallback, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 const TABS: { name: string; label: string; icon: IconName }[] = [
-  { name: "transactions", label: "Wallet", icon: "wallet-outline" },
-  { name: "loan", label: "Loans", icon: "bank-outline" },
-  { name: "investment", label: "Invest", icon: "chart-bar" },
-  { name: "settings", label: "Settings", icon: "cog-outline" },
+  { name: "transactions", label: "Wallet", icon: "wallet" },
+  { name: "loan", label: "Loans", icon: "bank" },
+  { name: "investment", label: "Invest", icon: "chart-box" },
+  { name: "settings", label: "Settings", icon: "cog" },
 ];
 
-export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+export default function CustomTabBar({
+  state,
+  navigation,
+}: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const handlePress = useCallback(
+  const handleTabPress = useCallback(
     (routeName: string) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.selectionAsync();
       navigation.navigate(routeName);
     },
     [navigation],
@@ -53,193 +38,125 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     eventEmitter.emit(EVENTS.OPEN_CREATION_MODAL);
   }, []);
 
-  const activeRouteName = state.routes[state.index].name;
-
-  const findRoute = (name: string) =>
-    state.routes.find((r: any) => r.name === name);
-
-  const PlusButtonGlow = () => (
-    <View style={styles.glowContainer}>
-      <Svg height="100" width="100" viewBox="0 0 100 100">
-        <Defs>
-          <RadialGradient id="grad" cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.4" />
-            <Stop offset="70%" stopColor={colors.primary} stopOpacity="0.1" />
-            <Stop offset="100%" stopColor={colors.primary} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Circle cx="50" cy="50" r="45" fill="url(#grad)" />
-      </Svg>
-    </View>
-  );
-
-  return (
-    <View style={[styles.wrapper, { bottom: Platform.OS === 'ios' ? insets.bottom + 4 : Math.max(insets.bottom, 16) }]}>
-      <BlurView intensity={Platform.OS === 'ios' ? 45 : 100} tint={isDark ? "dark" : "light"} style={styles.container}>
-        <View style={styles.tabContainer}>
-          {renderTabByName("transactions")}
-          {renderTabByName("loan")}
-
-          <View style={styles.centerSpacer} />
-
-          {renderTabByName("investment")}
-          {renderTabByName("settings")}
-        </View>
-      </BlurView>
-
-      {/* CENTER BUTTON */}
-      {activeRouteName !== "settings" && (
-        <View style={styles.centerButton}>
-          <PlusButtonGlow />
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={handlePlusPress}
-            style={styles.plusButtonInner}
-          >
-            <MaterialCommunityIcons name="plus" size={32} color="#000" />
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
-
-  function renderTabByName(name: string) {
-    const route = findRoute(name);
-    if (!route) return null;
-
-    const routeIndex = state.routes.findIndex((r: any) => r.name === name);
-    const isFocused = state.index === routeIndex;
-    const tab = TABS.find((t) => t.name === name);
-
-    if (!tab) return null;
+  const renderTab = (name: string) => {
+    const routeIndex = state.routes.findIndex((route) => route.name === name);
+    const route = state.routes[routeIndex];
+    const tab = TABS.find((candidate) => candidate.name === name);
+    if (!route || !tab) return null;
+    const focused = state.index === routeIndex;
 
     return (
-      <TabButton
-        key={tab.name}
-        tab={tab}
-        isFocused={isFocused}
-        onPress={() => handlePress(route.name)}
-        activeColor={colors.primaryText}
-        inactiveColor={colors.muted}
-        styles={styles}
-      />
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: focused }}
+        key={name}
+        onPress={() => handleTabPress(route.name)}
+        style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
+      >
+        <View style={[styles.rule, focused && styles.activeRule]} />
+        <MaterialCommunityIcons
+          name={tab.icon}
+          size={19}
+          color={focused ? colors.brandText : colors.textTertiary}
+        />
+        <Text style={[styles.label, focused && styles.activeLabel]}>
+          {tab.label}
+        </Text>
+      </Pressable>
     );
-  }
+  };
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom, 18) },
+      ]}
+    >
+      <View style={styles.row}>
+        {renderTab("transactions")}
+        {renderTab("loan")}
+        <Pressable
+          accessibilityLabel="Add entry"
+          accessibilityRole="button"
+          onPress={handlePlusPress}
+          style={({ pressed }) => [
+            styles.addButton,
+            pressed && styles.addButtonPressed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="plus"
+            size={28}
+            color={colors.onBrand}
+          />
+        </Pressable>
+        {renderTab("investment")}
+        {renderTab("settings")}
+      </View>
+    </View>
+  );
 }
 
-const TabButton = ({ tab, isFocused, onPress, activeColor, inactiveColor, styles }: any) => {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={styles.tabButton}
-      activeOpacity={0.75}
-    >
-      {isFocused && <View style={styles.activePill} />}
-      <MaterialCommunityIcons
-        name={tab.icon}
-        size={isFocused ? 23 : 22}
-        color={isFocused ? activeColor : inactiveColor}
-      />
-      <Text style={[styles.label, { color: isFocused ? activeColor : inactiveColor }]}>
-        {tab.label}
-      </Text>
-    </TouchableOpacity>
-  );
-};
-
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: boolean) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    wrapper: {
-      position: 'absolute',
-      alignSelf: 'center',
-      width: SCREEN_WIDTH * 0.92,
-      zIndex: 100,
-      ...Platform.select({
-        ios: {
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: isDark ? 12 : 6 },
-          shadowOpacity: isDark ? 0.4 : 0.12,
-          shadowRadius: isDark ? 24 : 10,
-        },
-        android: {
-          elevation: isDark ? 12 : 4,
-        },
-      }),
-    },
     container: {
-      height: 74,
-      borderRadius: 28,
-      backgroundColor: isDark ? 'rgba(14, 15, 17, 0.93)' : 'rgba(250, 251, 254, 0.88)',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.glassBorder,
-      borderTopColor: isDark ? 'rgba(255, 255, 255, 0.14)' : colors.glassBorder,
-      overflow: 'hidden',
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingHorizontal: 4,
     },
-    tabContainer: {
+    row: {
+      height: 61,
+      flexDirection: "row",
+      alignItems: "flex-start",
+    },
+    tab: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-around',
-      paddingHorizontal: 12,
-    },
-    centerSpacer: {
-      width: 60,
-    },
-    tabButton: {
+      height: 55,
+      minWidth: 52,
       alignItems: "center",
       justifyContent: "center",
-      flexDirection: 'column',
-      height: '100%',
-      minWidth: 64,
+      gap: 3,
+      position: "relative",
+    },
+    rule: {
+      position: "absolute",
+      top: 0,
+      width: 34,
+      height: 3,
+      borderBottomLeftRadius: 2,
+      borderBottomRightRadius: 2,
+      backgroundColor: "transparent",
+    },
+    activeRule: { backgroundColor: colors.brand },
+    pressed: {
+      backgroundColor: colors.surfaceSunken,
     },
     label: {
-      fontSize: 10,
-      fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
-      marginTop: 4,
-      letterSpacing: -0.2,
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 11,
+      lineHeight: 14,
+      fontWeight: "600",
     },
-    activePill: {
-      position: 'absolute',
-      top: 9,
-      bottom: 9,
-      left: 2,
-      right: 2,
-      backgroundColor: 'rgba(53, 210, 118, 0.10)',
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: 'rgba(91, 227, 145, 0.16)',
+    activeLabel: {
+      color: colors.brandText,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
     },
-    centerButton: {
-      position: "absolute",
-      top: -26,
-      alignSelf: "center",
-      zIndex: 110,
-    },
-    plusButtonInner: {
-      width: 62,
-      height: 62,
-      borderRadius: 31,
-      backgroundColor: colors.primary,
-      justifyContent: "center",
+    addButton: {
+      width: 56,
+      height: 56,
+      marginTop: 6,
+      marginHorizontal: 6,
       alignItems: "center",
-      borderWidth: 5,
-      borderColor: colors.background,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.5,
-      shadowRadius: 10,
-      elevation: 10,
+      justifyContent: "center",
+      borderRadius: designTokens.radius.full,
+      backgroundColor: colors.brand,
     },
-    glowContainer: {
-      position: 'absolute',
-      top: -17,
-      left: -17,
-      width: 100,
-      height: 100,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: -1,
+    addButtonPressed: {
+      backgroundColor: colors.brandText,
     },
   });
 }

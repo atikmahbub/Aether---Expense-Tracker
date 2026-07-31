@@ -1,244 +1,286 @@
-import {View, StyleSheet, Image, TouchableOpacity, ScrollView, Linking} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import React, { useMemo } from 'react';
-import {Text} from 'react-native-paper';
-import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
-import {AnimatedLoader} from '@trackingPortal/components';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
+import { AnimatedLoader } from "@trackingPortal/components";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { designTokens } from "@trackingPortal/themes/designTokens";
+import React, { useMemo } from "react";
+import {
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PROGRESS_STEPS = [0, 1, 2];
+const FEATURES = [
+  {
+    icon: "shield-check" as const,
+    title: "Private",
+    detail: "Secure account access",
+  },
+  {
+    icon: "lightning-bolt" as const,
+    title: "Fast",
+    detail: "Capture entries quickly",
+  },
+  {
+    icon: "cloud-check" as const,
+    title: "Offline",
+    detail: "Sync when reconnected",
+  },
+];
 
 export default function LoginScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const {login, loading} = useAuth();
+  const { login, loading } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const handleTermsOfService = async () => {
-    const url = 'https://atikmahbub.github.io/aether-privacy-policy/';
-    try {
-      await Linking.openURL(url);
-    } catch {
-      // Silently fail or add a toast if needed
-    }
-  };
-
-  if (loading) {
-    return <AnimatedLoader />;
-  }
+  if (loading) return <AnimatedLoader />;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topGlow} />
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 }
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.brandLockup}>
-          <View style={styles.brandBadge}>
-            <Image
-              source={require('../../../assets/screen.png')}
-              style={styles.brandIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.appName}>SCALAR</Text>
-          <Text style={styles.subtitle}>ELEVATED FINANCE</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingTop: insets.top + 20,
+          paddingBottom: Math.max(insets.bottom, 20),
+        },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.brandRow}>
+        <View style={styles.brandMark}>
+          <Text style={styles.brandMarkText}>S</Text>
         </View>
+        <Text style={styles.brandName}>Scalar</Text>
+      </View>
 
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroTitle}>
-            Master your <Text style={styles.heroAccent}>wealth</Text> with precision
-          </Text>
-          <Text style={styles.heroDescription}>
-            The minimalist workspace for your personal economy. Beautiful analytics,
-            instant tracking, and zero friction.
-          </Text>
+      <View style={styles.heroCard}>
+        <View style={styles.heroIcon}>
+          <MaterialCommunityIcons
+            name="wallet"
+            size={34}
+            color={colors.onBrand}
+          />
         </View>
+        <Text style={styles.eyebrow}>YOUR MONEY, MADE CLEAR</Text>
+        <Text style={styles.heroTitle}>Stay on top of every taka.</Text>
+        <Text style={styles.heroDescription}>
+          Track spending, income, loans, and investments in one calm,
+          dependable workspace.
+        </Text>
+      </View>
 
-        <View style={styles.featuresGrid}>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIcon}>
-              <MaterialCommunityIcons name="shield-check-outline" size={20} color={colors.primary} />
+      <View style={styles.features}>
+        {FEATURES.map((feature, index) => (
+          <View key={feature.title}>
+            <View style={styles.featureRow}>
+              <View style={styles.featureIcon}>
+                <MaterialCommunityIcons
+                  name={feature.icon}
+                  size={20}
+                  color={colors.brandText}
+                />
+              </View>
+              <View style={styles.featureCopy}>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureDetail}>{feature.detail}</Text>
+              </View>
             </View>
-            <Text style={styles.featureText}>SECURE</Text>
+            {index < FEATURES.length - 1 && <View style={styles.divider} />}
           </View>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIcon}>
-              <MaterialCommunityIcons name="lightning-bolt-outline" size={20} color={colors.primary} />
-            </View>
-            <Text style={styles.featureText}>FAST</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIcon}>
-              <MaterialCommunityIcons name="chart-arc" size={20} color={colors.primary} />
-            </View>
-            <Text style={styles.featureText}>SMART</Text>
-          </View>
-        </View>
+        ))}
+      </View>
 
-        <View style={styles.footerAction}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={styles.primaryButton}
-            onPress={login}>
-            <Text style={styles.primaryButtonText}>GET STARTED</Text>
-            <MaterialCommunityIcons name="arrow-right" size={20} color={colors.background} />
-          </TouchableOpacity>
-          <Text style={styles.legalNotice}>
-            By signing in, you agree to our{' '}
-            <Text style={styles.legalLink} onPress={handleTermsOfService}>Terms of Service</Text>.
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={login}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && styles.primaryButtonPressed,
+          ]}
+        >
+          <Text style={styles.primaryButtonText}>Continue securely</Text>
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={20}
+            color={colors.onBrand}
+          />
+        </Pressable>
+        <Text style={styles.legalNotice}>
+          By continuing, you agree to our{" "}
+          <Text
+            style={styles.legalLink}
+            onPress={() =>
+              Linking.openURL(
+                "https://atikmahbub.github.io/aether-privacy-policy/",
+              )
+            }
+          >
+            Terms and Privacy Policy
           </Text>
-        </View>
-      </ScrollView>
-    </View>
+          .
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    topGlow: {
-      position: 'absolute',
-      top: -100,
-      alignSelf: 'center',
-      width: 400,
-      height: 400,
-      borderRadius: 200,
-      backgroundColor: 'rgba(34, 197, 94, 0.03)',
-    },
-    scrollContent: {
+    container: { flex: 1, backgroundColor: colors.bg },
+    content: {
       flexGrow: 1,
-      alignItems: 'center',
-      paddingHorizontal: 32,
-      gap: 48,
+      paddingHorizontal: 20,
+      gap: 20,
     },
-    brandLockup: {
-      alignItems: 'center',
-      gap: 16,
+    brandRow: {
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
     },
-    brandBadge: {
-      width: 84,
-      height: 84,
-      borderRadius: 24,
-      backgroundColor: colors.surfaceAlt,
+    brandMark: {
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.md,
+      backgroundColor: colors.brand,
+    },
+    brandMarkText: {
+      color: colors.onBrand,
+      fontFamily: designTokens.font.bold,
+      fontSize: 17,
+      fontWeight: "700",
+    },
+    brandName: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    heroCard: {
+      minHeight: 310,
+      padding: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 14,
+      borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: colors.primary,
-      shadowOpacity: 0.15,
-      shadowRadius: 30,
-      shadowOffset: {width: 0, height: 10},
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    brandIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 12,
+    heroIcon: {
+      width: 72,
+      height: 72,
+      marginBottom: 4,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.lg,
+      backgroundColor: colors.brand,
     },
-    appName: {
-      color: colors.text,
-      fontSize: 24,
-      fontWeight: '800',
-      letterSpacing: 4,
-    },
-    subtitle: {
-      color: colors.muted,
-      fontSize: 11,
-      fontWeight: '800',
-      letterSpacing: 2,
-      marginTop: -4,
-    },
-    heroCopy: {
-      alignItems: 'center',
-      gap: 16,
+    eyebrow: {
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      textAlign: "center",
+      ...designTokens.typography.caps,
     },
     heroTitle: {
-      color: colors.text,
-      fontSize: 38,
-      fontWeight: '800',
-      textAlign: 'center',
-      lineHeight: 46,
-      letterSpacing: -1,
-    },
-    heroAccent: {
-      color: colors.primary,
+      maxWidth: 300,
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontSize: 30,
+      lineHeight: 37,
+      fontWeight: "700",
+      letterSpacing: -0.6,
+      textAlign: "center",
     },
     heroDescription: {
-      color: colors.subText,
-      fontSize: 16,
-      lineHeight: 24,
-      textAlign: 'center',
-      opacity: 0.8,
+      maxWidth: 310,
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.regular,
+      fontSize: 15,
+      lineHeight: 23,
+      textAlign: "center",
     },
-    featuresGrid: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 20,
-      width: '100%',
+    features: {
+      overflow: "hidden",
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    featureItem: {
-      alignItems: 'center',
-      gap: 8,
+    featureRow: {
+      minHeight: 64,
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
     },
     featureIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 16,
-      backgroundColor: colors.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
+      width: 40,
+      height: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.md,
+      backgroundColor: colors.brandWash,
     },
-    featureText: {
-      color: colors.muted,
-      fontSize: 10,
-      fontWeight: '800',
-      letterSpacing: 1.5,
-    },
-    footerAction: {
-      width: '100%',
-      gap: 20,
-      marginTop: 'auto',
-    },
-    primaryButton: {
-      width: '100%',
-      borderRadius: 18,
-      paddingVertical: 18,
-      backgroundColor: colors.primary,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 10,
-      shadowColor: colors.primary,
-      shadowOpacity: 0.3,
-      shadowRadius: 20,
-      shadowOffset: {width: 0, height: 10},
-    },
-    primaryButtonText: {
-      color: colors.background,
+    featureCopy: { flex: 1 },
+    featureTitle: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.semibold,
       fontSize: 15,
-      fontWeight: '800',
-      letterSpacing: 1,
+      fontWeight: "600",
+    },
+    featureDetail: {
+      marginTop: 2,
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.medium,
+      fontSize: 12,
+      fontWeight: "500",
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      marginLeft: 68,
+      backgroundColor: colors.divider,
+    },
+    actions: { marginTop: "auto", gap: 14 },
+    primaryButton: {
+      height: 54,
+      paddingHorizontal: 22,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      borderRadius: designTokens.radius.full,
+      backgroundColor: colors.brand,
+    },
+    primaryButtonPressed: { backgroundColor: colors.brandText },
+    primaryButtonText: {
+      color: colors.onBrand,
+      fontFamily: designTokens.font.bold,
+      fontSize: 16,
+      fontWeight: "700",
     },
     legalNotice: {
-      color: colors.muted,
+      color: colors.textTertiary,
+      fontFamily: designTokens.font.medium,
       fontSize: 12,
-      textAlign: 'center',
-      opacity: 0.7,
+      lineHeight: 18,
+      textAlign: "center",
     },
     legalLink: {
-      color: colors.primary,
-      textDecorationLine: 'underline',
+      color: colors.brandText,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
+      textDecorationLine: "underline",
     },
   });
 }

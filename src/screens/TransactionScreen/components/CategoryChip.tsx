@@ -1,7 +1,14 @@
-import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useAppTheme} from '../../../contexts/ThemeContext';
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import {
+  categoryTokens,
+  designTokens,
+  ScalarCategoryName,
+} from "@trackingPortal/themes/designTokens";
+import { normalizeCategoryIcon } from "./../TransactionScreen.constants";
 
 interface CategoryChipProps {
   label: string;
@@ -11,15 +18,6 @@ interface CategoryChipProps {
   onPress?: () => void;
 }
 
-const toRgba = (hex: string, alpha: number) => {
-  const sanitized = hex.replace('#', '');
-  const bigint = parseInt(sanitized, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
 const CategoryChip: React.FC<CategoryChipProps> = ({
   label,
   color,
@@ -27,29 +25,43 @@ const CategoryChip: React.FC<CategoryChipProps> = ({
   active = false,
   onPress,
 }) => {
-  const {colors} = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+  const semantic = (isDark ? categoryTokens.dark : categoryTokens.light)[
+    label as ScalarCategoryName
+  ];
+  const fill = semantic?.fill ?? color;
+  const glyph = semantic?.glyph ?? colors.onBrand;
 
   return (
     <Pressable
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         styles.container,
-        {backgroundColor: colors.surface, borderColor: colors.glassBorder},
-        active && styles.activeContainer,
-        active && {
-          backgroundColor: toRgba(color, 0.16),
-          shadowColor: color,
+        {
+          backgroundColor: active ? fill : colors.surface,
+          borderColor: active ? fill : colors.border,
         },
+        pressed && { backgroundColor: colors.surfaceSunken },
       ]}
       accessibilityRole="button"
-      accessibilityState={{selected: active}}
+      accessibilityState={{ selected: active }}
     >
-      <View style={[styles.iconWrapper, {backgroundColor: toRgba(color, active ? 0.25 : 0.12)}]}>
-        <MaterialCommunityIcons name={icon} size={18} color={color} />
-      </View>
+      {active ? (
+        <MaterialCommunityIcons
+          name={normalizeCategoryIcon(icon) as any}
+          size={15}
+          color={glyph}
+        />
+      ) : (
+        <View style={[styles.swatch, { backgroundColor: fill }]} />
+      )}
       <Text
-        style={[styles.label, {color: colors.subText}, active && {color: colors.text}]}
-        numberOfLines={1}>
+        style={[
+          styles.label,
+          { color: active ? glyph : colors.textPrimary },
+        ]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </Pressable>
@@ -58,29 +70,24 @@ const CategoryChip: React.FC<CategoryChipProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: designTokens.radius.full,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderWidth: 1.5,
   },
-  activeContainer: {
-    borderColor: 'transparent',
-  },
-  iconWrapper: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+  swatch: {
+    width: 9,
+    height: 9,
+    borderRadius: 3,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Manrope_700Bold',
-    letterSpacing: 0.2,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: "600",
+    fontFamily: designTokens.font.semibold,
   },
 });
 

@@ -1,11 +1,19 @@
+import { NotoSansBengali_600SemiBold } from "@expo-google-fonts/noto-sans-bengali";
 import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
   Manrope_700Bold,
   Manrope_800ExtraBold,
-  useFonts,
 } from "@expo-google-fonts/manrope";
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -31,6 +39,7 @@ import {
 import { authStorage } from "@trackingPortal/auth/authStorage";
 import { AnimatedLoader } from "@trackingPortal/components";
 import MigrationOverlay from "@trackingPortal/components/MigrationOverlay";
+import { ScalarAlertProvider } from "@trackingPortal/components/ScalarAlert";
 import ScalarSplashGate from "@trackingPortal/components/ScalarSplashGate";
 import toastConfig from "@trackingPortal/components/ToastConfig";
 import { NetworkProvider } from "@trackingPortal/contexts/NetworkProvider";
@@ -58,7 +67,7 @@ const applyDefaultFont = () => {
     const target = component as any;
     target.defaultProps = target.defaultProps || {};
     const existingStyle = target.defaultProps.style;
-    const fontStyle = { fontFamily: "Manrope_400Regular" };
+    const fontStyle = { fontFamily: "PlusJakartaSans_400Regular" };
     if (Array.isArray(existingStyle)) {
       target.defaultProps.style = [...existingStyle, fontStyle];
     } else if (existingStyle) {
@@ -255,6 +264,12 @@ function ThemedApp() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    NotoSansBengali_600SemiBold,
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
@@ -288,14 +303,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      {!splashComplete ? (
-        <ScalarSplashGate
-          fontsLoaded={!!fontsLoaded}
-          onComplete={() => setSplashComplete(true)}
-        />
-      ) : (
-        <ThemedApp />
-      )}
+      <ScalarAlertProvider>
+        {!splashComplete ? (
+          <ScalarSplashGate
+            fontsLoaded={!!fontsLoaded}
+            onComplete={() => setSplashComplete(true)}
+          />
+        ) : (
+          <ThemedApp />
+        )}
+      </ScalarAlertProvider>
     </ThemeProvider>
   );
 }

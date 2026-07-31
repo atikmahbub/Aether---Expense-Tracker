@@ -4,20 +4,26 @@ import {
   TransactionModel,
 } from "@trackingPortal/api/models";
 import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
-import { AnimatedLoader } from "@trackingPortal/components";
+import {
+  AnimatedLoader,
+  FormikTextInput,
+} from "@trackingPortal/components";
+import FormModal from "@trackingPortal/components/FormModal";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
+import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
-import AnalyticsCard from "@trackingPortal/screens/TransactionScreen/components/AnalyticsCard";
+import HomeDashboard from "@trackingPortal/screens/TransactionScreen/components/HomeDashboard";
 import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
 import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
+import { EMonthlyLimitFields } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
-import TransactionSummary from "@trackingPortal/screens/TransactionScreen/TransactionSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
+import { Formik, FormikHelpers } from "formik";
 import React, {
   useCallback,
   useEffect,
@@ -33,7 +39,6 @@ import {
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 const AnimatedKeyboardAwareScrollView = RNAnimated.createAnimatedComponent(
@@ -50,10 +55,13 @@ export default function TransactionScreen() {
     isCategoryHydrated,
   } = useStoreContext();
   const { transactionData, monthlyLimitData } = useDatabase();
+  const { syncNow } = useOffline();
 
   const activeUserId = user.userId;
 
   const [openCreationForm, setOpenCreationModal] = useState(false);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
+  const [savingLimit, setSavingLimit] = useState(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState(false);
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
   const [typeFilter, setTypeFilter] = useState<"expense" | "income">("expense");
@@ -87,7 +95,6 @@ export default function TransactionScreen() {
   const [summary, setSummary] = useState<TransactionSummaryModel | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
 
-  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const { isOnline } = useNetwork();
   const wasOfflineRef = useRef(false);
@@ -103,12 +110,7 @@ export default function TransactionScreen() {
     categories,
     categoryLoading,
     refreshCategories,
-    expenseAnalytics,
-    incomeAnalytics,
-    analyticsLoading,
-    analyticsError,
     refreshAnalytics,
-    categoryLookup,
     incomeCategories,
     incomeCategoryLoading,
   } = useTransactionInsights({
@@ -143,10 +145,6 @@ export default function TransactionScreen() {
     },
     [refreshAnalytics, activeUserId, isCategoryHydrated],
   );
-
-  const onRetryAnalytics = useCallback(() => {
-    refreshAnalytics({ force: true });
-  }, [refreshAnalytics]);
 
   const handleNotifyRowOpen = useCallback(() => {}, []);
   const handleExceedNotification = useCallback(() => {}, []);
@@ -311,129 +309,110 @@ export default function TransactionScreen() {
   // placeholder.
   const summaryInitialLoading = loadingSummary && !summary;
 
-  const totalDisplayValue = useMemo(() => {
-    if (!summary) return null;
-    return typeFilter === "expense"
-      ? summary.totalExpense
-      : summary.totalIncome;
-  }, [summary, typeFilter]);
-
-  const crossTabTotal = useMemo(() => {
-    if (!summary) return 0;
-    return typeFilter === "expense"
-      ? summary.totalIncome
-      : summary.totalExpense;
-  }, [summary, typeFilter]);
-
-  const activeTrend = useMemo(() => {
-    if (!summary) return null;
-    const value =
-      typeFilter === "expense"
-        ? summary.expenseChangePercentage
-        : summary.incomeChangePercentage;
-    const isIncrease = value > 0;
-    const isDecrease = value < 0;
-    const isBetter = typeFilter === "expense" ? isDecrease : isIncrease;
-
-    return {
-      percent: Math.abs(value),
-      isLower: value < 0,
-      label:
-        value === 0
-          ? "0% vs last month"
-          : `${isIncrease ? "↑" : "↓"} ${Math.abs(value)}% vs last month`,
-      color:
-        value === 0 ? colors.subText : isBetter ? colors.primary : colors.error,
-      icon: isIncrease
-        ? "arrow-top-right"
-        : isDecrease
-          ? "arrow-bottom-right"
-          : "minus",
-    };
-  }, [summary, typeFilter, colors]);
+  const handleSaveLimit = useCallback(
+    async (
+      values: Record<EMonthlyLimitFields, string>,
+      helpers: FormikHelpers<Record<EMonthlyLimitFields, string>>,
+    ) => {
+      const numericLimit = Number(values[EMonthlyLimitFields.LIMIT]);
+      if (
+        !numericLimit ||
+        Number.isNaN(numericLimit) ||
+        numericLimit <= 0 ||
+        !monthlyLimitData ||
+        !user.userId
+      ) {
+        Toast.show({ type: "error", text1: "Enter a valid monthly limit" });
+        return;
+      }
+      try {
+        setSavingLimit(true);
+        await monthlyLimitData.setLimit(
+          user.userId,
+          filterMonth.month() + 1,
+          filterMonth.year(),
+          numericLimit,
+        );
+        await getMonthlyLimit();
+        setLimitModalVisible(false);
+        helpers.resetForm();
+        Toast.show({
+          type: "success",
+          text1: monthLimit?.id
+            ? "Limit updated successfully"
+            : "Limit added successfully",
+        });
+        syncNow();
+      } catch {
+        Toast.show({ type: "error", text1: "Something went wrong" });
+      } finally {
+        setSavingLimit(false);
+      }
+    },
+    [
+      filterMonth,
+      getMonthlyLimit,
+      monthLimit?.id,
+      monthlyLimitData,
+      syncNow,
+      user.userId,
+    ],
+  );
 
   const headerComponent = useMemo(
     () => (
-      <View>
-        <View style={styles.topToggleRow}>
+      <HomeDashboard
+        month={filterMonth}
+        type={typeFilter}
+        summary={summary}
+        monthlyLimit={monthLimit}
+        transactions={transactions}
+        currency={currency}
+        loading={summaryInitialLoading}
+        onAdjustLimit={() => setLimitModalVisible(true)}
+        ledgerControl={
           <TransactionSegmentedControl
             options={["expense", "income"]}
             selectedOption={typeFilter}
             onOptionPress={handleTypeFilterChange}
           />
-        </View>
-
-        <TransactionSummary
-          totalValue={totalDisplayValue ?? 0}
-          type={typeFilter}
-          monthlyIncome={crossTabTotal}
-          filterMonth={filterMonth}
-          monthLimit={monthLimit}
-          getMonthlyLimit={getMonthlyLimit}
-          isLoading={summaryInitialLoading}
-        />
-
-        <AnalyticsCard
-          analytics={
-            typeFilter === "expense" ? expenseAnalytics : incomeAnalytics
-          }
-          monthlyLimit={
-            typeFilter === "expense" ? monthLimit?.limit : undefined
-          }
-          categories={categoryLookup}
-          loading={analyticsLoading || !isCategoryHydrated}
-          error={analyticsError}
-          onRetry={onRetryAnalytics}
-          currency={currency}
-          mode={typeFilter}
-          trend={activeTrend}
-          trendLoading={summaryInitialLoading}
-          totalSpent={totalDisplayValue ?? 0}
-          transactions={filteredTransactions}
-        />
-      </View>
+        }
+      />
     ),
     [
       typeFilter,
-      totalDisplayValue,
-      crossTabTotal,
-      activeTrend,
+      summary,
       summaryInitialLoading,
       filterMonth,
       monthLimit,
-      getMonthlyLimit,
-      expenseAnalytics,
-      incomeAnalytics,
-      categoryLookup,
-      analyticsLoading,
-      isCategoryHydrated,
-      analyticsError,
-      onRetryAnalytics,
       currency,
-      styles,
+      transactions,
+      handleTypeFilterChange,
     ],
   );
 
   const footerComponent = useMemo(
     () => (
-      <TransactionList
-        filteredMonth={filterMonth}
-        setFilteredMonth={setFilterMonth}
-        transactions={visibleData}
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-        getUserExpenses={getTransactions}
-        categories={typeFilter === "expense" ? categories : incomeCategories}
-        categoriesLoading={
-          typeFilter === "expense" ? categoryLoading : incomeCategoryLoading
-        }
-        refreshCategories={refreshCategories}
-        refreshAnalytics={fetchAnalytics}
-        recentCategoryIds={recentCategoryIds}
-        onCategoryUsed={addRecentCategory}
-        notifyRowOpen={handleNotifyRowOpen}
-        refreshSummary={fetchSummary}
-      />
+      <View>
+        <TransactionList
+          filteredMonth={filterMonth}
+          setFilteredMonth={setFilterMonth}
+          transactions={visibleData}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          getUserExpenses={getTransactions}
+          categories={typeFilter === "expense" ? categories : incomeCategories}
+          categoriesLoading={
+            typeFilter === "expense" ? categoryLoading : incomeCategoryLoading
+          }
+          refreshCategories={refreshCategories}
+          refreshAnalytics={fetchAnalytics}
+          recentCategoryIds={recentCategoryIds}
+          onCategoryUsed={addRecentCategory}
+          notifyRowOpen={handleNotifyRowOpen}
+          refreshSummary={fetchSummary}
+        />
+      </View>
     ),
     [
       filterMonth,
@@ -442,6 +421,9 @@ export default function TransactionScreen() {
       getTransactions,
       categories,
       categoryLoading,
+      incomeCategories,
+      incomeCategoryLoading,
+      typeFilter,
       refreshCategories,
       fetchAnalytics,
       recentCategoryIds,
@@ -491,7 +473,7 @@ export default function TransactionScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 120, flexGrow: 1 },
+          { paddingBottom: 20, flexGrow: 1 },
         ]}
         refreshControl={
           <RefreshControl
@@ -544,6 +526,37 @@ export default function TransactionScreen() {
           refreshSummary={fetchSummary}
         />
       )}
+      <Formik
+        enableReinitialize
+        initialValues={{
+          [EMonthlyLimitFields.LIMIT]: monthLimit?.limit
+            ? String(monthLimit.limit)
+            : "",
+        }}
+        onSubmit={handleSaveLimit}
+      >
+        {({ handleSubmit, resetForm }) => (
+          <FormModal
+            isVisible={limitModalVisible}
+            title={monthLimit?.limit ? "Adjust monthly limit" : "Set monthly limit"}
+            subtitle={filterMonth.format("MMMM YYYY")}
+            saveLabel={monthLimit?.limit ? "Update limit" : "Set limit"}
+            onClose={() => {
+              setLimitModalVisible(false);
+              resetForm();
+            }}
+            onSave={handleSubmit}
+            loading={savingLimit}
+          >
+            <FormikTextInput
+              autoFocus
+              name={EMonthlyLimitFields.LIMIT}
+              label="Monthly limit"
+              keyboardType="numeric"
+            />
+          </FormModal>
+        )}
+      </Formik>
     </View>
   );
 }
@@ -555,42 +568,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       backgroundColor: colors.background,
     },
     listContent: {
-      paddingTop: 8,
-    },
-    topToggleRow: {
-      paddingHorizontal: 16,
-      marginBottom: 8,
-      alignItems: "flex-end",
-    },
-    segmentedToggle: {
-      flexDirection: "row",
-      backgroundColor: colors.surfaceAlt,
-      borderRadius: 8,
-      padding: 2,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-    },
-    toggleButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 10,
-      borderRadius: 7,
-    },
-    toggleButtonActive: {
-      backgroundColor: colors.surface,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    toggleText: {
-      color: colors.subText,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    toggleTextActive: {
-      color: colors.primary,
-      fontWeight: "700",
+      paddingTop: 0,
     },
   });
 }

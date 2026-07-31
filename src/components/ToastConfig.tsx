@@ -1,32 +1,26 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {Platform, StyleSheet, Text, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useAppTheme} from '@trackingPortal/contexts/ThemeContext';
+import {designTokens} from '@trackingPortal/themes/designTokens';
 
 // ─── Variant tokens ───────────────────────────────────────────────────────────
 const TOKEN = {
   success: {
     icon: 'check-circle' as const,
-    accent: '#b6f700',
-    bg: 'rgba(182,247,0,0.10)',
-    border: 'rgba(182,247,0,0.22)',
+    tone: 'positive' as const,
   },
   error: {
     icon: 'alert-circle' as const,
-    accent: '#FF6B6B',
-    bg: 'rgba(255,107,107,0.10)',
-    border: 'rgba(255,107,107,0.22)',
+    tone: 'negative' as const,
   },
   info: {
     icon: 'information' as const,
-    accent: '#c47fff',
-    bg: 'rgba(196,127,255,0.10)',
-    border: 'rgba(196,127,255,0.22)',
+    tone: 'brand' as const,
   },
   offline: {
     icon: 'cloud-off-outline' as const,
-    accent: '#FFB347',
-    bg: 'rgba(255,179,71,0.10)',
-    border: 'rgba(255,179,71,0.22)',
+    tone: 'warning' as const,
   },
 } as const;
 
@@ -43,15 +37,23 @@ const ToastCard = ({
   text2?: string;
 }) => {
   const t = TOKEN[variant];
+  const {colors} = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const accent = colors[t.tone];
+  const wash =
+    t.tone === 'negative'
+      ? colors.errorSoft
+      : t.tone === 'brand'
+        ? colors.brandWash
+        : colors.surfaceSunken;
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.card, {borderColor: t.border}]}>
-        {/* Left neon accent bar */}
-        <View style={[styles.accentBar, {backgroundColor: t.accent}]} />
+      <View style={styles.card}>
+        <View style={[styles.accentBar, {backgroundColor: accent}]} />
 
         {/* Icon */}
-        <View style={[styles.iconBadge, {backgroundColor: t.bg}]}>
-          <MaterialCommunityIcons name={t.icon} size={20} color={t.accent} />
+        <View style={[styles.iconBadge, {backgroundColor: wash}]}>
+          <MaterialCommunityIcons name={t.icon} size={20} color={accent} />
         </View>
 
         {/* Text */}
@@ -73,10 +75,17 @@ const ToastCard = ({
 };
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
-const make =
-  (variant: Variant) =>
-  ({text1, text2}: {text1?: string; text2?: string}) =>
-    <ToastCard variant={variant} text1={text1} text2={text2} />;
+const make = (variant: Variant) => {
+  const ToastRenderer = ({
+    text1,
+    text2,
+  }: {
+    text1?: string;
+    text2?: string;
+  }) => <ToastCard variant={variant} text1={text1} text2={text2} />;
+  ToastRenderer.displayName = `ScalarToast(${variant})`;
+  return ToastRenderer;
+};
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 export const toastConfig = {
@@ -89,7 +98,8 @@ export const toastConfig = {
 export default toastConfig;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+  return StyleSheet.create({
   wrapper: {
     width: '100%',
     paddingHorizontal: 16,
@@ -97,19 +107,20 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121316',
-    borderRadius: 16,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: designTokens.radius.md,
     borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
     paddingRight: 16,
     paddingVertical: 14,
     gap: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.5,
-        shadowRadius: 18,
-        shadowOffset: {width: 0, height: 10},
+        shadowColor: colors.backdrop,
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 5},
       },
       android: {
         elevation: 10,
@@ -133,15 +144,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#f1f4fa',
+    color: colors.textPrimary,
+    fontFamily: designTokens.font.bold,
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
   },
   subtitle: {
-    color: 'rgba(241,244,250,0.65)',
+    color: colors.textSecondary,
+    fontFamily: designTokens.font.regular,
     fontSize: 12,
     marginTop: 2,
     lineHeight: 17,
   },
-});
+  });
+}

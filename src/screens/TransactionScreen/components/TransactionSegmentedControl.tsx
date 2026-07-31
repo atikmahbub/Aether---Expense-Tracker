@@ -1,29 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  Pressable,
-  LayoutChangeEvent,
-} from 'react-native';
+import * as Haptics from "expo-haptics";
+import React, { useEffect, useMemo, useState } from "react";
+import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
-  withSequence,
   withTiming,
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+} from "react-native-reanimated";
+
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { designTokens } from "@trackingPortal/themes/designTokens";
 
 interface SegmentedControlProps {
   options: string[];
   selectedOption: string;
   onOptionPress: (option: string) => void;
-  containerStyle?: any;
+  containerStyle?: object;
 }
 
-const SegmentedControl: React.FC<SegmentedControlProps> = ({
+const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
   options,
   selectedOption,
   onOptionPress,
@@ -31,80 +26,54 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
 }) => {
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
-  const containerPadding = 4;
-  const segmentWidth = (dimensions.width - (containerPadding * 2)) / options.length;
-
-  const selectedIndex = options.indexOf(selectedOption);
+  const [width, setWidth] = useState(0);
   const translateX = useSharedValue(0);
-  const scale = useSharedValue(1);
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setDimensions({ width, height });
-  };
+  const gap = 4;
+  const padding = 4;
+  const segmentWidth = width
+    ? (width - padding * 2 - gap * (options.length - 1)) / options.length
+    : 0;
+  const selectedIndex = Math.max(options.indexOf(selectedOption), 0);
 
   useEffect(() => {
-    if (dimensions.width > 0) {
-      translateX.value = withSpring(selectedIndex * segmentWidth, {
-        damping: 20,
-        stiffness: 400,
-        mass: 0.8,
-      });
-    }
-  }, [selectedIndex, segmentWidth, dimensions.width]);
+    translateX.value = withTiming(selectedIndex * (segmentWidth + gap), {
+      duration: designTokens.motion.quick,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [selectedIndex, segmentWidth, translateX]);
 
-  const animatedIndicatorStyle = useAnimatedStyle(() => {
-    return {
-      width: segmentWidth,
-      transform: [
-        { translateX: translateX.value },
-        { scale: scale.value },
-      ],
-    };
-  });
+  const indicatorStyle = useAnimatedStyle(() => ({
+    width: segmentWidth,
+    transform: [{ translateX: translateX.value }],
+  }));
 
-  const handlePress = (option: string) => {
-    if (option === selectedOption) return;
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    scale.value = withSequence(
-      withTiming(1.02, { duration: 100 }),
-      withSpring(1, { damping: 12, stiffness: 200 })
-    );
-
-    onOptionPress(option);
+  const onLayout = (event: LayoutChangeEvent) => {
+    setWidth(event.nativeEvent.layout.width);
   };
 
   return (
-    <View
-      style={[styles.container, containerStyle]}
-      onLayout={onLayout}
-    >
-      {dimensions.width > 0 && (
-        <Animated.View
-          style={[
-            styles.activeIndicator,
-            animatedIndicatorStyle,
-          ]}
-        />
+    <View style={[styles.track, containerStyle]} onLayout={onLayout}>
+      {segmentWidth > 0 && (
+        <Animated.View style={[styles.activeIndicator, indicatorStyle]} />
       )}
       {options.map((option) => {
-        const isActive = selectedOption === option;
+        const active = option === selectedOption;
         return (
           <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
             key={option}
-            onPress={() => handlePress(option)}
-            style={styles.segment}
+            onPress={() => {
+              if (active) return;
+              Haptics.selectionAsync();
+              onOptionPress(option);
+            }}
+            style={({ pressed }) => [
+              styles.segment,
+              pressed && styles.segmentPressed,
+            ]}
           >
-            <Text
-              style={[
-                styles.label,
-                isActive ? styles.activeLabel : styles.inactiveLabel,
-              ]}
-            >
+            <Text style={[styles.label, active ? styles.activeLabel : styles.inactiveLabel]}>
               {option.charAt(0).toUpperCase() + option.slice(1)}
             </Text>
           </Pressable>
@@ -114,53 +83,63 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   );
 };
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: boolean) {
+function makeStyles(
+  colors: ReturnType<typeof useAppTheme>["colors"],
+  isDark: boolean,
+) {
   return StyleSheet.create({
-    container: {
-      flexDirection: 'row',
-      height: 42,
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.045)' : 'rgba(0, 0, 0, 0.04)',
-      borderRadius: 999,
+    track: {
+      position: "relative",
+      flexDirection: "row",
+      gap: 4,
       padding: 4,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
-      position: 'relative',
+      minHeight: 52,
+      borderRadius: designTokens.radius.full,
+      backgroundColor: colors.surfaceSunken,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: colors.border,
     },
     activeIndicator: {
-      position: 'absolute',
-      top: 4,
-      bottom: 4,
+      position: "absolute",
       left: 4,
-      backgroundColor: isDark ? '#20232A' : '#FFFFFF',
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.04)',
-      shadowColor: '#000',
-      shadowOpacity: isDark ? 0.35 : 0.12,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 4,
+      top: 4,
+      height: 44,
+      borderRadius: designTokens.radius.full,
+      backgroundColor: isDark ? colors.surfaceRaised : colors.surface,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: colors.border,
+      shadowColor: colors.textPrimary,
+      shadowOpacity: isDark ? 0 : 0.12,
+      shadowRadius: isDark ? 0 : 3,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: isDark ? 0 : 2,
     },
     segment: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      minWidth: 80,
       zIndex: 1,
+      flex: 1,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.full,
+    },
+    segmentPressed: {
+      backgroundColor: colors.brandWash,
     },
     label: {
-      fontSize: 13,
-      fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
-      letterSpacing: 0.3,
+      fontSize: 15,
+      lineHeight: 20,
     },
     activeLabel: {
-      color: colors.text,
+      color: colors.brandText,
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
     },
     inactiveLabel: {
-      color: colors.muted,
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.semibold,
+      fontWeight: "600",
     },
   });
 }
 
-export default SegmentedControl;
+export default TransactionSegmentedControl;

@@ -6,8 +6,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { StyleSheet, View, Pressable, Text, InteractionManager, Keyboard } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
 
 import { ExpenseCategoryModel, TransactionModel } from '@trackingPortal/api/models';
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
@@ -22,8 +21,9 @@ import {
 import { INewTransaction } from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.interfaces';
 import TransactionForm from '@trackingPortal/screens/TransactionScreen/TransactionForm';
 import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface ITransactionCreation {
   openCreationModal: boolean;
@@ -64,8 +64,6 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   onCategoryUsed,
   refreshSummary,
 }) => {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { transactionData } = useDatabase();
   const { user } = useAuth();
   const { syncNow } = useOffline();
@@ -189,40 +187,15 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         onSubmit={handleAddTransaction}
         validationSchema={CreateTransactionSchema}
       >
-        {({ handleSubmit, isValid, dirty }) => (
+        {({ handleSubmit }) => (
           <View style={styles.container}>
-            <View style={styles.modalToggleRow}>
-              <View style={styles.segmentedToggle}>
-                <Pressable
-                  onPress={() => setTransactionType('Expense')}
-                  style={({ pressed }) => [
-                    styles.toggleButton,
-                    (transactionType === 'Expense' || pressed) && styles.toggleButtonActive,
-                  ]}>
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      transactionType === 'Expense' && styles.toggleTextActive,
-                    ]}>
-                    Expense
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setTransactionType('Income')}
-                  style={({ pressed }) => [
-                    styles.toggleButton,
-                    (transactionType === 'Income' || pressed) && styles.toggleButtonActive,
-                  ]}>
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      transactionType === 'Income' && styles.toggleTextActive,
-                    ]}>
-                    Income
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
+            <TransactionSegmentedControl
+              options={['Expense', 'Income']}
+              selectedOption={transactionType}
+              onOptionPress={option =>
+                setTransactionType(option as 'Expense' | 'Income')
+              }
+            />
 
             <TransactionForm
               categories={activeCategories}
@@ -234,6 +207,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
               onSubmit={handleSubmit}
               onCancel={handleClose}
               loading={loading}
+              showShortcutKeypad
             />
           </View>
         )}
@@ -242,56 +216,11 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   );
 };
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    modalToggleRow: {
-      alignItems: 'center',
-      marginBottom: 20,
-      marginTop: 10,
-    },
-    segmentedToggle: {
-      flexDirection: 'row',
-      backgroundColor: colors.surfaceAlt,
-      borderRadius: 10,
-      padding: 3,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-    },
-    toggleButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 10,
-      borderRadius: 7,
-    },
-    toggleButtonActive: {
-      backgroundColor: colors.surface,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    toggleText: {
-      color: colors.subText,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    toggleTextActive: {
-      color: colors.primary,
-      fontWeight: '700',
-    },
-    topHeader: {
-      position: 'absolute',
-      top: 5,
-      right: 8,
-      zIndex: 10,
-    },
-    checkIcon: {
-      margin: 0,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    gap: designTokens.spacing.md,
+  },
+});
 
 export default React.memo(TransactionCreation);

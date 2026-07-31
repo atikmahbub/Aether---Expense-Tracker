@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import {StyleSheet, View, Platform, TouchableOpacity, Dimensions, Pressable, KeyboardAvoidingView, Keyboard} from 'react-native';
+import {StyleSheet, View, Platform, Dimensions, Pressable, KeyboardAvoidingView, Keyboard} from 'react-native';
 import Modal from 'react-native-modal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -40,11 +41,12 @@ const BaseBottomSheet = React.memo(
           propagateSwipe={true}
           style={styles.modal}
           backdropOpacity={0.5}
+          backdropColor={colors.backdrop}
           backdropTransitionOutTiming={0}
           animationIn="slideInUp"
           animationOut="slideOutDown"
-          animationInTiming={300}
-          animationOutTiming={300}
+          animationInTiming={designTokens.motion.standard}
+          animationOutTiming={designTokens.motion.standard}
           useNativeDriver={true}
           statusBarTranslucent
           deviceHeight={SCREEN_HEIGHT}
@@ -124,28 +126,28 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       justifyContent: 'flex-end',
     },
     contentWrapper: {
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: 32,
-      borderTopRightRadius: 32,
+      backgroundColor: colors.bg,
+      borderTopLeftRadius: designTokens.radius.lg,
+      borderTopRightRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
-      maxHeight: SCREEN_HEIGHT * 0.9,
-      paddingTop: 8,
+      borderColor: colors.border,
+      maxHeight: SCREEN_HEIGHT * 0.94,
+      paddingTop: 6,
     },
     indicatorWrapper: {
       alignItems: 'center',
-      paddingTop: 8,
-      paddingBottom: 16,
+      paddingTop: 4,
+      paddingBottom: 10,
     },
     indicator: {
-      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-      width: 36,
+      backgroundColor: colors.borderStrong,
+      width: 40,
       height: 4,
       borderRadius: 2,
     },
     scrollContent: {
-      paddingHorizontal: 24,
-      paddingBottom: 120,
+      paddingHorizontal: 20,
+      paddingBottom: 18,
       flexGrow: 1,
     },
   });

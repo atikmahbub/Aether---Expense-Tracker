@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { OnboardingSlide } from '@trackingPortal/components';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 const viewabilityConfig = {itemVisiblePercentThreshold: 65};
 
@@ -31,27 +32,27 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
       id: 'slide-1',
       title: 'Track your money effortlessly',
       subtitle: 'See where your money goes, instantly',
-      icon: <MaterialCommunityIcons name="wallet-outline" size={80} color={colors.primary} />,
+      icon: <MaterialCommunityIcons name="wallet" size={34} color={colors.onBrand} />,
     },
     {
       id: 'slide-2',
       title: 'Understand your spending',
       subtitle: 'Smart insights & category breakdown',
-      icon: <MaterialCommunityIcons name="chart-pie" size={80} color={colors.primary} />,
+      icon: <MaterialCommunityIcons name="chart-donut" size={34} color={colors.onBrand} />,
     },
     {
       id: 'slide-3',
       title: 'Add income or expense in seconds',
       subtitle: 'Start building your financial habit today',
-      icon: <MaterialCommunityIcons name="plus-circle-outline" size={80} color={colors.primary} />,
+      icon: <MaterialCommunityIcons name="plus" size={38} color={colors.onBrand} />,
     },
     {
       id: 'slide-4',
       title: 'Works Offline',
       subtitle: "Add expenses anytime, even without internet. Your data syncs automatically when you're back online.",
-      icon: <MaterialCommunityIcons name="cloud-off-outline" size={80} color={colors.primary} />,
+      icon: <MaterialCommunityIcons name="cloud-check" size={34} color={colors.onBrand} />,
     },
-  ], [colors.primary]);
+  ], [colors.onBrand]);
 
   type Slide = (typeof SLIDES)[number];
 
@@ -81,7 +82,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
   }, []);
 
   const onViewableItemsChanged = useRef(
-    ({viewableItems}: {viewableItems: Array<ViewToken>}) => {
+    ({viewableItems}: {viewableItems: ViewToken[]}) => {
       const nextIndex = viewableItems?.[0]?.index;
       if (typeof nextIndex === 'number') {
         setCurrentIndex(nextIndex);
@@ -96,6 +97,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.brandRow, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.brandMark}>
+          <Text style={styles.brandMarkText}>S</Text>
+        </View>
+        <Text style={styles.brandName}>Scalar</Text>
+      </View>
       <FlatList
         ref={listRef}
         data={SLIDES}
@@ -112,7 +119,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
         style={styles.slider}
       />
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.progressRail}>
           {SLIDES.map((slide, index) => (
             <View
@@ -142,51 +149,74 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: colors.bg,
     },
     slider: {
       flex: 1,
     },
     footer: {
-      paddingHorizontal: 24,
-      gap: 20,
-      paddingTop: 10,
+      paddingHorizontal: 20,
+      gap: 16,
+      paddingTop: 12,
+    },
+    brandRow: {
+      minHeight: 64,
+      paddingHorizontal: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    brandMark: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: designTokens.radius.md,
+      backgroundColor: colors.brand,
+    },
+    brandMarkText: {
+      color: colors.onBrand,
+      fontFamily: designTokens.font.bold,
+      fontSize: 17,
+      fontWeight: '700',
+    },
+    brandName: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontSize: 18,
+      fontWeight: '700',
     },
     progressRail: {
       flexDirection: 'row',
       justifyContent: 'center',
-      gap: 10,
+      gap: 8,
     },
     progressDot: {
       width: (width - 160) / SLIDE_COUNT,
       maxWidth: 72,
-      height: 4,
-      borderRadius: 999,
-      backgroundColor: colors.inactiveIcon,
+      height: 5,
+      borderRadius: designTokens.radius.full,
+      backgroundColor: colors.surfaceSunken,
     },
     progressDotActive: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.brand,
       width: ((width - 160) / SLIDE_COUNT) * 1.3,
     },
     progressDotCompleted: {
-      backgroundColor: colors.primarySoft,
+      backgroundColor: colors.brandWash,
     },
     primaryButton: {
-      borderRadius: 999,
-      paddingVertical: 16,
+      height: 54,
+      borderRadius: designTokens.radius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.primary,
-      shadowColor: colors.primary,
-      shadowOpacity: 0.35,
-      shadowOffset: {width: 0, height: 14},
-      shadowRadius: 28,
+      backgroundColor: colors.brand,
     },
     primaryButtonText: {
-      color: colors.background,
-      fontSize: 17,
+      color: colors.onBrand,
+      fontFamily: designTokens.font.bold,
+      fontSize: 16,
       fontWeight: '700',
-      letterSpacing: 0.4,
     },
   });
 }

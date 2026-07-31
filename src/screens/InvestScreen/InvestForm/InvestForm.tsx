@@ -3,10 +3,9 @@ import React, {Fragment, useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddInvestFormFields} from '@trackingPortal/screens/InvestScreen';
 import {TextInput} from 'react-native-paper';
-import {FormikCheckboxField, FormikTextInput} from '@trackingPortal/components';
-import DatePicker from 'react-native-date-picker';
+import {FormikCheckboxField, FormikTextInput, LoadingButton} from '@trackingPortal/components';
+import ScalarCalendar from '@trackingPortal/components/ScalarCalendar';
 import dayjs from 'dayjs';
-import {LoadingButton} from '@trackingPortal/components';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 interface IInvestForm {
@@ -17,7 +16,7 @@ interface IInvestForm {
 }
 
 const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}) => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [startPickerVisible, setStartPickerVisible] = useState(false);
@@ -97,12 +96,10 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
         />
       </View>
 
-      <DatePicker
-        modal
-        mode="date"
-        open={startPickerVisible}
+      <ScalarCalendar
+        visible={startPickerVisible}
         date={startDate}
-        theme={isDark ? 'dark' : 'light'}
+        title="Investment start date"
         onConfirm={selectedDate => {
           setFieldValue(EAddInvestFormFields.START_DATE, selectedDate);
           setStartPickerVisible(false);
@@ -130,12 +127,10 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
               />
             </View>
           </View>
-          <DatePicker
-            modal
-            mode="date"
-            open={endPickerVisible}
+          <ScalarCalendar
+            visible={endPickerVisible}
             date={endDate}
-            theme={isDark ? 'dark' : 'light'}
+            title="Investment end date"
             onConfirm={selectedDate => {
               setFieldValue(EAddInvestFormFields.END_DATE, selectedDate);
               setEndPickerVisible(false);

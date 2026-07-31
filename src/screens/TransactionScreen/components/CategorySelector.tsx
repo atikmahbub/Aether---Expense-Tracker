@@ -1,5 +1,5 @@
-import React, {useCallback, useMemo} from 'react';
-import {ActivityIndicator, FlatList, StyleSheet, Text, View} from 'react-native';
+import React, {useMemo} from 'react';
+import {ActivityIndicator, ScrollView, StyleSheet, Text, View} from 'react-native';
 import CategoryChip from '@trackingPortal/screens/TransactionScreen/components/CategoryChip';
 import {ExpenseCategoryModel} from '@trackingPortal/api/models';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
@@ -43,19 +43,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     return [...recentMatches, ...remaining];
   }, [categories, recentCategoryIds]);
 
-  const renderItem = useCallback(
-    ({item}: {item: ExpenseCategoryModel}) => (
-      <CategoryChip
-        label={item.name}
-        color={item.color}
-        icon={item.icon}
-        active={item.id === selectedCategoryId}
-        onPress={() => onSelect(item.id)}
-      />
-    ),
-    [onSelect, selectedCategoryId],
-  );
-
   if (loading && !categories.length) {
     return (
       <View style={styles.fallbackContainer}>
@@ -77,15 +64,22 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   return (
     <View>
-      <FlatList
-        data={prioritizedCategories}
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
+      >
+          {prioritizedCategories.map(item => (
+            <CategoryChip
+              key={item.id}
+              label={item.name}
+              color={item.color}
+              icon={item.icon}
+              active={item.id === selectedCategoryId}
+              onPress={() => onSelect(item.id)}
+            />
+          ))}
+      </ScrollView>
       {error ? (
         <Text style={styles.errorText} onPress={onRetry}>
           {onRetry ? 'Could not update categories. Tap to retry.' : error}
@@ -99,27 +93,26 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     listContent: {
       paddingVertical: 4,
-      paddingRight: 12,
-    },
-    separator: {
-      width: 12,
+      flexDirection: 'row',
+      gap: 8,
+      paddingRight: 20,
     },
     fallbackContainer: {
       minHeight: 48,
-      borderRadius: 16,
+      borderRadius: 12,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
       padding: 12,
       backgroundColor: colors.surface,
     },
     placeholder: {
-      color: colors.subText,
+      color: colors.textSecondary,
       fontSize: 13,
     },
     helper: {
-      color: colors.subText,
+      color: colors.textSecondary,
       fontSize: 12,
       marginTop: 4,
     },
@@ -127,7 +120,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.warning,
       fontSize: 12,
       marginTop: 6,
-      fontFamily: 'Manrope_600SemiBold',
+      fontFamily: 'PlusJakartaSans_600SemiBold',
       fontWeight: '600',
     },
   });

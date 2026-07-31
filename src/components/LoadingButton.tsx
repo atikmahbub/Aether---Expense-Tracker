@@ -1,13 +1,14 @@
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import React, { useMemo } from 'react';
 import {
-  ActivityIndicator,
   GestureResponderEvent,
   StyleSheet,
   Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { designTokens } from '@trackingPortal/themes/designTokens';
+import { LoadingSquares } from '@trackingPortal/components/ScalarLoadingMarks';
 
 interface ILoadingButtonProps {
   onPress: (event: GestureResponderEvent) => void;
@@ -34,13 +35,12 @@ const LoadingButton: React.FC<ILoadingButtonProps> = ({
       disabled={loading}
       activeOpacity={0.78}
     >
-      <Text style={[styles.buttonText, textStyle]}>{label}</Text>
-      {loading && (
-        <ActivityIndicator
-          size="small"
-          color={colors.background}
-          style={styles.loader}
-        />
+      {loading ? (
+        <View accessibilityLabel={`${label}, loading`} style={styles.loader}>
+          <LoadingSquares color={colors.onBrand} />
+        </View>
+      ) : (
+        <Text style={[styles.buttonText, textStyle]}>{label}</Text>
       )}
     </TouchableOpacity>
   );
@@ -72,7 +72,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       textAlign: 'center',
     },
     loader: {
-      marginLeft: 8,
+      minHeight: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
   });
 }
