@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   Platform,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutChangeEvent,
   TouchableWithoutFeedback,
   Modal,
 } from 'react-native';
 import LoadingButton from '@trackingPortal/components/LoadingButton';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import useKeyboardHeight from '@trackingPortal/hooks/useKeyboardHeight';
 
 interface IFormModal {
   isVisible: boolean;
@@ -40,6 +42,25 @@ const FormModal: React.FC<IFormModal> = ({
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
+  // Android only: edge-to-edge (Expo SDK 54+) stops the window from resizing
+  // for the keyboard on Android 15+, so the card is lifted manually instead.
+  const keyboardHeight = useKeyboardHeight();
+  const [rootHeight, setRootHeight] = useState(0);
+
+  const onRootLayout = useCallback((event: LayoutChangeEvent) => {
+    setRootHeight(event.nativeEvent.layout.height);
+  }, []);
+
+  // Older Android versions still resize the window for the IME; detect that by
+  // the shrunken root height so the card isn't pushed up twice.
+  const windowResized =
+    rootHeight > 0 &&
+    rootHeight < Dimensions.get('screen').height - keyboardHeight * 0.6;
+  const lift =
+    Platform.OS === 'android' && keyboardHeight > 0 && !windowResized
+      ? keyboardHeight
+      : 0;
+
   const dismissKeyboard = () => Keyboard.dismiss();
 
   const handleClose = () => {
@@ -56,9 +77,12 @@ const FormModal: React.FC<IFormModal> = ({
       statusBarTranslucent
     >
       <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.modalOverlay}>
+        <View
+          style={[styles.modalOverlay, lift > 0 && {paddingBottom: lift}]}
+          onLayout={onRootLayout}
+        >
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardView}
           >
             <TouchableWithoutFeedback onPress={dismissKeyboard}>

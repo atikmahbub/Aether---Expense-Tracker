@@ -1,8 +1,18 @@
-import React, { useMemo } from 'react';
-import {StyleSheet, View, Platform, Dimensions, Pressable, KeyboardAvoidingView, Keyboard} from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  Platform,
+  Dimensions,
+  Pressable,
+  KeyboardAvoidingView,
+  Keyboard,
+  LayoutChangeEvent,
+} from 'react-native';
 import Modal from 'react-native-modal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import useKeyboardHeight from '@trackingPortal/hooks/useKeyboardHeight';
 import { designTokens } from '@trackingPortal/themes/designTokens';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -30,6 +40,24 @@ const BaseBottomSheet = React.memo(
       const { colors } = useAppTheme();
       const styles = useMemo(() => makeStyles(colors), [colors]);
       const isVisible = index >= 0;
+
+      // Android only: with edge-to-edge (Expo SDK 54+) the window is no longer
+      // resized for the keyboard on Android 15+, so the sheet has to be lifted
+      // by the IME height manually.
+      const keyboardHeight = useKeyboardHeight();
+      const [rootHeight, setRootHeight] = useState(0);
+
+      const onRootLayout = useCallback((event: LayoutChangeEvent) => {
+        setRootHeight(event.nativeEvent.layout.height);
+      }, []);
+
+      // Older Android versions still resize the window for the IME; detect that
+      // by the shrunken root height so the sheet isn't pushed up twice.
+      const windowResized =
+        rootHeight > 0 &&
+        rootHeight < Dimensions.get('screen').height - keyboardHeight * 0.6;
+      const lift = keyboardHeight > 0 && !windowResized ? keyboardHeight : 0;
+      const availableHeight = (rootHeight || SCREEN_HEIGHT) - lift;
 
       return (
         <Modal
@@ -81,15 +109,29 @@ const BaseBottomSheet = React.memo(
               </View>
             </KeyboardAvoidingView>
           ) : (
-            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-              <View style={styles.contentWrapper}>
+            <View
+              style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: lift }}
+              onLayout={onRootLayout}
+            >
+              <View
+                style={[
+                  styles.contentWrapper,
+                  {
+                    maxHeight: Math.min(
+                      SCREEN_HEIGHT * 0.94,
+                      Math.max(availableHeight, 0),
+                    ),
+                  },
+                ]}
+              >
                 <View style={styles.indicatorWrapper}>
                   <View style={styles.indicator} />
                 </View>
+                {/* enableOnAndroid is off: it pads the content by the keyboard
+                    height, which would stack on top of the lift above. */}
                 <KeyboardAwareScrollView
-                  enableOnAndroid={true}
+                  enableOnAndroid={false}
                   keyboardShouldPersistTaps="handled"
-                  extraScrollHeight={40}
                   showsVerticalScrollIndicator={false}
                   bounces={false}
                   contentContainerStyle={styles.scrollContent}

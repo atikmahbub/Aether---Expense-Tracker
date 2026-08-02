@@ -143,8 +143,10 @@ export default function InvestScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Every input on this screen lives inside a modal that handles the
+          keyboard itself; enableOnAndroid would shift this list too. */}
       <KeyboardAwareScrollView
-        enableOnAndroid={true}
+        enableOnAndroid={false}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={40}
         showsVerticalScrollIndicator={false}

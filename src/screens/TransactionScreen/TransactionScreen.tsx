@@ -446,8 +446,10 @@ export default function TransactionScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Every input on this screen lives inside a modal that handles the
+          keyboard itself; enableOnAndroid would shift this list too. */}
       <AnimatedKeyboardAwareScrollView
-        enableOnAndroid={true}
+        enableOnAndroid={false}
         extraScrollHeight={40}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
