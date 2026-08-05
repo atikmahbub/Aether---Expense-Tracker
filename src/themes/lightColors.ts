@@ -31,6 +31,13 @@ export const lightColors = {
   nav: "#EFF4F2",
   navBorder: "#C2D4CF",
 
+  onAccent: "#D3E5E1",
+  negativeFill: "#C01642",
+  onNegativeFill: "#FFFFFF",
+  onPositiveFill: "#FFFFFF",
+  assetGold: "#8A6A15",
+  onAssetGold: "#FFFFFF",
+
   background: "#FFFFFF",
   cardBg: "#FFFFFF",
   surfaceAlt: "#EFF4F2",

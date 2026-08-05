@@ -19,6 +19,8 @@ interface ScalarListRowProps {
   icon: IconName;
   categoryName?: string;
   categoryColor?: string;
+  /** Glyph ink for the icon tile. Defaults to the on-brand ink. */
+  iconGlyphColor?: string;
   positive?: boolean;
   negative?: boolean;
   onPress?: () => void;
@@ -33,6 +35,7 @@ export default function ScalarListRow({
   icon,
   categoryName,
   categoryColor,
+  iconGlyphColor,
   positive = false,
   negative = false,
   onPress,
@@ -44,7 +47,7 @@ export default function ScalarListRow({
   const semanticCategory = categoryName as ScalarCategoryName | undefined;
   const category = semanticCategory ? palette[semanticCategory] : undefined;
   const tileColor = category?.fill ?? categoryColor ?? colors.brand;
-  const iconColor = category?.glyph ?? colors.onBrand;
+  const iconColor = category?.glyph ?? iconGlyphColor ?? colors.onBrand;
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -90,7 +93,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       paddingVertical: 12,
       paddingHorizontal: 16,
       backgroundColor: colors.surface,
-      borderRadius: 18,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -108,7 +111,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     tile: {
       width: 44,
       height: 44,
-      borderRadius: designTokens.radius.md,
+      borderRadius: designTokens.radius.icon,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -131,8 +134,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     amount: {
       color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.rowAmount,
     },

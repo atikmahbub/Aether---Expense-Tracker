@@ -31,6 +31,18 @@ export const colors = {
   nav: "#111D19",
   navBorder: "rgba(255,255,255,0.08)",
 
+  // Ink for anything sitting on a brand-coloured accent surface: FAB, month
+  // chips, segmented-control pills. Kept separate from `onBrand` so the four
+  // v4 screens can carry the spec value without moving ink on every button.
+  onAccent: "#06211C",
+  // Solid negative fill (chart Out bars, borrowed-loan icon tiles). Distinct
+  // from `negative`, which is the negative *text* ink.
+  negativeFill: "#FF95A8",
+  onNegativeFill: "#3A0512",
+  onPositiveFill: "#06211C",
+  assetGold: "#E8C46A",
+  onAssetGold: "#2A2008",
+
   // Compatibility aliases for screens not migrated yet.
   background: "#07110E",
   cardBg: "#262F3D",

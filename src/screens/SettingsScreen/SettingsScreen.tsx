@@ -242,7 +242,7 @@ function SettingsRow({
       <MaterialCommunityIcons
         name={external ? "open-in-new" : "chevron-right"}
         size={19}
-        color={colors.textTertiary}
+        color={colors.textSecondary}
       />
     </Pressable>
   );
@@ -256,34 +256,39 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 0,
     },
     panelContent: { paddingHorizontal: 20, gap: 8 },
-    bodyContent: { paddingHorizontal: 20, gap: 12 },
+    // Nothing in this column may shrink: with flex sizing the last About row
+    // gets clipped instead of the column simply being as tall as its content.
+    bodyContent: { paddingHorizontal: 20, gap: 8 },
     title: {
-      marginBottom: 4,
       color: colors.panelText,
       fontFamily: designTokens.font.extraBold,
       fontWeight: "800",
-      fontSize: 30,
-      lineHeight: 38,
-      letterSpacing: -0.9,
+      ...designTokens.typography.title,
     },
     sectionLabel: {
-      marginTop: 12,
-      color: colors.textTertiary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      flex: 0,
+      flexShrink: 0,
+      marginTop: 6,
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.caps,
     },
-    panelSectionLabel: { color: colors.panelTextSecondary, marginTop: 0 },
+    // 8 here plus the column's 8 gap = the spec's 16 above APPEARANCE.
+    panelSectionLabel: { color: colors.panelTextSecondary, marginTop: 8 },
     card: {
+      flex: 0,
+      flexShrink: 0,
       overflow: "hidden",
-      borderRadius: designTokens.radius.lg,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
     },
     row: {
-      minHeight: 64,
-      paddingHorizontal: 16,
+      minHeight: 62,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
@@ -295,7 +300,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.md,
-      backgroundColor: colors.brandWash,
+      backgroundColor: colors.panel,
     },
     rowLabel: {
       flex: 1,
@@ -306,32 +311,33 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     rowValue: {
       color: colors.textSecondary,
-      fontFamily: designTokens.font.medium,
+      fontFamily: designTokens.font.bold,
       fontSize: 15,
-      fontWeight: "500",
+      fontWeight: "700",
     },
     divider: {
       height: StyleSheet.hairlineWidth,
-      marginLeft: 68,
       backgroundColor: colors.divider,
     },
     signOut: {
-      height: 52,
-      marginTop: 12,
+      flex: 0,
+      flexShrink: 0,
+      height: 50,
+      marginTop: 6,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      borderRadius: designTokens.radius.full,
+      borderRadius: designTokens.radius.button,
       borderWidth: 1.5,
       borderColor: colors.negative,
       backgroundColor: "transparent",
     },
     signOutText: {
       color: colors.negative,
-      fontFamily: designTokens.font.bold,
+      fontFamily: designTokens.font.extraBold,
       fontSize: 16,
-      fontWeight: "700",
+      fontWeight: "800",
     },
     modalBackdrop: {
       ...StyleSheet.absoluteFillObject,

@@ -17,4 +17,10 @@ export default function CurvyHeroPanel({ children }: { children: React.ReactNode
   );
 }
 
-const styles = StyleSheet.create({ shell: { width: "100%" }, panel: { paddingBottom: 10 } });
+const styles = StyleSheet.create({
+  shell: { width: "100%" },
+  // The gap separates the greeting row from the panel body. Every screen passes
+  // <CustomAppBar /> plus one content view, so setting it here spaces all four
+  // consistently — the spec allows 14-16px depending on what follows.
+  panel: { paddingBottom: 10, gap: 14 },
+});

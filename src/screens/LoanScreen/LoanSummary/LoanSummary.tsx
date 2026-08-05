@@ -1,10 +1,11 @@
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
 import { CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import { formatCurrency } from "@trackingPortal/utils/utils";
-import React, { useMemo } from "react";
+import React, { ComponentProps, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 interface ISummary {
@@ -32,12 +33,9 @@ const LoanSummary: React.FC<ISummary> = ({
       <View style={styles.container}>
       <View style={styles.hero}>
         <Text style={styles.label}>NET POSITION</Text>
-        <ScalarAmountText
-          adjustsFontSizeToFit
-          minimumFontScale={0.75}
-          numberOfLines={1}
-          style={styles.heroAmount}
-        >
+        {/* See HomeDashboard: adjustsFontSizeToFit collapses multi-font-run
+            amounts (the ৳ is Noto Sans Bengali) at this size on iOS. */}
+        <ScalarAmountText numberOfLines={1} style={styles.heroAmount}>
           {formatCurrency(Math.abs(netPosition), currency, moneyOptions)}
         </ScalarAmountText>
         <Text style={styles.heroFooter}>
@@ -51,14 +49,19 @@ const LoanSummary: React.FC<ISummary> = ({
       <View style={styles.metrics}>
         <Metric
           label="TOTAL GIVEN"
-          amount={`↗ +${formatCurrency(totalGiven, currency, moneyOptions)}`}
-          positive
+          icon="arrow-top-right"
+          amount={`+${formatCurrency(totalGiven, currency, moneyOptions)}`}
+          tone="positive"
           styles={styles}
+          colors={colors}
         />
         <Metric
           label="TOTAL BORROWED"
-          amount={`↙ −${formatCurrency(totalBorrowed, currency, moneyOptions)}`}
+          icon="arrow-bottom-left"
+          amount={`−${formatCurrency(totalBorrowed, currency, moneyOptions)}`}
+          tone="negative"
           styles={styles}
+          colors={colors}
         />
       </View>
       </View>
@@ -66,27 +69,39 @@ const LoanSummary: React.FC<ISummary> = ({
   );
 };
 
+// Loan direction carries the arrow as well as the sign and the colour, so it
+// never rests on colour alone.
 function Metric({
   label,
+  icon,
   amount,
-  positive,
+  tone,
   styles,
+  colors,
 }: {
   label: string;
+  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
   amount: string;
-  positive?: boolean;
+  tone: "positive" | "negative";
   styles: ReturnType<typeof makeStyles>;
+  colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
+  const toneStyle = tone === "positive" ? styles.positive : styles.negative;
+  const toneColor =
+    tone === "positive" ? colors.panelPositive : colors.panelNegative;
   return (
     <View style={styles.metricCard}>
       <Text style={styles.label}>{label}</Text>
-      <ScalarAmountText
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={[styles.metricAmount, positive && styles.positive]}
-      >
-        {amount}
-      </ScalarAmountText>
+      <View style={styles.metricValueRow}>
+        <MaterialCommunityIcons name={icon} size={15} color={toneColor} />
+        <ScalarAmountText
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={[styles.metricAmount, toneStyle]}
+        >
+          {amount}
+        </ScalarAmountText>
+      </View>
     </View>
   );
 }
@@ -107,17 +122,16 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     label: {
       color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.caps,
     },
     heroAmount: {
       color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.heroAmount,
-      lineHeight: 48,
     },
     heroFooter: {
       color: colors.panelTextSecondary,
@@ -126,24 +140,32 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.caption,
     },
     metrics: { flexDirection: "row", gap: 12 },
+    metricValueRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      minWidth: 0,
+    },
     metricCard: {
       flex: 1,
       minWidth: 0,
       gap: 3,
       paddingVertical: 11,
       paddingHorizontal: 14,
-      borderRadius: 18,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderColor: colors.panelTileBorder,
       backgroundColor: colors.panelTile,
     },
     metricAmount: {
+      flexShrink: 1,
       color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.metric,
     },
     positive: { color: colors.panelPositive },
+    negative: { color: colors.panelNegative },
   });
 }

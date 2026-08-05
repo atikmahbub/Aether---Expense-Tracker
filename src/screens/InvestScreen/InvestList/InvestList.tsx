@@ -226,8 +226,11 @@ const InvestList: FC<IInvestList> = ({
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
                   })}
-                  icon={completed ? "check-bold" : "chart-bar"}
-                  categoryColor={completed ? colors.positive : colors.secondary}
+                  icon={completed ? "check-bold" : "rhombus"}
+                  categoryColor={completed ? colors.positive : colors.assetGold}
+                  iconGlyphColor={
+                    completed ? colors.onPositiveFill : colors.onAssetGold
+                  }
                   showDivider={index < invests.length - 1 || open}
                   onPress={() => {
                     const next = open ? null : invest.id;
@@ -262,8 +265,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     container: { paddingHorizontal: 20, paddingTop: 6, gap: 12 },
     title: {
       color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.section,
     },
     card: {
@@ -293,8 +296,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     assetHint: {
       gap: 4,
-      padding: 16,
-      borderRadius: 18,
+      alignItems: "center",
+      paddingVertical: 18,
+      paddingHorizontal: 16,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderStyle: "dashed",
       borderColor: colors.border,
@@ -310,6 +315,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontFamily: designTokens.font.medium,
       fontSize: 13,
       fontWeight: "500",
+      textAlign: "center",
     },
   });
 }

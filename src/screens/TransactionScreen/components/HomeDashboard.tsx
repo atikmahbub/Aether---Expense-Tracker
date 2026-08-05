@@ -37,6 +37,23 @@ const signedMoney = (
   positive: boolean,
 ) => `${positive ? "+" : "−"}${money(Math.abs(value), currency)}`;
 
+// Proposed in the v4 handoff as the point where the limit bar drops its
+// positive colour; still listed there as an open question.
+const LIMIT_WARNING_RATIO = 0.85;
+
+// Round the axis up to the nearest "readable" number just above the data, so
+// the tallest bar nearly fills the plot. Fixed 20k steps left the chart
+// two-thirds empty whenever the month's peak sat just over a boundary.
+const niceCeil = (value: number) => {
+  if (value <= 0) return 1000;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+  const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(
+    (candidate) => normalized <= candidate,
+  );
+  return (step ?? 10) * magnitude;
+};
+
 const compact = (value: number) => {
   if (value >= 1000) {
     return `${formatNumber(value / 1000, {
@@ -65,10 +82,27 @@ export default function HomeDashboard({
   const activeTotal = type === "expense" ? expenseTotal : incomeTotal;
   const limit = monthlyLimit?.limit ?? 0;
   const ratio = limit > 0 ? expenseTotal / limit : 0;
-  const isOver = type === "expense" && ratio > 1;
-  const progress = type === "expense" && limit > 0 ? Math.min(ratio, 1) : 0;
   const difference = Math.abs(expenseTotal - limit);
   const days = Math.max(month.daysInMonth(), 1);
+
+  // Three limit states with transitions at 85% and 100%. "Approaching" uses
+  // neutral ink rather than a new hue, so the only colour shift on the bar is
+  // green -> red at the actual breach.
+  const limitState: "under" | "approaching" | "over" =
+    ratio >= 1 ? "over" : ratio >= LIMIT_WARNING_RATIO ? "approaching" : "under";
+  const isOver = type === "expense" && limitState === "over";
+  const progress = type === "expense" && limit > 0 ? Math.min(ratio, 1) : 0;
+  // In the over state the bar is full width and represents total spend, so the
+  // limit falls at limit/spent along it. The distance past the notch reads as
+  // the overage.
+  const notchLeft = ratio > 1 ? (1 / ratio) * 100 : 100;
+
+  const limitFillColor =
+    limitState === "over"
+      ? colors.panelNegative
+      : limitState === "approaching"
+        ? colors.panelText
+        : colors.panelPositive;
 
   const weekly = useMemo(() => {
     const values = Array.from({ length: 4 }, () => ({ income: 0, expense: 0 }));
@@ -85,7 +119,7 @@ export default function HomeDashboard({
     ...weekly.flatMap((week) => [week.income, week.expense]),
     1,
   );
-  const axisMax = Math.ceil(chartMax / 20000) * 20000 || 20000;
+  const axisMax = niceCeil(chartMax);
 
   const categoryBreakdown = useMemo(() => {
     const totals = new Map<
@@ -127,18 +161,22 @@ export default function HomeDashboard({
           </Text>
           {isOver && (
             <View style={styles.overBadge}>
+              <MaterialCommunityIcons
+                name="triangle"
+                size={8}
+                color={colors.onNegative}
+              />
               <Text style={styles.overBadgeText}>
                 {formatNumber(ratio * 100, { maximumFractionDigits: 0 })}% OVER
               </Text>
             </View>
           )}
         </View>
-        <ScalarAmountText
-          adjustsFontSizeToFit
-          minimumFontScale={0.75}
-          numberOfLines={1}
-          style={styles.heroAmount}
-        >
+        {/* No adjustsFontSizeToFit here: the ৳ is a second font run (Noto Sans
+            Bengali), and iOS mis-measures multi-run text badly enough at this
+            size to shrink it to a few pixels, ignoring minimumFontScale. The
+            tile is full-bleed, so the amount fits without shrinking. */}
+        <ScalarAmountText numberOfLines={1} style={styles.heroAmount}>
           {loading ? "…" : money(activeTotal, currency)}
         </ScalarAmountText>
         {type === "expense" && (
@@ -151,10 +189,13 @@ export default function HomeDashboard({
                     styles.limitFill,
                     {
                       width: `${progress * 100}%`,
-                      backgroundColor: isOver ? colors.negative : colors.brand,
+                      backgroundColor: limitFillColor,
                     },
                   ]}
                 />
+                {isOver && (
+                  <View style={[styles.limitNotch, { left: `${notchLeft}%` }]} />
+                )}
               </View>
             )}
             <View style={styles.limitFooter}>
@@ -167,13 +208,21 @@ export default function HomeDashboard({
                 <Pressable
                   accessibilityRole="button"
                   onPress={onAdjustLimit}
+                  // The pill is 23px tall by design; hitSlop keeps the touch
+                  // area near the 44px minimum without enlarging the visual.
+                  hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
                   style={({ pressed }) => [
                     styles.limitAction,
+                    { borderColor: limitFillColor },
                     pressed && styles.limitActionPressed,
                   ]}
                 >
-                  <Text style={styles.limitActionText}>
-                    {limit > 0 ? "Adjust limit" : "Set limit"}
+                  <Text style={[styles.limitActionText, { color: limitFillColor }]}>
+                    {limit <= 0
+                      ? "Set limit"
+                      : isOver
+                        ? "Raise limit"
+                        : "Adjust limit"}
                   </Text>
                 </Pressable>
               </View>
@@ -184,7 +233,14 @@ export default function HomeDashboard({
                     isOver && styles.negativeText,
                   ]}
                 >
-                  {`${money(difference, currency)} ${isOver ? "over" : "left"}`}
+                  {isOver
+                    ? `${money(difference, currency)} over`
+                    : limitState === "approaching"
+                      ? `${money(difference, currency)} left · ${formatNumber(
+                          ratio * 100,
+                          { maximumFractionDigits: 0 },
+                        )}%`
+                      : `${money(difference, currency)} left`}
                 </ScalarAmountText>
               )}
             </View>
@@ -233,16 +289,18 @@ export default function HomeDashboard({
           ]}
         >
           <View style={styles.chartTitleRow}>
-            <Text style={styles.capsLabel}>IN VS OUT · BY WEEK</Text>
-            <MaterialCommunityIcons
-              name={chartExpanded ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.textTertiary}
-            />
+            <Text style={styles.cardCapsLabel}>IN VS OUT · BY WEEK</Text>
+            <View style={styles.chartToggle}>
+              <MaterialCommunityIcons
+                name={chartExpanded ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={colors.brandText}
+              />
+            </View>
           </View>
           <View style={styles.legend}>
             <Legend color={colors.positive} label="In" styles={styles} />
-            <Legend color={colors.negative} label="Out" styles={styles} />
+            <Legend color={colors.negativeFill} label="Out" styles={styles} />
           </View>
         </Pressable>
         <View style={styles.chartBody}>
@@ -254,10 +312,13 @@ export default function HomeDashboard({
                 ))}
               </View>
               <View style={styles.plot}>
-                {[1, 2, 3].map((line) => (
+                {/* Aligned to the top three axis labels (which space-between at
+                    0/33/66/100%); the 0 line is the plot's own baseline. These
+                    sat at 25/50/75% and so lined up with nothing. */}
+                {[0, 1, 2].map((line) => (
                   <View
                     key={line}
-                    style={[styles.gridline, { top: `${line * 25}%` }]}
+                    style={[styles.gridline, { top: `${(line * 100) / 3}%` }]}
                   />
                 ))}
                 <View style={styles.weeks}>
@@ -275,7 +336,7 @@ export default function HomeDashboard({
                           },
                         ]}
                       />
-                      <View style={styles.outBarColumn}>
+                      <View style={styles.outBarSlot}>
                         <View
                           style={[
                             styles.bar,
@@ -295,8 +356,8 @@ export default function HomeDashboard({
                               styles.expenseBarLabel,
                               {
                                 bottom: `${Math.min(
-                                  (week.expense / axisMax) * 100 + 5,
-                                  88,
+                                  (week.expense / axisMax) * 100 + 4,
+                                  86,
                                 )}%`,
                               },
                             ]}
@@ -320,7 +381,7 @@ export default function HomeDashboard({
         {chartExpanded && (
           <>
             <View style={styles.breakdownDivider} />
-            <Text style={styles.breakdownTitle}>
+            <Text style={styles.cardCapsLabel}>
               {type === "expense" ? "EXPENSE" : "INCOME"} BY CATEGORY
             </Text>
             <View style={styles.breakdown}>
@@ -405,34 +466,33 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     capsLabel: {
       color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.caps,
     },
     overBadge: {
-      borderRadius: designTokens.radius.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderRadius: designTokens.radius.full,
       paddingVertical: 5,
       paddingHorizontal: 9,
       backgroundColor: colors.negative,
     },
     overBadgeText: {
       color: colors.onNegative,
-      fontFamily: designTokens.font.bold,
-      fontSize: 12,
-      lineHeight: 16,
-      letterSpacing: 0.48,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontSize: 11,
+      lineHeight: 15,
+      letterSpacing: 1.32,
+      fontWeight: "800",
     },
     heroAmount: {
       color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.heroAmount,
-      minHeight: 54,
-      fontSize: 46,
-      lineHeight: 54,
-      paddingTop: 2,
     },
     limitTrack: {
       height: 8,
@@ -443,6 +503,16 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     limitFill: {
       height: 8,
       borderRadius: 999,
+    },
+    // Marks where the limit fell once the bar is full width, so the run past it
+    // is legible as the overage.
+    limitNotch: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      width: 2,
+      marginLeft: -1,
+      backgroundColor: "#FFFFFF",
     },
     limitFooter: {
       flexDirection: "row",
@@ -463,30 +533,31 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.caption,
     },
     limitStatus: {
-      color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      color: colors.panelText,
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.caption,
     },
+    // Outlined in the current limit-state colour, not filled — the pill has to
+    // read as a control without competing with the bar.
     limitAction: {
-      minHeight: 28,
-      paddingHorizontal: 10,
+      minHeight: 23,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.panelTileBorder,
-      backgroundColor: colors.panelTile,
+      borderWidth: 1.25,
+      backgroundColor: "transparent",
     },
     limitActionPressed: {
-      backgroundColor: colors.chartGrid,
+      backgroundColor: colors.panelTile,
     },
     limitActionText: {
-      color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontSize: 12,
-      lineHeight: 16,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontSize: 11,
+      lineHeight: 14,
+      fontWeight: "800",
     },
     negativeText: { color: colors.panelNegative },
     positiveText: { color: colors.panelPositive },
@@ -500,15 +571,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 3,
       paddingHorizontal: 14,
       paddingVertical: 11,
-      borderRadius: 18,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderColor: colors.panelTileBorder,
       backgroundColor: colors.panelTile,
     },
     metricValue: {
       color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.metric,
     },
@@ -516,7 +587,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 12,
       paddingVertical: 14,
       paddingHorizontal: 16,
-      borderRadius: designTokens.radius.lg,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
@@ -535,20 +606,37 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     chartTitleRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 4,
+      gap: 6,
       flexShrink: 1,
+    },
+    // The bare caret the spec draws is too faint to find on a dark card, so the
+    // chevron gets a tinted disc to read as a control. Tap target stays the
+    // whole 44px header row.
+    chartToggle: {
+      width: 22,
+      height: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: designTokens.radius.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.brandWash,
     },
     legend: { flexDirection: "row", gap: 10 },
     legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
     legendSwatch: { width: 9, height: 9, borderRadius: 2 },
     legendText: {
       color: colors.textSecondary,
-      fontFamily: designTokens.font.semibold,
-      fontWeight: "600",
+      fontFamily: designTokens.font.bold,
+      fontWeight: "700",
       ...designTokens.typography.micro,
       letterSpacing: 0,
     },
-    chartBody: { height: 92, flexDirection: "row", gap: 8 },
+    chartBody: {
+      height: designTokens.chart.plotHeight,
+      flexDirection: "row",
+      gap: 8,
+    },
     axis: {
       width: 32,
       alignItems: "flex-end",
@@ -566,13 +654,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       borderBottomWidth: 1.5,
       borderBottomColor: colors.borderStrong,
     },
+    // Full-strength 1px rules, as in the spec. At hairline width and 0.42 alpha
+    // these were effectively invisible, so the plot read as an empty box.
     gridline: {
       position: "absolute",
       left: 0,
       right: 0,
-      height: StyleSheet.hairlineWidth,
+      height: 1,
       backgroundColor: colors.chartGrid,
-      opacity: 0.42,
     },
     weeks: {
       position: "absolute",
@@ -585,24 +674,28 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       height: "100%",
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: 3,
+      gap: designTokens.chart.barGap,
     },
-    outBarColumn: {
-      width: 34,
+    // Wider than the bar so the value label fits inside the slot's own bounds
+    // rather than overflowing it (Android clips overflow). The negative margins
+    // cancel the extra width, so the slot still occupies exactly one bar and the
+    // In/Out pair keeps its 4px gap.
+    outBarSlot: {
+      width: designTokens.chart.barWidth + 26,
+      marginHorizontal: -13,
       height: "100%",
       alignItems: "center",
       justifyContent: "flex-end",
-      overflow: "visible",
     },
     expenseBarLabel: {
       position: "absolute",
       zIndex: 10,
       elevation: 10,
       color: colors.negative,
+      // Matches the card so the label reads over a gridline without colliding.
       backgroundColor: colors.surface,
       paddingHorizontal: 3,
       borderRadius: 3,
-      minWidth: 42,
       textAlign: "center",
       fontFamily: designTokens.font.bold,
       fontSize: 9,
@@ -610,9 +703,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "700",
       fontVariant: ["tabular-nums"],
     },
-    bar: { width: 14, minHeight: 3, borderTopLeftRadius: 7, borderTopRightRadius: 7 },
+    bar: {
+      width: designTokens.chart.barWidth,
+      minHeight: 3,
+      borderTopLeftRadius: 3,
+      borderTopRightRadius: 3,
+    },
     inBar: { backgroundColor: colors.positive },
-    outBar: { backgroundColor: colors.negative },
+    outBar: { backgroundColor: colors.negativeFill },
     xLabels: {
       paddingLeft: 40,
       flexDirection: "row",
@@ -629,10 +727,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       height: 1,
       backgroundColor: colors.divider,
     },
-    breakdownTitle: {
-      color: colors.textTertiary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+    // Same eyebrow, but off the panel — body-secondary ink instead of
+    // panel-secondary.
+    cardCapsLabel: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.caps,
     },
     breakdown: { gap: 12 },

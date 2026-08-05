@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { EInvestStatus } from "@trackingPortal/api/enums";
 import { InvestModel } from "@trackingPortal/api/models";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
@@ -28,6 +29,27 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
       completedReturns.length
     : 0;
 
+  // "1 asset · Gold" — name the holdings while the list is short enough to read.
+  const assetSubtitle = useMemo(() => {
+    const count = `${investList.length} ${investList.length === 1 ? "asset" : "assets"}`;
+    const names = investList
+      .slice(0, 2)
+      .map((item) => item.name)
+      .filter(Boolean);
+    if (!names.length) return count;
+    const suffix = investList.length > names.length ? "…" : "";
+    return `${count} · ${names.join(", ")}${suffix}`;
+  }, [investList]);
+
+  const returnIcon =
+    averageReturn < 0 ? "triangle-down" : averageReturn > 0 ? "triangle" : null;
+  const returnColor =
+    averageReturn < 0
+      ? colors.panelNegative
+      : averageReturn > 0
+        ? colors.panelPositive
+        : colors.panelText;
+
   return (
     <CurvyHeroPanel>
       <CustomAppBar />
@@ -36,37 +58,41 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
         <Text style={styles.label}>
           {isActive ? "ACTIVE INVESTMENTS" : "COMPLETED INVESTMENTS"}
         </Text>
-        <ScalarAmountText
-          adjustsFontSizeToFit
-          minimumFontScale={0.75}
-          numberOfLines={1}
-          style={styles.heroAmount}
-        >
+        {/* See HomeDashboard: adjustsFontSizeToFit collapses multi-font-run
+            amounts (the ৳ is Noto Sans Bengali) at this size on iOS. */}
+        <ScalarAmountText numberOfLines={1} style={styles.heroAmount}>
           {formatCurrency(totalAmount, currency, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
           })}
         </ScalarAmountText>
-        <Text style={styles.heroFooter}>
-          {investList.length} {investList.length === 1 ? "asset" : "assets"}
+        <Text style={styles.heroFooter} numberOfLines={1}>
+          {assetSubtitle}
         </Text>
       </View>
       <View style={styles.metrics}>
         <View style={styles.metricCard}>
           <Text style={styles.label}>AVERAGE RETURN</Text>
-          <Text
-            style={[
-              styles.metricValue,
-              averageReturn > 0 && styles.positive,
-              averageReturn < 0 && styles.negative,
-            ]}
-          >
-            {`${averageReturn < 0 ? "▼ " : averageReturn > 0 ? "▲ " : ""}${formatNumber(averageReturn, {
-              maximumFractionDigits: 1,
-              minimumFractionDigits: 1,
-              suffix: "%",
-            })}`}
-          </Text>
+          {/* Direction carries a glyph as well as the sign and colour. */}
+          <View style={styles.metricValueRow}>
+            {returnIcon && (
+              <MaterialCommunityIcons
+                name={returnIcon}
+                size={13}
+                color={returnColor}
+              />
+            )}
+            <Text
+              numberOfLines={1}
+              style={[styles.metricValue, { color: returnColor }]}
+            >
+              {formatNumber(averageReturn, {
+                maximumFractionDigits: 1,
+                minimumFractionDigits: 1,
+                suffix: "%",
+              })}
+            </Text>
+          </View>
         </View>
         <View style={styles.metricCard}>
           <Text style={styles.label}>ASSET COUNT</Text>
@@ -99,17 +125,16 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     label: {
       color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.caps,
     },
     heroAmount: {
       color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.heroAmount,
-      lineHeight: 48,
     },
     heroFooter: {
       color: colors.panelTextSecondary,
@@ -123,19 +148,24 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 3,
       paddingVertical: 11,
       paddingHorizontal: 14,
-      borderRadius: 18,
+      borderRadius: designTokens.radius.tile,
       borderWidth: 1,
       borderColor: colors.panelTileBorder,
       backgroundColor: colors.panelTile,
     },
+    metricValueRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      minWidth: 0,
+    },
     metricValue: {
+      flexShrink: 1,
       color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.metric,
     },
-    positive: { color: colors.panelPositive },
-    negative: { color: colors.panelNegative },
   });
 }

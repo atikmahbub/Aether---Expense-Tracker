@@ -172,7 +172,10 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
                   positive={given}
                   negative={!given}
                   icon={given ? "arrow-top-right" : "arrow-bottom-left"}
-                  categoryColor={given ? colors.positive : colors.warning}
+                  categoryColor={given ? colors.positive : colors.negativeFill}
+                  iconGlyphColor={
+                    given ? colors.onPositiveFill : colors.onNegativeFill
+                  }
                   showDivider={index < loans.length - 1 || open}
                   onPress={() => {
                     const next = open ? null : loan.id;
@@ -199,8 +202,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     container: { paddingHorizontal: 20, paddingTop: 6, gap: 12 },
     title: {
       color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
       ...designTokens.typography.section,
     },
     card: {

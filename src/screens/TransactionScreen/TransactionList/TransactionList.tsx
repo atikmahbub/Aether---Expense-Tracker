@@ -106,7 +106,7 @@ const TransactionList: FC<ITransactionList> = ({
   const scrollToActiveMonth = useCallback((monthIndex: number, animated = true) => {
     if (!scrollRef.current) return;
 
-    const CHIP_WIDTH = 75;
+    const CHIP_WIDTH = 62;
     const GAP = 8;
     const itemCenter = monthIndex * (CHIP_WIDTH + GAP) + CHIP_WIDTH / 2;
     const scrollX = itemCenter - SCREEN_WIDTH / 2 + 20;
@@ -490,7 +490,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     mainContainer: {
       paddingHorizontal: 20,
-      paddingTop: 28,
+      paddingTop: 16,
       flex: 1,
     },
     listCard: {
@@ -512,12 +512,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       paddingRight: 20,
     },
     chip: {
-      width: 64,
-      height: 48,
+      width: 62,
+      height: 44,
       alignItems: 'center',
       justifyContent: 'center',
       borderColor: colors.border,
-      borderRadius: designTokens.radius.md,
+      borderRadius: designTokens.radius.chip,
       backgroundColor: colors.surface,
       borderWidth: 1,
     },
@@ -527,22 +527,21 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     chipLabel: {
       color: colors.textSecondary,
-      fontSize: 14,
+      fontSize: 13,
+      lineHeight: 18,
       fontWeight: '600',
       fontFamily: designTokens.font.semibold,
     },
     chipLabelActive: {
-      color: colors.onBrand,
-      fontWeight: '700',
-      fontFamily: designTokens.font.bold,
+      color: colors.onAccent,
+      fontWeight: '800',
+      fontFamily: designTokens.font.extraBold,
     },
     title: {
       color: colors.textPrimary,
-      fontSize: 20,
-      lineHeight: 26,
-      fontWeight: '700',
-      fontFamily: designTokens.font.bold,
-      letterSpacing: -0.4,
+      fontWeight: '800',
+      fontFamily: designTokens.font.extraBold,
+      ...designTokens.typography.section,
     },
     yearButton: {
       height: 36,

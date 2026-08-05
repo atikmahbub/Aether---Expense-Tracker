@@ -160,8 +160,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.panelTextSecondary,
       fontSize: 21,
       lineHeight: 26,
-      fontFamily: designTokens.font.regular,
-      fontWeight: '400',
+      fontFamily: designTokens.font.medium,
+      fontWeight: '500',
       letterSpacing: -0.4,
     },
     userNameText: {

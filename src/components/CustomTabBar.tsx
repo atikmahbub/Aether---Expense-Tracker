@@ -58,7 +58,7 @@ export default function CustomTabBar({
         <MaterialCommunityIcons
           name={tab.icon}
           size={19}
-          color={focused ? colors.brandText : colors.textTertiary}
+          color={focused ? colors.brandText : colors.textSecondary}
         />
         <Text style={[styles.label, focused && styles.activeLabel]}>
           {tab.label}
@@ -91,7 +91,7 @@ export default function CustomTabBar({
           <MaterialCommunityIcons
             name={isSettings ? "book-open-page-variant-outline" : "plus"}
             size={isSettings ? 23 : 28}
-            color={isSettings ? colors.textTertiary : colors.onBrand}
+            color={isSettings ? colors.textSecondary : colors.onAccent}
           />
         </Pressable>
         {renderTab("investment")}
@@ -141,7 +141,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       transform: [{ scale: 0.96 }],
     },
     label: {
-      color: colors.textTertiary,
+      color: colors.textSecondary,
       fontFamily: designTokens.font.semibold,
       fontSize: 11,
       lineHeight: 14,
@@ -149,8 +149,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     activeLabel: {
       color: colors.brandText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
     },
     addButton: {
       width: 58,

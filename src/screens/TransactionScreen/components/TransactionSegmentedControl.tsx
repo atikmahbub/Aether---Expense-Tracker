@@ -98,8 +98,8 @@ function makeStyles(
       padding: 4,
       minHeight: 52,
       borderRadius: designTokens.radius.full,
-      backgroundColor: panel ? "rgba(0,0,0,0.20)" : colors.surfaceSunken,
-      borderWidth: panel || isDark ? StyleSheet.hairlineWidth : 0,
+      backgroundColor: panel ? "rgba(0,0,0,0.20)" : colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: panel ? colors.panelTileBorder : colors.border,
     },
     activeIndicator: {
@@ -108,9 +108,11 @@ function makeStyles(
       top: 4,
       height: 44,
       borderRadius: designTokens.radius.full,
-      backgroundColor: panel ? (isDark ? "#DCEAE5" : colors.brand) : isDark ? colors.surfaceRaised : colors.surface,
-      borderWidth: panel || isDark ? StyleSheet.hairlineWidth : 0,
-      borderColor: panel ? colors.panelTileBorder : colors.border,
+      // On the panel the pill is the light avatar-chip surface; off the panel
+      // it is the brand accent chip.
+      backgroundColor: panel ? (isDark ? "#DCEAE5" : colors.brand) : colors.brand,
+      borderWidth: panel ? StyleSheet.hairlineWidth : 0,
+      borderColor: colors.panelTileBorder,
       shadowColor: colors.textPrimary,
       shadowOpacity: isDark ? 0.12 : 0.09,
       shadowRadius: 5,
@@ -134,9 +136,9 @@ function makeStyles(
       lineHeight: 20,
     },
     activeLabel: {
-      color: panel ? colors.onBrand : colors.brandText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
+      color: panel && isDark ? colors.primaryDark : colors.onAccent,
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
     },
     inactiveLabel: {
       color: panel ? colors.panelTextSecondary : colors.textSecondary,

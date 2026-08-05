@@ -13,6 +13,14 @@ export const designTokens = {
   radius: {
     sm: 8,
     md: 12,
+    // Row icon tiles.
+    icon: 14,
+    // Buttons and month chips.
+    button: 16,
+    chip: 16,
+    // Metric tiles, list rows, grouped setting cards.
+    tile: 18,
+    // Hero tile.
     lg: 20,
     hero: 28,
     analytics: 30,
@@ -61,12 +69,12 @@ export const designTokens = {
     },
   },
   chart: {
-    plotHeight: 112,
+    plotHeight: 78,
     axisWidth: 32,
     gridlineWidth: 1,
     baselineWidth: 1.5,
-    barWidth: 13,
-    barGap: 3,
+    barWidth: 14,
+    barGap: 4,
   },
 } as const;
 
