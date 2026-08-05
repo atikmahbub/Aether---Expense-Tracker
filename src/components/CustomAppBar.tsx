@@ -47,21 +47,21 @@ const CustomAppBar: React.FC = () => {
     router.push('/profile');
   }, [router]);
 
-  const glowValue = useSharedValue(0.15);
-  const glowScale = useSharedValue(1.175);
+  const glowValue = useSharedValue(0.08);
+  const glowScale = useSharedValue(1.08);
   useEffect(() => {
     glowValue.value = withRepeat(
       withSequence(
-        withTiming(0.4, { duration: 2000 }),
-        withTiming(0.15, { duration: 2000 })
+        withTiming(0.16, { duration: 2200 }),
+        withTiming(0.08, { duration: 2200 })
       ),
       2,
       true
     );
     glowScale.value = withRepeat(
       withSequence(
-        withTiming(1.8, { duration: 2000 }),
-        withTiming(1.175, { duration: 2000 })
+        withTiming(1.22, { duration: 2200 }),
+        withTiming(1.08, { duration: 2200 })
       ),
       2,
       true
@@ -90,7 +90,8 @@ const CustomAppBar: React.FC = () => {
           <Text style={styles.dateLabel}>{todayLabel.toUpperCase()}</Text>
         </View>
         <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>{greeting}, <Text style={styles.userNameText}>{userName}</Text></Text>
+          <Text style={styles.greetingText}>{greeting},</Text>
+          <Text style={styles.userNameText}>{userName}</Text>
         </View>
       </Animated.View>
 
@@ -128,9 +129,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     container: {
       flexDirection: 'row',
       paddingHorizontal: 20,
-      paddingTop: 8,
-      paddingBottom: 10,
-      minHeight: 60,
+      paddingTop: 0,
+      paddingBottom: 6,
+      minHeight: 66,
       justifyContent: 'space-between',
       alignItems: 'center',
     },
@@ -141,7 +142,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginBottom: 4,
+      marginBottom: 3,
     },
     dateLabel: {
       color: colors.panelTextSecondary,
@@ -152,23 +153,27 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     greetingRow: {
       flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 5,
     },
     greetingText: {
       color: colors.panelTextSecondary,
-      fontSize: 21,
-      fontFamily: designTokens.font.medium,
-      fontWeight: '500',
-      letterSpacing: -0.3,
+      fontSize: 19,
+      lineHeight: 22,
+      fontFamily: designTokens.font.regular,
+      fontWeight: '400',
+      letterSpacing: -0.4,
     },
     userNameText: {
       color: colors.panelText,
-      fontSize: 21,
+      fontSize: 24,
+      lineHeight: 27,
       fontFamily: designTokens.font.extraBold,
       fontWeight: '800',
-      letterSpacing: -0.3,
+      letterSpacing: -0.7,
     },
     avatarTapArea: {
-      padding: 4,
+      padding: 2,
     },
     avatarContainer: {
       position: 'relative',
@@ -179,8 +184,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       width: AVATAR_SIZE + 4,
       height: AVATAR_SIZE + 4,
       borderRadius: (AVATAR_SIZE + 4) / 2,
-      borderWidth: 2,
-      borderColor: colors.panelText,
+      borderWidth: 1.5,
+      borderColor: colors.panelTileBorder,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',

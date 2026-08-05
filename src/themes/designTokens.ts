@@ -12,8 +12,10 @@ export const designTokens = {
   },
   radius: {
     sm: 8,
-    md: 12,
-    lg: 20,
+    md: 16,
+    lg: 22,
+    hero: 28,
+    analytics: 30,
     full: 999,
     // Compatibility aliases while untouched screens migrate.
     xl: 20,
@@ -46,10 +48,10 @@ export const designTokens = {
   },
   elevation: {
     lightRaised: {
-      shadowOpacity: 0.12,
-      shadowRadius: 3,
-      shadowOffset: { width: 0, height: 1 },
-      elevation: 2,
+      shadowOpacity: 0.09,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
     darkRaised: {
       shadowOpacity: 0,

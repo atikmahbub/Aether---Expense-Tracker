@@ -1,7 +1,6 @@
 import React from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import Animated, {
   Easing,
   FadeInDown,
@@ -15,7 +14,7 @@ type Props = {
 };
 
 const TabScreenContainer: React.FC<Props> = ({ children }) => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -28,11 +27,6 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
         },
       ]}
     >
-      <StatusBar
-        style={isDark ? "light" : "dark"}
-        backgroundColor={colors.panel}
-        translucent={false}
-      />
       {Platform.OS === 'ios' ? (
         <KeyboardAvoidingView
           style={{ flex: 1 }}

@@ -71,9 +71,10 @@ export default function CustomTabBar({
     <View
       style={[
         styles.container,
-        { paddingBottom: Math.max(insets.bottom, 18) },
+        { paddingBottom: Math.max(insets.bottom, 10) },
       ]}
     >
+      <View style={styles.dockShadow}>
       <View style={styles.row}>
         {renderTab("transactions")}
         {renderTab("loan")}
@@ -97,6 +98,7 @@ export default function CustomTabBar({
         {renderTab("investment")}
         {renderTab("settings")}
       </View>
+      </View>
     </View>
   );
 }
@@ -104,37 +106,51 @@ export default function CustomTabBar({
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
+      backgroundColor: colors.background,
+      paddingHorizontal: 14,
+      paddingTop: 8,
+    },
+    dockShadow: {
+      borderRadius: 32,
       backgroundColor: colors.nav,
-      borderTopWidth: 1,
-      borderTopColor: colors.navBorder,
-      paddingHorizontal: 4,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.navBorder,
+      shadowColor: "#001A13",
+      shadowOpacity: 0.14,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 9,
     },
     row: {
-      height: 61,
+      height: 68,
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
+      paddingHorizontal: 8,
+      borderRadius: 32,
+      overflow: "visible",
     },
     tab: {
       flex: 1,
-      height: 55,
+      height: 58,
       minWidth: 52,
       alignItems: "center",
       justifyContent: "center",
-      gap: 3,
+      gap: 5,
       position: "relative",
     },
     rule: {
       position: "absolute",
-      top: 0,
-      width: 34,
-      height: 3,
-      borderBottomLeftRadius: 2,
-      borderBottomRightRadius: 2,
+      top: 5,
+      width: 30,
+      height: 4,
+      borderRadius: 999,
       backgroundColor: "transparent",
     },
     activeRule: { backgroundColor: colors.brand },
     pressed: {
       backgroundColor: colors.surfaceSunken,
+      borderRadius: 18,
+      transform: [{ scale: 0.96 }],
     },
     label: {
       color: colors.textTertiary,
@@ -151,15 +167,23 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     addButton: {
       width: 56,
       height: 56,
-      marginTop: 6,
-      marginHorizontal: 6,
+      marginTop: -20,
+      marginHorizontal: 8,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
       backgroundColor: colors.brand,
+      borderWidth: 3,
+      borderColor: colors.nav,
+      shadowColor: colors.brand,
+      shadowOpacity: 0.18,
+      shadowRadius: 9,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 6,
     },
     addButtonPressed: {
       backgroundColor: colors.brandText,
+      transform: [{ scale: 0.91 }],
     },
     addButtonDisabled: {
       borderWidth: 1,

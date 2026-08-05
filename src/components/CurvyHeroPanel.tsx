@@ -9,9 +9,9 @@ export default function CurvyHeroPanel({ children }: { children: React.ReactNode
   return (
     <View style={styles.shell}>
       <View style={[styles.panel, { backgroundColor: colors.panel }]}>{children}</View>
-      <Svg width="100%" height={48} viewBox="0 0 390 48" preserveAspectRatio="none">
-        <Path d="M0 0 H390 V46 C300 46 290 2 195 2 C100 2 90 46 0 46 Z" fill={colors.panel} />
-        <Path d="M390 46 C300 46 290 2 195 2 C100 2 90 46 0 46" fill="none" stroke={colors.panelEdge} strokeWidth={1.5} />
+      <Svg width="100%" height={29} viewBox="0 0 390 29" preserveAspectRatio="none">
+        <Path d="M0 0 H390 V28 C300 28 290 2 195 2 C100 2 90 28 0 28 Z" fill={colors.panel} />
+        <Path d="M390 28 C300 28 290 2 195 2 C100 2 90 28 0 28" fill="none" stroke={colors.panelEdge} strokeWidth={1} />
       </Svg>
     </View>
   );

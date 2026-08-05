@@ -2,10 +2,9 @@ import * as Haptics from "expo-haptics";
 import React, { useEffect, useMemo, useState } from "react";
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
+  withSpring,
 } from "react-native-reanimated";
 
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
@@ -38,9 +37,10 @@ const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
   const selectedIndex = Math.max(options.indexOf(selectedOption), 0);
 
   useEffect(() => {
-    translateX.value = withTiming(selectedIndex * (segmentWidth + gap), {
-      duration: designTokens.motion.quick,
-      easing: Easing.out(Easing.cubic),
+    translateX.value = withSpring(selectedIndex * (segmentWidth + gap), {
+      damping: 20,
+      stiffness: 220,
+      mass: 0.7,
     });
   }, [selectedIndex, segmentWidth, translateX]);
 
@@ -96,37 +96,38 @@ function makeStyles(
       flexDirection: "row",
       gap: 4,
       padding: 4,
-      minHeight: 52,
+      minHeight: 50,
       borderRadius: designTokens.radius.full,
       backgroundColor: panel ? "rgba(0,0,0,0.20)" : colors.surfaceSunken,
-      borderWidth: panel || isDark ? 1 : 0,
+      borderWidth: panel || isDark ? StyleSheet.hairlineWidth : 0,
       borderColor: panel ? colors.panelTileBorder : colors.border,
     },
     activeIndicator: {
       position: "absolute",
       left: 4,
       top: 4,
-      height: 44,
+      height: 42,
       borderRadius: designTokens.radius.full,
-      backgroundColor: panel ? colors.brand : isDark ? colors.surfaceRaised : colors.surface,
-      borderWidth: panel || isDark ? 1 : 0,
+      backgroundColor: panel ? colors.brandText : isDark ? colors.surfaceRaised : colors.surface,
+      borderWidth: panel || isDark ? StyleSheet.hairlineWidth : 0,
       borderColor: panel ? colors.panelTileBorder : colors.border,
       shadowColor: colors.textPrimary,
-      shadowOpacity: isDark ? 0 : 0.12,
-      shadowRadius: isDark ? 0 : 3,
-      shadowOffset: { width: 0, height: 1 },
-      elevation: isDark ? 0 : 2,
+      shadowOpacity: isDark ? 0.12 : 0.09,
+      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
     segment: {
       zIndex: 1,
       flex: 1,
-      height: 44,
+      height: 42,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
     },
     segmentPressed: {
       backgroundColor: colors.brandWash,
+      transform: [{ scale: 0.985 }],
     },
     label: {
       fontSize: 15,
