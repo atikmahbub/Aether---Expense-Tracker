@@ -29,8 +29,8 @@ interface LoanFormProps {
 }
 
 export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const deadlineValue = values[EAddLoanFields.DEADLINE];
@@ -155,7 +155,10 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(
+  colors: ReturnType<typeof useAppTheme>['colors'],
+  isDark: boolean,
+) {
   return StyleSheet.create({
     formRoot: {
       gap: 16,
@@ -192,7 +195,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       letterSpacing: 1,
     },
     toggleTitleSelected: {
-      color: '#000',
+      color: isDark ? colors.onBrand : '#FFFFFF',
     },
     givenTitle: {
       color: colors.primary,

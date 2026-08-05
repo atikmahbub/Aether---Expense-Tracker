@@ -3,24 +3,24 @@
     "name": "Scalar",
     "slug": "aether",
     "owner": "atikmahbub100",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "platforms": ["ios", "android"],
     "orientation": "portrait",
     "scheme": "aether",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#F4F6FA",
+    "backgroundColor": "#FFFFFF",
     "splash": {
-      "backgroundColor": "#F4F6FA",
+      "backgroundColor": "#FFFFFF",
       "resizeMode": "contain",
       "dark": {
-        "backgroundColor": "#09090A"
+        "backgroundColor": "#1B222C"
       }
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.atik.aether",
-      "backgroundColor": "#F4F6FA",
+      "backgroundColor": "#FFFFFF",
       "infoPlist": {
         "CFBundleDisplayName": "Scalar",
         "UIViewControllerBasedStatusBarAppearance": true,
@@ -31,10 +31,10 @@
       "package": "com.atik.aether",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
-      "backgroundColor": "#F4F6FA",
+      "backgroundColor": "#FFFFFF",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#09090A"
+        "backgroundColor": "#1B222C"
       }
     },
     "web": {
@@ -49,9 +49,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F4F6FA",
+          "backgroundColor": "#FFFFFF",
           "dark": {
-            "backgroundColor": "#09090A"
+          "backgroundColor": "#1B222C"
           }
         }
       ],

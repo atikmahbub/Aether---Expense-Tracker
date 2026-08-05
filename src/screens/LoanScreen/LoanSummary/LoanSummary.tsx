@@ -1,4 +1,5 @@
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
+import { CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
@@ -26,7 +27,9 @@ const LoanSummary: React.FC<ISummary> = ({
   const netPosition = totalGiven - totalBorrowed;
 
   return (
-    <View style={styles.container}>
+    <CurvyHeroPanel>
+      <CustomAppBar />
+      <View style={styles.container}>
       <View style={styles.hero}>
         <Text style={styles.label}>NET POSITION</Text>
         <ScalarAmountText
@@ -58,7 +61,8 @@ const LoanSummary: React.FC<ISummary> = ({
           styles={styles}
         />
       </View>
-    </View>
+      </View>
+    </CurvyHeroPanel>
   );
 };
 
@@ -91,23 +95,23 @@ export default LoanSummary;
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+    container: { paddingHorizontal: 20, gap: 12 },
     hero: {
       gap: 10,
       padding: 16,
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
     label: {
-      color: colors.textTertiary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       ...designTokens.typography.caps,
     },
     heroAmount: {
-      color: colors.textPrimary,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       fontVariant: ["tabular-nums"],
@@ -115,7 +119,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       lineHeight: 48,
     },
     heroFooter: {
-      color: colors.textSecondary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.medium,
       fontWeight: "500",
       ...designTokens.typography.caption,
@@ -128,11 +132,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       padding: 16,
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
     metricAmount: {
-      color: colors.textPrimary,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       fontVariant: ["tabular-nums"],

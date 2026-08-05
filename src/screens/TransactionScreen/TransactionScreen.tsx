@@ -372,6 +372,7 @@ export default function TransactionScreen() {
         onAdjustLimit={() => setLimitModalVisible(true)}
         ledgerControl={
           <TransactionSegmentedControl
+            panel
             options={["expense", "income"]}
             selectedOption={typeFilter}
             onOptionPress={handleTypeFilterChange}

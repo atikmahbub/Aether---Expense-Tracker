@@ -152,6 +152,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
                     { minimumFractionDigits: 0, maximumFractionDigits: 0 },
                   )}`}
                   positive={given}
+                  negative={!given}
                   icon={given ? "arrow-top-right" : "arrow-bottom-left"}
                   categoryColor={given ? colors.positive : colors.warning}
                   showDivider={index < loans.length - 1 || open}
@@ -185,11 +186,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.section,
     },
     card: {
-      overflow: "hidden",
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      gap: 8,
+      backgroundColor: "transparent",
     },
     editor: { gap: 12, padding: 16, backgroundColor: colors.bg },
     deleteButton: {

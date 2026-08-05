@@ -1,38 +1,43 @@
-import React, { useMemo } from 'react';
-import {View, StyleSheet, Image, ScrollView} from 'react-native';
-import {Text} from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
-import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
-import {AnimatedLoader} from '@trackingPortal/components';
-import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
-import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import Toast from 'react-native-toast-message';
-import {useScalarAlert} from '@trackingPortal/components/ScalarAlert';
+import Constants from "expo-constants";
+import React, { useMemo } from "react";
 import {
-  Modal,
-  TouchableWithoutFeedback,
+  ActivityIndicator,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView as RNScrollView,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
-  Keyboard,
-} from 'react-native';
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { Text } from "react-native-paper";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+
+import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
+import { AnimatedLoader } from "@trackingPortal/components";
+import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import Toast from "react-native-toast-message";
 
 const AVATAR_SIZE = 120;
 const DEFAULT_AVATAR =
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Scalar&backgroundColor=transparent';
+  "https://api.dicebear.com/7.x/avataaars/png?seed=Scalar&backgroundColor=transparent";
+const APP_VERSION = Constants.expoConfig?.version ?? "3.0.0";
 
 const ProfileScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const {logout, user, loading} = useAuth();
-  const {currentUser, apiGateway} = useStoreContext();
+  const { logout, user, loading } = useAuth();
+  const { currentUser, apiGateway } = useStoreContext();
   const [deleteModalVisible, setDeleteModalVisible] = React.useState(false);
-  const [deleteConfirmationText, setDeleteConfirmationText] = React.useState('');
+  const [deleteConfirmationText, setDeleteConfirmationText] =
+    React.useState("");
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   if (loading) {
@@ -50,10 +55,10 @@ const ProfileScreen: React.FC = () => {
           text: "Proceed",
           style: "destructive",
           onPress: () => {
-            setDeleteConfirmationText('');
+            setDeleteConfirmationText("");
             setDeleteModalVisible(true);
-          }
-        }
+          },
+        },
       ],
     });
   };
@@ -65,28 +70,31 @@ const ProfileScreen: React.FC = () => {
       Toast.show({ type: "success", text1: "Account deleted successfully" });
       setDeleteModalVisible(false);
       await logout();
-    } catch (e) {
+    } catch {
       Toast.show({ type: "error", text1: "Failed to delete account" });
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const displayName = (user?.name as string | undefined) ?? '';
-  const displayEmail = (user?.email as string | undefined) ?? '';
-  const avatarSource = (user?.picture as string | undefined) || (user?.profilePicture as string | undefined) || DEFAULT_AVATAR;
-  const firstName = displayName.split(' ')[0] || 'there';
+  const displayName = (user?.name as string | undefined) ?? "";
+  const displayEmail = (user?.email as string | undefined) ?? "";
+  const avatarSource =
+    (user?.picture as string | undefined) ||
+    (user?.profilePicture as string | undefined) ||
+    DEFAULT_AVATAR;
+  const firstName = displayName.split(" ")[0] || "there";
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <RNScrollView
         contentContainerStyle={[styles.content, { paddingTop: 60 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
           <View style={styles.heroGlow} />
           <View style={styles.avatarWrapper}>
-            <Image source={{uri: avatarSource}} style={styles.avatar} />
+            <Image source={{ uri: avatarSource }} style={styles.avatar} />
           </View>
           <Text style={styles.greeting}>Hey, {firstName}</Text>
           <Text style={styles.caption}>
@@ -98,7 +106,12 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.sectionHeader}>Account Information</Text>
           <View style={styles.detailCard}>
             <View style={styles.detailRow}>
-              <View style={[styles.detailIcon, {backgroundColor: 'rgba(34, 197, 94, 0.1)'}]}>
+              <View
+                style={[
+                  styles.detailIcon,
+                  { backgroundColor: "rgba(34, 197, 94, 0.1)" },
+                ]}
+              >
                 <MaterialCommunityIcons
                   name="account-outline"
                   size={22}
@@ -114,7 +127,12 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.divider} />
 
             <View style={styles.detailRow}>
-              <View style={[styles.detailIcon, {backgroundColor: 'rgba(34, 197, 94, 0.1)'}]}>
+              <View
+                style={[
+                  styles.detailIcon,
+                  { backgroundColor: "rgba(34, 197, 94, 0.1)" },
+                ]}
+              >
                 <MaterialCommunityIcons
                   name="email-outline"
                   size={20}
@@ -130,60 +148,77 @@ const ProfileScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardGroup}>
-          <Text style={[styles.sectionHeader, {color: colors.error}]}>Security</Text>
+          <Text style={[styles.sectionHeader, { color: colors.error }]}>
+            Security
+          </Text>
           <TouchableOpacity
             style={[styles.actionRow, styles.dangerRow]}
             activeOpacity={0.8}
-            onPress={handleInitialDeleteTap}>
-            <View style={[styles.detailIcon, {backgroundColor: 'rgba(248, 113, 113, 0.1)'}]}>
+            onPress={handleInitialDeleteTap}
+          >
+            <View
+              style={[
+                styles.detailIcon,
+                { backgroundColor: "rgba(248, 113, 113, 0.1)" },
+              ]}
+            >
               <MaterialCommunityIcons
                 name="delete-outline"
                 size={20}
                 color={colors.error}
               />
             </View>
-            <View style={{flex: 1}}>
-              <Text style={[styles.actionLabel, {color: colors.error}]}>Delete Account</Text>
-              <Text style={styles.dangerHint}>This action cannot be undone</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.actionLabel, { color: colors.error }]}>
+                Delete Account
+              </Text>
+              <Text style={styles.dangerHint}>
+                This action cannot be undone
+              </Text>
             </View>
             <MaterialCommunityIcons
               name="chevron-right"
               size={20}
               color={colors.error}
-              style={{opacity: 0.5}}
+              style={{ opacity: 0.5 }}
             />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.versionTag}>Scalar v2.0.0</Text>
-      </ScrollView>
+        <Text style={styles.versionTag}>Scalar v{APP_VERSION}</Text>
+      </RNScrollView>
 
       <Modal
         visible={deleteModalVisible}
         animationType="fade"
         transparent
-        onRequestClose={() => !isDeleting && setDeleteModalVisible(false)}>
+        onRequestClose={() => !isDeleting && setDeleteModalVisible(false)}
+      >
         <TouchableWithoutFeedback
           onPress={() => {
             if (!isDeleting) {
               setDeleteModalVisible(false);
               Keyboard.dismiss();
             }
-          }}>
+          }}
+        >
           <View style={styles.modalBackdrop} />
         </TouchableWithoutFeedback>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoidingContainer}
-          pointerEvents="box-none">
+          pointerEvents="box-none"
+        >
           <View style={styles.modalSheet}>
             <RNScrollView
               contentContainerStyle={styles.modalScrollContent}
               keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}>
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.modalTitle}>Delete Account</Text>
               <Text style={styles.modalMessage}>
-                This will permanently delete your account and all associated data. To confirm, please type DELETE below.
+                This will permanently delete your account and all associated
+                data. To confirm, please type DELETE below.
               </Text>
               <TextInput
                 style={styles.deleteInput}
@@ -200,10 +235,12 @@ const ProfileScreen: React.FC = () => {
                   style={[
                     styles.modalButton,
                     styles.deleteButton,
-                    deleteConfirmationText !== 'DELETE' && styles.deleteButtonDisabled
+                    deleteConfirmationText !== "DELETE" &&
+                      styles.deleteButtonDisabled,
                   ]}
                   onPress={handleDeleteAccount}
-                  disabled={isDeleting || deleteConfirmationText !== 'DELETE'}>
+                  disabled={isDeleting || deleteConfirmationText !== "DELETE"}
+                >
                   {isDeleting ? (
                     <ActivityIndicator color={colors.text} />
                   ) : (
@@ -216,7 +253,8 @@ const ProfileScreen: React.FC = () => {
                     setDeleteModalVisible(false);
                     Keyboard.dismiss();
                   }}
-                  disabled={isDeleting}>
+                  disabled={isDeleting}
+                >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -228,7 +266,7 @@ const ProfileScreen: React.FC = () => {
   );
 };
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -240,18 +278,18 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       gap: 32,
     },
     hero: {
-      alignItems: 'center',
+      alignItems: "center",
       gap: 16,
-      width: '100%',
-      position: 'relative',
+      width: "100%",
+      position: "relative",
       marginBottom: 8,
     },
     heroGlow: {
-      position: 'absolute',
+      position: "absolute",
       width: 260,
       height: 260,
       borderRadius: 130,
-      backgroundColor: 'rgba(34, 197, 94, 0.05)',
+      backgroundColor: "rgba(34, 197, 94, 0.05)",
       top: -50,
     },
     avatarWrapper: {
@@ -262,12 +300,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       backgroundColor: colors.surfaceAlt,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
       shadowOpacity: 0.2,
       shadowRadius: 20,
-      shadowOffset: {width: 0, height: 10},
+      shadowOffset: { width: 0, height: 10 },
     },
     avatar: {
       width: AVATAR_SIZE,
@@ -278,31 +316,31 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     greeting: {
       color: colors.text,
       fontSize: 32,
-      fontWeight: '800',
+      fontWeight: "800",
       letterSpacing: -0.5,
-      textAlign: 'center',
+      textAlign: "center",
     },
     caption: {
       color: colors.subText,
       fontSize: 15,
-      textAlign: 'center',
+      textAlign: "center",
       lineHeight: 22,
       opacity: 0.8,
     },
     cardGroup: {
-      width: '100%',
+      width: "100%",
       gap: 12,
     },
     sectionHeader: {
       color: colors.muted,
       fontSize: 12,
-      fontWeight: '700',
+      fontWeight: "700",
       letterSpacing: 1.2,
-      textTransform: 'uppercase',
+      textTransform: "uppercase",
       paddingLeft: 4,
     },
     detailCard: {
-      width: '100%',
+      width: "100%",
       backgroundColor: colors.cardBg,
       borderRadius: 24,
       padding: 20,
@@ -311,16 +349,16 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       borderColor: colors.glassBorder,
     },
     detailRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: 16,
     },
     detailIcon: {
       width: 42,
       height: 42,
       borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
     },
     detailTextCol: {
       flex: 1,
@@ -328,23 +366,23 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     detailLabel: {
       color: colors.muted,
       fontSize: 10,
-      fontWeight: '700',
+      fontWeight: "700",
       letterSpacing: 1,
       marginBottom: 4,
     },
     detailValue: {
       color: colors.text,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     divider: {
       height: 1,
       backgroundColor: colors.glassBorder,
     },
     actionRow: {
-      width: '100%',
-      flexDirection: 'row',
-      alignItems: 'center',
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
       backgroundColor: colors.cardBg,
       borderRadius: 20,
       padding: 16,
@@ -356,10 +394,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       flex: 1,
       color: colors.text,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     dangerRow: {
-      borderColor: 'rgba(248, 113, 113, 0.15)',
+      borderColor: "rgba(248, 113, 113, 0.15)",
     },
     dangerHint: {
       color: colors.muted,
@@ -367,10 +405,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       marginTop: 2,
     },
     versionTag: {
-      textAlign: 'center',
+      textAlign: "center",
       color: colors.muted,
       fontSize: 12,
-      fontWeight: '500',
+      fontWeight: "500",
       marginTop: 8,
     },
     modalBackdrop: {
@@ -386,7 +424,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       paddingBottom: 36,
       borderWidth: 1,
       borderColor: colors.glassBorder,
-      marginTop: 'auto',
+      marginTop: "auto",
     },
     modalScrollContent: {
       flexGrow: 1,
@@ -394,7 +432,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     modalTitle: {
       color: colors.text,
       fontSize: 18,
-      fontWeight: '700',
+      fontWeight: "700",
       marginBottom: 16,
     },
     modalMessage: {
@@ -405,7 +443,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     keyboardAvoidingContainer: {
       flex: 1,
-      justifyContent: 'flex-end',
+      justifyContent: "flex-end",
     },
     deleteInput: {
       backgroundColor: colors.surface,
@@ -414,21 +452,21 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       paddingVertical: 16,
       color: colors.text,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: "600",
       marginBottom: 24,
       borderWidth: 1,
       borderColor: colors.glassBorder,
     },
     modalButtonsGroup: {
-      flexDirection: 'row',
+      flexDirection: "row",
       gap: 12,
     },
     modalButton: {
       flex: 1,
       paddingVertical: 16,
       borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
     },
     cancelButton: {
       backgroundColor: colors.surface,
@@ -436,7 +474,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     cancelButtonText: {
       color: colors.text,
       fontSize: 16,
-      fontWeight: '700',
+      fontWeight: "700",
     },
     deleteButton: {
       backgroundColor: colors.error,
@@ -444,7 +482,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     deleteButtonText: {
       color: colors.background,
       fontSize: 16,
-      fontWeight: '800',
+      fontWeight: "800",
     },
     deleteButtonDisabled: {
       opacity: 0.5,

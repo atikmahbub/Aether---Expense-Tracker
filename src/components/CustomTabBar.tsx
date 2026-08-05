@@ -104,9 +104,9 @@ export default function CustomTabBar({
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.nav,
       borderTopWidth: 1,
-      borderTopColor: colors.border,
+      borderTopColor: colors.navBorder,
       paddingHorizontal: 4,
     },
     row: {

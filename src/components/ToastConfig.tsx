@@ -45,7 +45,9 @@ const ToastCard = ({
       ? colors.errorSoft
       : t.tone === 'brand'
         ? colors.brandWash
-        : colors.surfaceSunken;
+        : t.tone === 'positive'
+          ? colors.positiveSoft
+          : colors.warningSoft;
   return (
     <View style={styles.wrapper}>
       <View style={styles.card}>
@@ -110,7 +112,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     backgroundColor: colors.surfaceRaised,
     borderRadius: designTokens.radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     overflow: 'hidden',
     paddingRight: 16,
     paddingVertical: 14,

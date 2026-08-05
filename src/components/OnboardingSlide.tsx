@@ -44,18 +44,18 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       alignItems: 'center',
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.panelEdge,
+      backgroundColor: colors.panel,
     },
     eyebrow: {
-      color: colors.textTertiary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.bold,
       fontWeight: '700',
       ...designTokens.typography.caps,
       textAlign: 'center',
     },
     title: {
-      color: colors.textPrimary,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontSize: 30,
       fontWeight: '700',
@@ -64,7 +64,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       letterSpacing: -0.6,
     },
     subtitle: {
-      color: colors.textSecondary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.regular,
       fontSize: 15,
       lineHeight: 24,
@@ -78,7 +78,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: designTokens.radius.lg,
-      backgroundColor: colors.brand,
+      borderWidth: 1,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
   });
 }

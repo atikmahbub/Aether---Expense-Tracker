@@ -15,7 +15,7 @@ import {
 import Toast from "react-native-toast-message";
 
 import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
-import { AnimatedLoader } from "@trackingPortal/components";
+import { AnimatedLoader, CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
 import { SUPPORTED_CURRENCIES } from "@trackingPortal/constants/currency";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import {
@@ -68,18 +68,21 @@ export default function SettingsScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Settings</Text>
+      <CurvyHeroPanel>
+        <CustomAppBar />
+        <View style={styles.panelContent}>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={[styles.sectionLabel, styles.panelSectionLabel]}>APPEARANCE</Text>
+          <TransactionSegmentedControl
+            panel
+            options={["Light", "Dark", "System"]}
+            selectedOption={themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
+            onOptionPress={(option) => setThemeMode(option.toLowerCase() as ThemeMode)}
+          />
+        </View>
+      </CurvyHeroPanel>
 
-      <Text style={styles.sectionLabel}>APPEARANCE</Text>
-      <TransactionSegmentedControl
-        options={["Light", "Dark", "System"]}
-        selectedOption={
-          themeMode.charAt(0).toUpperCase() + themeMode.slice(1)
-        }
-        onOptionPress={(option) =>
-          setThemeMode(option.toLowerCase() as ThemeMode)
-        }
-      />
+      <View style={styles.bodyContent}>
 
       <Text style={styles.sectionLabel}>PREFERENCES</Text>
       <View style={styles.card}>
@@ -146,6 +149,7 @@ export default function SettingsScreen() {
         />
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
+      </View>
 
       <Modal
         visible={currencyModalVisible}
@@ -248,17 +252,19 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg },
     content: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
       paddingBottom: 28,
-      gap: 12,
+      gap: 0,
     },
+    panelContent: { paddingHorizontal: 20, gap: 8 },
+    bodyContent: { paddingHorizontal: 20, gap: 12 },
     title: {
       marginBottom: 4,
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
-      ...designTokens.typography.title,
+      color: colors.panelText,
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: "800",
+      fontSize: 30,
+      lineHeight: 38,
+      letterSpacing: -0.9,
     },
     sectionLabel: {
       marginTop: 12,
@@ -267,6 +273,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "700",
       ...designTokens.typography.caps,
     },
+    panelSectionLabel: { color: colors.panelTextSecondary, marginTop: 0 },
     card: {
       overflow: "hidden",
       borderRadius: designTokens.radius.lg,

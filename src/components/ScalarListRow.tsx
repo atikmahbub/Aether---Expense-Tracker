@@ -20,8 +20,10 @@ interface ScalarListRowProps {
   categoryName?: string;
   categoryColor?: string;
   positive?: boolean;
+  negative?: boolean;
   onPress?: () => void;
   showDivider?: boolean;
+  grouped?: boolean;
 }
 
 export default function ScalarListRow({
@@ -32,8 +34,10 @@ export default function ScalarListRow({
   categoryName,
   categoryColor,
   positive = false,
+  negative = false,
   onPress,
   showDivider = true,
+  grouped = false,
 }: ScalarListRowProps) {
   const { colors, isDark } = useAppTheme();
   const palette = isDark ? categoryTokens.dark : categoryTokens.light;
@@ -50,6 +54,7 @@ export default function ScalarListRow({
       disabled={!onPress}
       style={({ pressed }) => [
         styles.row,
+        grouped && styles.groupedRow,
         showDivider && styles.divider,
         pressed && styles.pressed,
       ]}
@@ -67,7 +72,7 @@ export default function ScalarListRow({
       </View>
       <ScalarAmountText
         numberOfLines={1}
-        style={[styles.amount, positive && styles.positiveAmount]}
+        style={[styles.amount, positive && styles.positiveAmount, negative && styles.negativeAmount]}
       >
         {amount}
       </ScalarAmountText>
@@ -85,10 +90,17 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       paddingVertical: 12,
       paddingHorizontal: 16,
       backgroundColor: colors.surface,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     divider: {
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.divider,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    groupedRow: {
+      borderWidth: 0,
+      borderRadius: 0,
     },
     pressed: {
       backgroundColor: colors.surfaceSunken,
@@ -126,6 +138,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     positiveAmount: {
       color: colors.positive,
+    },
+    negativeAmount: {
+      color: colors.negative,
     },
   });
 }

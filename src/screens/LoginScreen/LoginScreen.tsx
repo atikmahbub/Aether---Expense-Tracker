@@ -64,7 +64,7 @@ export default function LoginScreen() {
           <MaterialCommunityIcons
             name="wallet"
             size={34}
-            color={colors.onBrand}
+            color={colors.panelText}
           />
         </View>
         <Text style={styles.eyebrow}>YOUR MONEY, MADE CLEAR</Text>
@@ -173,8 +173,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 14,
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.panelEdge,
+      backgroundColor: colors.panel,
     },
     heroIcon: {
       width: 72,
@@ -183,10 +183,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.lg,
-      backgroundColor: colors.brand,
+      borderWidth: 1,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
     eyebrow: {
-      color: colors.textTertiary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       textAlign: "center",
@@ -194,7 +196,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     heroTitle: {
       maxWidth: 300,
-      color: colors.textPrimary,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontSize: 30,
       lineHeight: 37,
@@ -204,7 +206,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     heroDescription: {
       maxWidth: 310,
-      color: colors.textSecondary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.regular,
       fontSize: 15,
       lineHeight: 23,

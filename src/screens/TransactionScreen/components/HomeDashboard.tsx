@@ -2,6 +2,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { MonthlyLimitModel, TransactionModel } from "@trackingPortal/api/models";
 import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
+import { CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { CurrencyPreference } from "@trackingPortal/constants/currency";
 import { designTokens } from "@trackingPortal/themes/designTokens";
@@ -111,7 +112,10 @@ export default function HomeDashboard({
 
   return (
     <View style={styles.container}>
-      {ledgerControl}
+      <CurvyHeroPanel>
+        <CustomAppBar />
+        <View style={styles.panelContent}>
+          {ledgerControl}
 
       <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
@@ -212,7 +216,11 @@ export default function HomeDashboard({
         </View>
       </View>
 
-      <View style={styles.chartCard}>
+        </View>
+      </CurvyHeroPanel>
+
+      <View style={styles.bodyContent}>
+        <View style={styles.chartCard}>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: chartExpanded }}
@@ -266,22 +274,6 @@ export default function HomeDashboard({
                         ]}
                       />
                       <View style={styles.outBarColumn}>
-                        {week.expense > 0 && (
-                          <Text
-                            numberOfLines={1}
-                            style={[
-                              styles.expenseBarLabel,
-                              {
-                                bottom: `${Math.min(
-                                  (week.expense / axisMax) * 100 + 2,
-                                  91,
-                                )}%`,
-                              },
-                            ]}
-                          >
-                            {`${currency.symbol}${compact(week.expense)}`}
-                          </Text>
-                        )}
                         <View
                           style={[
                             styles.bar,
@@ -294,6 +286,22 @@ export default function HomeDashboard({
                             },
                           ]}
                         />
+                        {week.expense > 0 && (
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              styles.expenseBarLabel,
+                              {
+                                bottom: `${Math.min(
+                                  (week.expense / axisMax) * 100 + 5,
+                                  88,
+                                )}%`,
+                              },
+                            ]}
+                          >
+                            {`${currency.symbol}${compact(week.expense)}`}
+                          </Text>
+                        )}
                       </View>
                     </View>
                   ))}
@@ -347,6 +355,7 @@ export default function HomeDashboard({
             </View>
           </>
         )}
+        </View>
       </View>
 
     </View>
@@ -373,16 +382,17 @@ function Legend({
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
-      paddingHorizontal: 20,
-      gap: 12,
+      gap: 0,
     },
+    panelContent: { paddingHorizontal: 20, gap: 12 },
+    bodyContent: { paddingHorizontal: 20, paddingTop: 4 },
     heroCard: {
       gap: 10,
       padding: 16,
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
     heroHeader: {
       flexDirection: "row",
@@ -391,7 +401,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 8,
     },
     capsLabel: {
-      color: colors.textTertiary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       ...designTokens.typography.caps,
@@ -411,7 +421,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "700",
     },
     heroAmount: {
-      color: colors.textPrimary,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       fontVariant: ["tabular-nums"],
@@ -423,7 +433,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       height: 8,
       overflow: "hidden",
       borderRadius: 4,
-      backgroundColor: colors.surfaceSunken,
+      backgroundColor: "rgba(0,0,0,0.20)",
     },
     limitFill: {
       height: 8,
@@ -442,13 +452,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       flexShrink: 1,
     },
     limitText: {
-      color: colors.textSecondary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.medium,
       fontWeight: "500",
       ...designTokens.typography.caption,
     },
     limitStatus: {
-      color: colors.textSecondary,
+      color: colors.panelTextSecondary,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       ...designTokens.typography.caption,
@@ -460,14 +470,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
       borderWidth: 1,
-      borderColor: colors.brand,
-      backgroundColor: colors.brandWash,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
     limitActionPressed: {
-      backgroundColor: colors.surfaceRaised,
+      backgroundColor: colors.chartGrid,
     },
     limitActionText: {
-      color: colors.brandText,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontSize: 10,
       lineHeight: 12,
@@ -486,11 +496,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       padding: 16,
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.panelTileBorder,
+      backgroundColor: colors.panelTile,
     },
     metricValue: {
-      color: colors.textPrimary,
+      color: colors.panelText,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
       fontVariant: ["tabular-nums"],
@@ -554,7 +564,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       left: 0,
       right: 0,
       height: 1,
-      backgroundColor: colors.border,
+      backgroundColor: colors.surfaceRaised,
     },
     weeks: {
       position: "absolute",
@@ -574,11 +584,18 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       height: "100%",
       alignItems: "center",
       justifyContent: "flex-end",
+      overflow: "visible",
     },
     expenseBarLabel: {
       position: "absolute",
-      zIndex: 2,
+      zIndex: 10,
+      elevation: 10,
       color: colors.negative,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 3,
+      borderRadius: 3,
+      minWidth: 42,
+      textAlign: "center",
       fontFamily: designTokens.font.bold,
       fontSize: 9,
       lineHeight: 11,

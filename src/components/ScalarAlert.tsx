@@ -64,6 +64,12 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
           >
             <View
               style={[
+                styles.accent,
+                destructive ? styles.destructiveAccent : styles.infoAccent,
+              ]}
+            />
+            <View
+              style={[
                 styles.iconTile,
                 destructive ? styles.destructiveTile : styles.infoTile,
               ]}
@@ -134,7 +140,17 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surfaceRaised,
+      overflow: "hidden",
     },
+    accent: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 5,
+    },
+    infoAccent: { backgroundColor: colors.panel },
+    destructiveAccent: { backgroundColor: colors.negative },
     iconTile: {
       width: 48,
       height: 48,
@@ -143,7 +159,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       justifyContent: "center",
       borderRadius: designTokens.radius.md,
     },
-    infoTile: { backgroundColor: colors.brandWash },
+    infoTile: {
+      borderWidth: 1,
+      borderColor: colors.panelEdge,
+      backgroundColor: colors.brandWash,
+    },
     destructiveTile: { backgroundColor: colors.errorSoft },
     title: {
       color: colors.textPrimary,

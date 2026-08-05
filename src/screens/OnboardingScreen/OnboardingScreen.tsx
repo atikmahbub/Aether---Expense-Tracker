@@ -32,27 +32,27 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({onFinish}) => {
       id: 'slide-1',
       title: 'Track your money effortlessly',
       subtitle: 'See where your money goes, instantly',
-      icon: <MaterialCommunityIcons name="wallet" size={34} color={colors.onBrand} />,
+      icon: <MaterialCommunityIcons name="wallet" size={34} color={colors.panelText} />,
     },
     {
       id: 'slide-2',
       title: 'Understand your spending',
       subtitle: 'Smart insights & category breakdown',
-      icon: <MaterialCommunityIcons name="chart-donut" size={34} color={colors.onBrand} />,
+      icon: <MaterialCommunityIcons name="chart-donut" size={34} color={colors.panelText} />,
     },
     {
       id: 'slide-3',
       title: 'Add income or expense in seconds',
       subtitle: 'Start building your financial habit today',
-      icon: <MaterialCommunityIcons name="plus" size={38} color={colors.onBrand} />,
+      icon: <MaterialCommunityIcons name="plus" size={38} color={colors.panelText} />,
     },
     {
       id: 'slide-4',
       title: 'Works Offline',
       subtitle: "Add expenses anytime, even without internet. Your data syncs automatically when you're back online.",
-      icon: <MaterialCommunityIcons name="cloud-check" size={34} color={colors.onBrand} />,
+      icon: <MaterialCommunityIcons name="cloud-check" size={34} color={colors.panelText} />,
     },
-  ], [colors.onBrand]);
+  ], [colors.panelText]);
 
   type Slide = (typeof SLIDES)[number];
 
@@ -196,14 +196,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       maxWidth: 72,
       height: 5,
       borderRadius: designTokens.radius.full,
-      backgroundColor: colors.surfaceSunken,
+      backgroundColor: colors.border,
     },
     progressDotActive: {
       backgroundColor: colors.brand,
       width: ((width - 160) / SLIDE_COUNT) * 1.3,
     },
     progressDotCompleted: {
-      backgroundColor: colors.brandWash,
+      backgroundColor: colors.panelEdge,
     },
     primaryButton: {
       height: 54,

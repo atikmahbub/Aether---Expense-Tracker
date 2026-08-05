@@ -227,6 +227,12 @@ const InvestList: FC<IInvestList> = ({
           </Text>
         )}
       </View>
+      {active && invests.length === 1 && (
+        <View style={styles.assetHint}>
+          <Text style={styles.assetHintTitle}>One asset tracked</Text>
+          <Text style={styles.assetHintText}>Add a second to compare returns over time.</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -243,11 +249,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.section,
     },
     card: {
-      overflow: "hidden",
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      gap: 8,
+      backgroundColor: "transparent",
     },
     editor: { gap: 12, padding: 16, backgroundColor: colors.bg },
     deleteButton: {
@@ -269,6 +272,26 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       textAlign: "center",
       color: colors.textSecondary,
       fontFamily: designTokens.font.medium,
+    },
+    assetHint: {
+      gap: 4,
+      padding: 16,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: colors.border,
+    },
+    assetHintTitle: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.bold,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    assetHintText: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.medium,
+      fontSize: 13,
+      fontWeight: "500",
     },
   });
 }

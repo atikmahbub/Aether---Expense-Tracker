@@ -388,6 +388,7 @@ const TransactionList: FC<ITransactionList> = ({
                   return (
                     <View key={item.id}>
                       <ScalarListRow
+                        grouped
                         title={item.description || category}
                         meta={`${category} · ${dayjs(parseDate(item.date)).format('h:mm a')}`}
                         amount={`${positive ? '+' : '−'}${formatCurrency(

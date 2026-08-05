@@ -18,8 +18,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
 import SyncStatusIndicator from '@trackingPortal/components/SyncStatusIndicator';
+import {designTokens} from '@trackingPortal/themes/designTokens';
 
-const AVATAR_SIZE = 54;
+const AVATAR_SIZE = 42;
 
 const CustomAppBar: React.FC = () => {
   const {user} = useAuth();
@@ -85,7 +86,7 @@ const CustomAppBar: React.FC = () => {
         entering={FadeInLeft.delay(100).duration(500)}
         style={styles.textBlock}>
         <View style={styles.dateRow}>
-          <MaterialCommunityIcons name={timeIcon} size={14} color={colors.primary} />
+          <MaterialCommunityIcons name={timeIcon} size={14} color={colors.panelTextSecondary} />
           <Text style={styles.dateLabel}>{todayLabel.toUpperCase()}</Text>
         </View>
         <View style={styles.greetingRow}>
@@ -128,7 +129,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       flexDirection: 'row',
       paddingHorizontal: 20,
       paddingTop: 8,
-      paddingBottom: 12,
+      paddingBottom: 10,
+      minHeight: 60,
       justifyContent: 'space-between',
       alignItems: 'center',
     },
@@ -142,27 +144,27 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       marginBottom: 4,
     },
     dateLabel: {
-      color: colors.muted,
-      fontSize: 10,
+      color: colors.panelTextSecondary,
+      fontSize: 11,
       fontWeight: '800',
       letterSpacing: 1.5,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: designTokens.font.bold,
     },
     greetingRow: {
       flexDirection: 'row',
     },
     greetingText: {
-      color: colors.subText,
-      fontSize: 20,
-      fontFamily: 'Manrope_400Regular',
-      fontWeight: '400',
+      color: colors.panelTextSecondary,
+      fontSize: 21,
+      fontFamily: designTokens.font.medium,
+      fontWeight: '500',
       letterSpacing: -0.3,
     },
     userNameText: {
-      color: colors.text,
-      fontSize: 20,
-      fontFamily: 'Manrope_700Bold',
-      fontWeight: '700',
+      color: colors.panelText,
+      fontSize: 21,
+      fontFamily: designTokens.font.extraBold,
+      fontWeight: '800',
       letterSpacing: -0.3,
     },
     avatarTapArea: {
@@ -177,37 +179,37 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       width: AVATAR_SIZE + 4,
       height: AVATAR_SIZE + 4,
       borderRadius: (AVATAR_SIZE + 4) / 2,
-      borderWidth: 1.5,
-      borderColor: colors.primary,
+      borderWidth: 2,
+      borderColor: colors.panelText,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
       zIndex: 2,
     },
     avatarImage: {
-      backgroundColor: colors.surfaceAlt,
+      backgroundColor: colors.panelTile,
     },
     avatarGlow: {
       position: 'absolute',
       width: AVATAR_SIZE,
       height: AVATAR_SIZE,
       borderRadius: AVATAR_SIZE / 2,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.brand,
       zIndex: 1,
     },
     avatarFallback: {
       width: AVATAR_SIZE,
       height: AVATAR_SIZE,
       borderRadius: AVATAR_SIZE / 2,
-      backgroundColor: colors.surfaceAlt,
+      backgroundColor: colors.panelTile,
       alignItems: 'center',
       justifyContent: 'center',
     },
     avatarInitial: {
-      color: colors.text,
+      color: colors.panelText,
       fontSize: 18,
       fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
+      fontFamily: designTokens.font.extraBold,
     },
   });
 }

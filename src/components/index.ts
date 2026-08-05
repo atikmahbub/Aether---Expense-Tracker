@@ -19,6 +19,7 @@ import BaseBottomSheet from './BaseBottomSheet';
 import { CommonCard } from './CommonCard';
 import { StatCard } from './StatCard';
 import HeroGlow from './HeroGlow';
+import CurvyHeroPanel from './CurvyHeroPanel';
 
 export {
   CustomAppBar,
@@ -41,4 +42,5 @@ export {
   CommonCard,
   StatCard,
   HeroGlow,
+  CurvyHeroPanel,
 };

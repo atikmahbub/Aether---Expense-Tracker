@@ -16,6 +16,7 @@ interface SegmentedControlProps {
   selectedOption: string;
   onOptionPress: (option: string) => void;
   containerStyle?: object;
+  panel?: boolean;
 }
 
 const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
@@ -23,9 +24,10 @@ const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
   selectedOption,
   onOptionPress,
   containerStyle,
+  panel = false,
 }) => {
   const { colors, isDark } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const styles = useMemo(() => makeStyles(colors, isDark, panel), [colors, isDark, panel]);
   const [width, setWidth] = useState(0);
   const translateX = useSharedValue(0);
   const gap = 4;
@@ -86,6 +88,7 @@ const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
 function makeStyles(
   colors: ReturnType<typeof useAppTheme>["colors"],
   isDark: boolean,
+  panel: boolean,
 ) {
   return StyleSheet.create({
     track: {
@@ -95,9 +98,9 @@ function makeStyles(
       padding: 4,
       minHeight: 52,
       borderRadius: designTokens.radius.full,
-      backgroundColor: colors.surfaceSunken,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
+      backgroundColor: panel ? "rgba(0,0,0,0.20)" : colors.surfaceSunken,
+      borderWidth: panel || isDark ? 1 : 0,
+      borderColor: panel ? colors.panelTileBorder : colors.border,
     },
     activeIndicator: {
       position: "absolute",
@@ -105,9 +108,9 @@ function makeStyles(
       top: 4,
       height: 44,
       borderRadius: designTokens.radius.full,
-      backgroundColor: isDark ? colors.surfaceRaised : colors.surface,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
+      backgroundColor: panel ? colors.brand : isDark ? colors.surfaceRaised : colors.surface,
+      borderWidth: panel || isDark ? 1 : 0,
+      borderColor: panel ? colors.panelTileBorder : colors.border,
       shadowColor: colors.textPrimary,
       shadowOpacity: isDark ? 0 : 0.12,
       shadowRadius: isDark ? 0 : 3,
@@ -130,12 +133,12 @@ function makeStyles(
       lineHeight: 20,
     },
     activeLabel: {
-      color: colors.brandText,
+      color: panel ? colors.onBrand : colors.brandText,
       fontFamily: designTokens.font.bold,
       fontWeight: "700",
     },
     inactiveLabel: {
-      color: colors.textSecondary,
+      color: panel ? colors.panelTextSecondary : colors.textSecondary,
       fontFamily: designTokens.font.semibold,
       fontWeight: "600",
     },
