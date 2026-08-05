@@ -40,7 +40,6 @@ import Toast from 'react-native-toast-message';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {
   triggerSuccessHaptic,
-  triggerWarningHaptic,
 } from '@trackingPortal/utils/haptic';
 import {normalizeCategoryIcon} from '@trackingPortal/screens/TransactionScreen/TransactionScreen.constants';
 import {parseDate} from '@trackingPortal/utils/date';
@@ -202,7 +201,6 @@ const TransactionList: FC<ITransactionList> = ({
         await getUserExpenses();
         await refreshAnalytics({force: true});
         await refreshSummary?.();
-        triggerWarningHaptic();
         Toast.show({
           type: 'success',
           text1: 'Deleted successfully!',

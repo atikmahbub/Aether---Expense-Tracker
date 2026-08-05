@@ -20,7 +20,6 @@ import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScre
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import {
   triggerSuccessHaptic,
-  triggerWarningHaptic,
 } from "@trackingPortal/utils/haptic";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
 import dayjs from "dayjs";
@@ -101,7 +100,6 @@ const InvestList: FC<IInvestList> = ({
         setDeleteLoading(true);
         await investData.deleteInvest(id as string);
         await getUserInvestHistory();
-        triggerWarningHaptic();
         Toast.show({ type: "success", text1: "Deleted successfully!" });
         syncNow();
       } catch {

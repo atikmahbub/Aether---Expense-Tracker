@@ -19,7 +19,6 @@ import {
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import {
   triggerSuccessHaptic,
-  triggerWarningHaptic,
 } from "@trackingPortal/utils/haptic";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
 import dayjs from "dayjs";
@@ -78,7 +77,6 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
         setDeleteLoading(true);
         await loanData.deleteLoan(rowId);
         await getUserLoan();
-        triggerWarningHaptic();
         Toast.show({ type: "success", text1: "Deleted successfully!" });
         syncNow();
       } catch {

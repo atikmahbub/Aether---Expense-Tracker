@@ -10,6 +10,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
+import { triggerWarningHaptic } from "@trackingPortal/utils/haptic";
 
 export type ScalarAlertButton = {
   text: string;
@@ -34,7 +35,12 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [alert, setAlert] = useState<AlertOptions | null>(null);
 
-  const showAlert = useCallback((options: AlertOptions) => setAlert(options), []);
+  const showAlert = useCallback((options: AlertOptions) => {
+    if (options.buttons?.some(button => button.style === "destructive")) {
+      triggerWarningHaptic();
+    }
+    setAlert(options);
+  }, []);
   const close = useCallback(() => setAlert(null), []);
   const buttons = alert?.buttons?.length
     ? alert.buttons
@@ -94,6 +100,9 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
                   <Pressable
                     key={`${button.text}-${index}`}
                     onPress={() => {
+                      if (isDestructive) {
+                        triggerWarningHaptic();
+                      }
                       close();
                       button.onPress?.();
                     }}
