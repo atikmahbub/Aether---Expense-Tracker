@@ -12,8 +12,8 @@ export const designTokens = {
   },
   radius: {
     sm: 8,
-    md: 16,
-    lg: 22,
+    md: 12,
+    lg: 20,
     hero: 28,
     analytics: 30,
     full: 999,

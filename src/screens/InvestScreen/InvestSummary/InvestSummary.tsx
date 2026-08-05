@@ -87,10 +87,11 @@ export default InvestSummary;
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { paddingHorizontal: 20, gap: 12 },
+    container: { paddingHorizontal: 20, gap: 10 },
     hero: {
       gap: 10,
-      padding: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
       borderRadius: designTokens.radius.lg,
       borderWidth: 1,
       borderColor: colors.panelTileBorder,
@@ -119,9 +120,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     metricCard: {
       flex: 1,
       minWidth: 0,
-      gap: 8,
-      padding: 16,
-      borderRadius: designTokens.radius.lg,
+      gap: 3,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+      borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.panelTileBorder,
       backgroundColor: colors.panelTile,
@@ -133,7 +135,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.metric,
     },
-    positive: { color: colors.positive },
-    negative: { color: colors.negative },
+    positive: { color: colors.panelPositive },
+    negative: { color: colors.panelNegative },
   });
 }

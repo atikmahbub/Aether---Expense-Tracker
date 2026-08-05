@@ -196,7 +196,7 @@ export default React.memo(LoanList);
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { paddingHorizontal: 20, paddingTop: 28, gap: 12 },
+    container: { paddingHorizontal: 20, paddingTop: 6, gap: 12 },
     title: {
       color: colors.textPrimary,
       fontFamily: designTokens.font.bold,

@@ -20,7 +20,7 @@ import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
 import SyncStatusIndicator from '@trackingPortal/components/SyncStatusIndicator';
 import {designTokens} from '@trackingPortal/themes/designTokens';
 
-const AVATAR_SIZE = 42;
+const AVATAR_SIZE = 44;
 
 const CustomAppBar: React.FC = () => {
   const {user} = useAuth();
@@ -130,8 +130,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       flexDirection: 'row',
       paddingHorizontal: 20,
       paddingTop: 0,
-      paddingBottom: 6,
-      minHeight: 66,
+      paddingBottom: 0,
+      minHeight: 60,
       justifyContent: 'space-between',
       alignItems: 'center',
     },
@@ -158,16 +158,16 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     greetingText: {
       color: colors.panelTextSecondary,
-      fontSize: 19,
-      lineHeight: 22,
+      fontSize: 21,
+      lineHeight: 26,
       fontFamily: designTokens.font.regular,
       fontWeight: '400',
       letterSpacing: -0.4,
     },
     userNameText: {
       color: colors.panelText,
-      fontSize: 24,
-      lineHeight: 27,
+      fontSize: 21,
+      lineHeight: 26,
       fontFamily: designTokens.font.extraBold,
       fontWeight: '800',
       letterSpacing: -0.7,
@@ -184,8 +184,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       width: AVATAR_SIZE + 4,
       height: AVATAR_SIZE + 4,
       borderRadius: (AVATAR_SIZE + 4) / 2,
-      borderWidth: 1.5,
-      borderColor: colors.panelTileBorder,
+      borderWidth: 2,
+      borderColor: colors.panelText,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'transparent',
@@ -211,8 +211,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       justifyContent: 'center',
     },
     avatarInitial: {
-      color: colors.panelText,
-      fontSize: 18,
+      color: colors.primaryDark,
+      fontSize: 16,
       fontWeight: '800',
       fontFamily: designTokens.font.extraBold,
     },

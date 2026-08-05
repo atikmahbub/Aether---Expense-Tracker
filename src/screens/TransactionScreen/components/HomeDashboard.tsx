@@ -165,7 +165,6 @@ export default function HomeDashboard({
                     : "No monthly limit"}
                 </ScalarAmountText>
                 <Pressable
-                  accessibilityLabel={limit > 0 ? "Adjust monthly limit" : "Set monthly limit"}
                   accessibilityRole="button"
                   onPress={onAdjustLimit}
                   style={({ pressed }) => [
@@ -173,11 +172,9 @@ export default function HomeDashboard({
                     pressed && styles.limitActionPressed,
                   ]}
                 >
-                  <MaterialCommunityIcons
-                    name={limit > 0 ? "pencil-outline" : "plus"}
-                    size={14}
-                    color={colors.panelText}
-                  />
+                  <Text style={styles.limitActionText}>
+                    {limit > 0 ? "Adjust limit" : "Set limit"}
+                  </Text>
                 </Pressable>
               </View>
               {limit > 0 && (
@@ -236,7 +233,7 @@ export default function HomeDashboard({
           ]}
         >
           <View style={styles.chartTitleRow}>
-            <Text style={styles.chartTitle}>Cash Flow</Text>
+            <Text style={styles.capsLabel}>IN VS OUT · BY WEEK</Text>
             <MaterialCommunityIcons
               name={chartExpanded ? "chevron-up" : "chevron-down"}
               size={18}
@@ -390,19 +387,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 0,
     },
     panelContent: { paddingHorizontal: 20, gap: 12 },
-    bodyContent: { paddingHorizontal: 20, paddingTop: 8 },
+    bodyContent: { paddingHorizontal: 20, paddingTop: 6 },
     heroCard: {
-      gap: 12,
-      padding: 20,
-      borderRadius: designTokens.radius.hero,
-      borderWidth: StyleSheet.hairlineWidth,
+      gap: 10,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
       borderColor: colors.panelTileBorder,
       backgroundColor: colors.panelTile,
-      shadowColor: "#001A13",
-      shadowOpacity: 0.16,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 5,
     },
     heroHeader: {
       flexDirection: "row",
@@ -436,18 +429,19 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "700",
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.heroAmount,
+      minHeight: 54,
       fontSize: 46,
       lineHeight: 54,
       paddingTop: 2,
     },
     limitTrack: {
-      height: 12,
+      height: 8,
       overflow: "hidden",
       borderRadius: 999,
       backgroundColor: "rgba(0,0,0,0.20)",
     },
     limitFill: {
-      height: 12,
+      height: 8,
       borderRadius: 999,
     },
     limitFooter: {
@@ -475,8 +469,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.caption,
     },
     limitAction: {
-      width: 28,
-      height: 28,
+      minHeight: 28,
+      paddingHorizontal: 10,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
@@ -487,8 +481,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     limitActionPressed: {
       backgroundColor: colors.chartGrid,
     },
-    negativeText: { color: colors.negative },
-    positiveText: { color: colors.positive },
+    limitActionText: {
+      color: colors.panelText,
+      fontFamily: designTokens.font.bold,
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: "700",
+    },
+    negativeText: { color: colors.panelNegative },
+    positiveText: { color: colors.panelPositive },
     metrics: {
       flexDirection: "row",
       gap: 12,
@@ -496,18 +497,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     metricCard: {
       flex: 1,
       minWidth: 0,
-      gap: 6,
-      paddingHorizontal: 18,
-      paddingVertical: 15,
-      borderRadius: designTokens.radius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
+      gap: 3,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      borderRadius: 18,
+      borderWidth: 1,
       borderColor: colors.panelTileBorder,
       backgroundColor: colors.panelTile,
-      shadowColor: "#001A13",
-      shadowOpacity: 0.10,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 3,
     },
     metricValue: {
       color: colors.panelText,
@@ -517,19 +513,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.metric,
     },
     chartCard: {
-      gap: 18,
-      paddingHorizontal: 20,
-      paddingTop: 20,
-      paddingBottom: 28,
-      borderRadius: designTokens.radius.analytics,
-      borderWidth: StyleSheet.hairlineWidth,
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: designTokens.radius.lg,
+      borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
-      shadowColor: "#001A13",
-      shadowOpacity: 0.10,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 4,
     },
     chartHeader: {
       flexDirection: "row",
@@ -548,17 +538,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 4,
       flexShrink: 1,
     },
-    chartTitle: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.semibold,
-      fontSize: 19,
-      lineHeight: 24,
-      letterSpacing: -0.35,
-      fontWeight: "600",
-    },
     legend: { flexDirection: "row", gap: 10 },
     legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-    legendSwatch: { width: 8, height: 8, borderRadius: 999 },
+    legendSwatch: { width: 9, height: 9, borderRadius: 2 },
     legendText: {
       color: colors.textSecondary,
       fontFamily: designTokens.font.semibold,
@@ -566,7 +548,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       ...designTokens.typography.micro,
       letterSpacing: 0,
     },
-    chartBody: { height: 104, flexDirection: "row", gap: 12 },
+    chartBody: { height: 92, flexDirection: "row", gap: 8 },
     axis: {
       width: 32,
       alignItems: "flex-end",

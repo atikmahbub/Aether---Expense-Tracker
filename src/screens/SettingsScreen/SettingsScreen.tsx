@@ -324,8 +324,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       gap: 8,
       borderRadius: designTokens.radius.full,
       borderWidth: 1.5,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.negative,
+      backgroundColor: "transparent",
     },
     signOutText: {
       color: colors.negative,
