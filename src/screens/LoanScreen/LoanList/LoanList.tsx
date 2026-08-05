@@ -6,6 +6,7 @@ import {
   makeUnixTimestampToNumber,
 } from "@trackingPortal/api/primitives";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
+import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
@@ -40,6 +41,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
   const { currentUser: user, currency } = useStoreContext();
   const { loanData } = useDatabase();
   const { syncNow } = useOffline();
+  const showAlert = useScalarAlert();
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -89,6 +91,24 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
     [getUserLoan, loanData, syncNow],
   );
 
+  const confirmDeleteLoan = useCallback(
+    (loan: LoanModel) => {
+      showAlert({
+        title: "Delete loan?",
+        message: `Are you sure you want to delete the loan with ${loan.name}? This action cannot be undone.`,
+        buttons: [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => handleDeleteLoan(loan.id),
+          },
+        ],
+      });
+    },
+    [handleDeleteLoan, showAlert],
+  );
+
   const renderEditor = useCallback(
     (item: LoanModel) => (
       <Formik
@@ -117,7 +137,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
             />
             <Pressable
               disabled={deleteLoading}
-              onPress={() => handleDeleteLoan(item.id)}
+              onPress={() => confirmDeleteLoan(item)}
               style={styles.deleteButton}
             >
               <Text style={styles.deleteText}>
@@ -128,7 +148,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
         )}
       </Formik>
     ),
-    [deleteLoading, handleDeleteLoan, loading, onLoanEdit, styles],
+    [confirmDeleteLoan, deleteLoading, loading, onLoanEdit, styles],
   );
 
   return (

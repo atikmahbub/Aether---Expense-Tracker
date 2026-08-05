@@ -160,6 +160,7 @@ export default function TransactionForm({
         <Text style={styles.capsLabel}>PURPOSE</Text>
         <TextInput
           accessibilityLabel="Purpose"
+          allowFontScaling={false}
           value={values[EAddTransactionFields.DESCRIPTION] || ""}
           onChangeText={(text) =>
             setFieldValue(EAddTransactionFields.DESCRIPTION, text)
@@ -373,6 +374,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     fieldSection: { gap: 8 },
     purposeInput: {
+      width: "100%",
+      flexShrink: 0,
       height: 52,
       paddingHorizontal: 16,
       paddingVertical: 0,

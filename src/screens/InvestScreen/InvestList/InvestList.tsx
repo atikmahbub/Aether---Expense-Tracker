@@ -6,6 +6,7 @@ import {
   makeUnixTimestampToNumber,
 } from "@trackingPortal/api/primitives";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
+import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
@@ -55,6 +56,7 @@ const InvestList: FC<IInvestList> = ({
   const { currentUser: user, currency } = useStoreContext();
   const { investData } = useDatabase();
   const { syncNow } = useOffline();
+  const showAlert = useScalarAlert();
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -112,6 +114,24 @@ const InvestList: FC<IInvestList> = ({
     [getUserInvestHistory, investData, syncNow],
   );
 
+  const confirmDelete = useCallback(
+    (investment: InvestModel) => {
+      showAlert({
+        title: "Delete investment?",
+        message: `Are you sure you want to delete ${investment.name}? This action cannot be undone.`,
+        buttons: [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => handleDelete(investment.id as InvestId),
+          },
+        ],
+      });
+    },
+    [handleDelete, showAlert],
+  );
+
   const renderEditor = useCallback(
     (item: InvestModel) => (
       <Formik
@@ -155,7 +175,7 @@ const InvestList: FC<IInvestList> = ({
             />
             <Pressable
               disabled={deleteLoading}
-              onPress={() => handleDelete(item.id as InvestId)}
+              onPress={() => confirmDelete(item)}
               style={styles.deleteButton}
             >
               <Text style={styles.deleteText}>
@@ -166,7 +186,7 @@ const InvestList: FC<IInvestList> = ({
         )}
       </Formik>
     ),
-    [deleteLoading, handleDelete, loading, onInvestEdit, styles],
+    [confirmDelete, deleteLoading, loading, onInvestEdit, styles],
   );
 
   const active = status === EInvestStatus.Active;

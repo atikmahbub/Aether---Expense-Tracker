@@ -20,6 +20,7 @@ import dayjs, {Dayjs} from 'dayjs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import ScalarListRow from '@trackingPortal/components/ScalarListRow';
+import {useScalarAlert} from '@trackingPortal/components/ScalarAlert';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {Formik} from 'formik';
 import {
@@ -90,6 +91,7 @@ const TransactionList: FC<ITransactionList> = ({
   const {currentUser: user, currency} = useStoreContext();
   const {transactionData} = useDatabase();
   const {syncNow} = useOffline();
+  const showAlert = useScalarAlert();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const categoryLookup = useMemo(() => {
@@ -224,6 +226,24 @@ const TransactionList: FC<ITransactionList> = ({
     syncNow,
   ]);
 
+  const confirmDeleteTransaction = useCallback((transaction: TransactionModel) => {
+    const purpose = transaction.description?.trim();
+    showAlert({
+      title: 'Delete transaction?',
+      message: purpose
+        ? `Are you sure you want to delete “${purpose}”? This action cannot be undone.`
+        : 'Are you sure you want to delete this transaction? This action cannot be undone.',
+      buttons: [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDeleteTransaction(transaction.id),
+        },
+      ],
+    });
+  }, [handleDeleteTransaction, showAlert]);
+
   const renderCollapsibleContent = useCallback(
     (item: any) => {
       const selectedItem = transactions.find(t => t.id === item.id);
@@ -261,7 +281,7 @@ const TransactionList: FC<ITransactionList> = ({
               />
               <Pressable
                 disabled={deleteLoading}
-                onPress={() => handleDeleteTransaction(currentRowId)}
+                onPress={() => confirmDeleteTransaction(selectedItem)}
                 style={({pressed}) => [
                   styles.deleteButton,
                   pressed && styles.deleteButtonPressed,
@@ -285,7 +305,7 @@ const TransactionList: FC<ITransactionList> = ({
       recentCategoryIds,
       loading,
       deleteLoading,
-      handleDeleteTransaction,
+      confirmDeleteTransaction,
       onTransactionEdit,
       styles,
     ],
