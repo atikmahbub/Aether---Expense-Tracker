@@ -219,9 +219,23 @@ export class TransactionDataService {
     await this.repos.transactions.softDelete(localId);
   }
 
-  /** Normalizes a JS Date to the midday UnixTimeStampString the app stores. */
+  /**
+   * Normalizes a JS Date to the UnixTimeStampString the app stores, keeping the
+   * time of day. Date-only values (midnight, e.g. straight from the calendar)
+   * get the current clock time so the list shows when the entry was made.
+   */
   static toTimestamp(date: Date): string {
-    const safe = dayjs(date).hour(12).minute(0).second(0).millisecond(0).toDate();
+    const picked = dayjs(date);
+    const hasTimeOfDay =
+      picked.hour() !== 0 || picked.minute() !== 0 || picked.second() !== 0;
+    const now = dayjs();
+    const safe = (
+      hasTimeOfDay
+        ? picked
+        : picked.hour(now.hour()).minute(now.minute()).second(now.second())
+    )
+      .millisecond(0)
+      .toDate();
     return makeUnixTimestampString(Number(safe)) as unknown as string;
   }
 }

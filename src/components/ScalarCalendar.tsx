@@ -178,7 +178,19 @@ export default function ScalarCalendar({
               <Text style={styles.todayText}>Today</Text>
             </Pressable>
             <Pressable
-              onPress={() => onConfirm(selected.toDate())}
+              onPress={() => {
+                // Grid days are midnight; keep the time of day of the incoming
+                // date so editing an entry does not discard its recorded time.
+                const base = dayjs(date);
+                const withTime = base.isValid()
+                  ? selected
+                      .hour(base.hour())
+                      .minute(base.minute())
+                      .second(base.second())
+                      .millisecond(base.millisecond())
+                  : selected;
+                onConfirm(withTime.toDate());
+              }}
               style={({ pressed }) => [
                 styles.confirmButton,
                 pressed && styles.confirmPressed,
