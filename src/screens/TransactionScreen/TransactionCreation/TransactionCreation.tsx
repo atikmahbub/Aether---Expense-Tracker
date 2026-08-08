@@ -17,6 +17,7 @@ import { TransactionDataService } from '@trackingPortal/db/services/TransactionD
 import {
   CreateTransactionSchema,
   EAddTransactionFields,
+  resolveTransactionAmount,
 } from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants';
 import { INewTransaction } from '@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.interfaces';
 import TransactionForm from '@trackingPortal/screens/TransactionScreen/TransactionForm';
@@ -97,6 +98,9 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
     async (values: INewTransaction, { resetForm }: any) => {
       if (!user?.sub || !transactionData) return;
 
+      const amount = resolveTransactionAmount(values.amount);
+      if (amount === null || amount <= 0) return;
+
       try {
         setLoading(true);
 
@@ -111,7 +115,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         // Offline-first: write to SQLite immediately (works online or offline).
         const created = await transactionData.createTransaction({
           userId: user.sub as string,
-          amount: Number(values.amount),
+          amount,
           description,
           date,
           categoryId: values.categoryId,

@@ -2,7 +2,10 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { ExpenseCategoryModel } from "@trackingPortal/api/models";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
-import { EAddTransactionFields } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
+import {
+  EAddTransactionFields,
+  resolveTransactionAmount,
+} from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
 import CategorySelector from "@trackingPortal/screens/TransactionScreen/components/CategorySelector";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import dayjs from "dayjs";
@@ -59,7 +62,7 @@ export default function TransactionForm({
   const { currency } = useStoreContext();
   const dateValue = values[EAddTransactionFields.DATE];
   const categoryValue = values[EAddTransactionFields.CATEGORY_ID];
-  const amountValue = values[EAddTransactionFields.AMOUNT] || "";
+  const amountValue = String(values[EAddTransactionFields.AMOUNT] || "");
 
   const currentDate = useMemo(() => {
     if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
@@ -71,7 +74,9 @@ export default function TransactionForm({
 
   const isToday = dayjs(currentDate).isSame(dayjs(), "day");
   const canSave =
-    Number(amountValue) > 0 && Boolean(categoryValue) && !loading;
+    (resolveTransactionAmount(amountValue) ?? 0) > 0 &&
+    Boolean(categoryValue) &&
+    !loading;
 
   useEffect(() => {
     if (!categories.length) return;
@@ -92,17 +97,60 @@ export default function TransactionForm({
   const handleKeyPress = useCallback(
     (key: string) => {
       const current = String(amountValue);
+      if (key === "clear") {
+        setFieldValue(EAddTransactionFields.AMOUNT, "");
+        return;
+      }
       if (key === "backspace") {
         setFieldValue(EAddTransactionFields.AMOUNT, current.slice(0, -1));
         return;
       }
-      if (key === "." && current.includes(".")) return;
-      if (key === "." && !current) {
-        setFieldValue(EAddTransactionFields.AMOUNT, "0.");
+      if (key === "=") {
+        // Only the keypad's two supported operations are accepted here. This
+        // keeps evaluation predictable without executing arbitrary input.
+        const parts = current.split(/([+-])/);
+        if (
+          parts.length < 3 ||
+          parts.some((part, index) =>
+            index % 2 === 0
+              ? !/^\d+(?:\.\d+)?$/.test(part)
+              : part !== "+" && part !== "-",
+          )
+        ) {
+          return;
+        }
+
+        let total = Number(parts[0]);
+        for (let index = 1; index < parts.length; index += 2) {
+          const operand = Number(parts[index + 1]);
+          total = parts[index] === "+" ? total + operand : total - operand;
+        }
+        if (Number.isFinite(total)) {
+          setFieldValue(EAddTransactionFields.AMOUNT, String(total));
+        }
         return;
       }
-      if (current === "0" && key !== ".") {
-        setFieldValue(EAddTransactionFields.AMOUNT, key);
+      if (key === "+" || key === "-") {
+        if (!current || current.endsWith(".")) return;
+        if (/[+-]$/.test(current)) {
+          setFieldValue(
+            EAddTransactionFields.AMOUNT,
+            `${current.slice(0, -1)}${key}`,
+          );
+          return;
+        }
+        setFieldValue(EAddTransactionFields.AMOUNT, `${current}${key}`);
+        return;
+      }
+      const activeNumber = current.split(/[+-]/).pop() || "";
+      const prefix = current.slice(0, current.length - activeNumber.length);
+      if (key === "." && activeNumber.includes(".")) return;
+      if (key === "." && !activeNumber) {
+        setFieldValue(EAddTransactionFields.AMOUNT, `${current}0.`);
+        return;
+      }
+      if (activeNumber === "0" && key !== ".") {
+        setFieldValue(EAddTransactionFields.AMOUNT, `${prefix}${key}`);
         return;
       }
       setFieldValue(EAddTransactionFields.AMOUNT, `${current}${key}`);
@@ -126,7 +174,7 @@ export default function TransactionForm({
             onChangeText={(text) =>
               setFieldValue(
                 EAddTransactionFields.AMOUNT,
-                text.replace(/[^0-9.]/g, ""),
+                text.replace(/[^0-9.+-]/g, ""),
               )
             }
             onBlur={() => {
@@ -300,31 +348,64 @@ export default function TransactionForm({
 
       {showShortcutKeypad && !purposeFocused && (
         <View style={styles.keypad}>
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "backspace"].map(
-            (key) => (
-              <Pressable
-                accessibilityLabel={
-                  key === "backspace" ? "Delete digit" : `Digit ${key}`
-                }
-                key={key}
-                onPress={() => handleKeyPress(key)}
-                style={({ pressed }) => [
-                  styles.key,
-                  pressed && styles.keyPressed,
-                ]}
-              >
-                {key === "backspace" ? (
-                  <MaterialCommunityIcons
-                    name="backspace"
-                    size={22}
-                    color={colors.textPrimary}
-                  />
-                ) : (
-                  <Text style={styles.keyText}>{key}</Text>
-                )}
-              </Pressable>
-            ),
-          )}
+          <View style={styles.keypadNumbers}>
+            {[
+              ["1", "2", "3"],
+              ["4", "5", "6"],
+              ["7", "8", "9"],
+              [".", "0", "backspace"],
+            ].map((row) => (
+              <View key={row.join("-")} style={styles.keypadRow}>
+                {row.map((key) => (
+                  <Pressable
+                    accessibilityLabel={
+                      key === "backspace" ? "Delete digit" : `Digit ${key}`
+                    }
+                    key={key}
+                    onPress={() => handleKeyPress(key)}
+                    style={({ pressed }) => [
+                      styles.key,
+                      styles.numberKey,
+                      pressed && styles.keyPressed,
+                    ]}
+                  >
+                    {key === "backspace" ? (
+                      <MaterialCommunityIcons
+                        name="backspace"
+                        size={22}
+                        color={colors.textPrimary}
+                      />
+                    ) : (
+                      <Text style={styles.keyText}>{key}</Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            ))}
+          </View>
+          <View style={styles.keypadActions}>
+            {["clear", "+", "-", "="].map((key) => (
+                <Pressable
+                  accessibilityLabel={
+                    key === "clear"
+                      ? "Clear amount"
+                      : key === "="
+                      ? "Calculate amount"
+                      : `${key === "+" ? "Add" : "Subtract"} operator`
+                  }
+                  key={key}
+                  onPress={() => handleKeyPress(key)}
+                  style={({ pressed }) => [
+                    styles.key,
+                    styles.actionKey,
+                    styles.operatorKey,
+                    pressed && styles.keyPressed,
+                  ]}
+                >
+                  <Text style={styles.keyText}>{key === "clear" ? "C" : key}</Text>
+                </Pressable>
+              ))}
+          </View>
         </View>
       )}
     </View>
@@ -458,18 +539,25 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     keypad: {
       flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
+      gap: 5,
     },
+    keypadNumbers: { flex: 3, gap: 5 },
+    keypadRow: { flexDirection: "row", gap: 5 },
+    keypadActions: { flex: 1, gap: 5 },
     key: {
-      width: "31.7%",
-      height: 52,
+      height: 38,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.md,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
+    },
+    numberKey: { flex: 1 },
+    actionKey: { width: "100%", flex: 1 },
+    operatorKey: {
+      borderColor: colors.brand,
+      backgroundColor: colors.brandWash,
     },
     keyPressed: {
       backgroundColor: colors.surfaceRaised,
@@ -478,8 +566,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     keyText: {
       color: colors.textPrimary,
       fontFamily: designTokens.font.semibold,
-      fontSize: 21,
-      lineHeight: 27,
+      fontSize: 19,
+      lineHeight: 24,
       fontWeight: "600",
       fontVariant: ["tabular-nums"],
     },
