@@ -545,7 +545,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     keypadRow: { flexDirection: "row", gap: 5 },
     keypadActions: { flex: 1, gap: 5 },
     key: {
-      height: 38,
+      height: 42,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.md,
