@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import useKeyboardHeight from '@trackingPortal/hooks/useKeyboardHeight';
 import { designTokens } from '@trackingPortal/themes/designTokens';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
+const CONTENT_PADDING_BOTTOM = 18;
 
 interface BaseBottomSheetProps {
   children: React.ReactNode;
@@ -46,6 +48,18 @@ const BaseBottomSheet = React.memo(
       // by the IME height manually.
       const keyboardHeight = useKeyboardHeight();
       const [rootHeight, setRootHeight] = useState(0);
+      const insets = useSafeAreaInsets();
+
+      // Keep the last row of content clear of the home indicator / gesture bar.
+      // While the IME is up it already covers that area (or the sheet is lifted
+      // by its height), so the inset would only add a floating gap.
+      const contentPaddingBottom = useMemo(
+        () => ({
+          paddingBottom:
+            CONTENT_PADDING_BOTTOM + (keyboardHeight > 0 ? 0 : insets.bottom),
+        }),
+        [insets.bottom, keyboardHeight],
+      );
 
       const onRootLayout = useCallback((event: LayoutChangeEvent) => {
         setRootHeight(event.nativeEvent.layout.height);
@@ -96,7 +110,10 @@ const BaseBottomSheet = React.memo(
                   enableAutomaticScroll={true}
                   showsVerticalScrollIndicator={false}
                   bounces={false}
-                  contentContainerStyle={styles.scrollContent}
+                  contentContainerStyle={[
+                    styles.scrollContent,
+                    contentPaddingBottom,
+                  ]}
                 >
                   <Pressable
                     onPress={Keyboard.dismiss}
@@ -134,7 +151,10 @@ const BaseBottomSheet = React.memo(
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                   bounces={false}
-                  contentContainerStyle={styles.scrollContent}
+                  contentContainerStyle={[
+                    styles.scrollContent,
+                    contentPaddingBottom,
+                  ]}
                 >
                   <Pressable
                     onPress={() => {}}
@@ -189,7 +209,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     scrollContent: {
       paddingHorizontal: 20,
-      paddingBottom: 18,
+      paddingBottom: CONTENT_PADDING_BOTTOM,
       flexGrow: 1,
     },
   });

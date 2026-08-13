@@ -20,6 +20,10 @@ import {
   View,
 } from "react-native";
 import ScalarCalendar from "@trackingPortal/components/ScalarCalendar";
+import { withHaptic } from "@trackingPortal/utils/haptic";
+import { ImpactFeedbackStyle } from "expo-haptics";
+
+const AMOUNT_MAX_LENGTH = 18;
 
 interface TransactionFormProps {
   categories: ExpenseCategoryModel[];
@@ -71,6 +75,19 @@ export default function TransactionForm({
     const parsed = new Date(dateValue);
     return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   }, [dateValue]);
+
+  // A long calculator expression is shrunk to fit instead of scrolling out of
+  // view: the field is centred, so overflow would hide the digits just typed.
+  const amountTextStyle = useMemo(() => {
+    const length = amountValue.length;
+    const fontSize =
+      length <= 8 ? 48 : length <= 11 ? 38 : length <= 14 ? 30 : 25;
+    return {
+      fontSize,
+      lineHeight: Math.round(fontSize * 1.3),
+      letterSpacing: fontSize >= 48 ? -1.44 : -0.5,
+    };
+  }, [amountValue]);
 
   const isToday = dayjs(currentDate).isSame(dayjs(), "day");
   const canSave =
@@ -130,6 +147,10 @@ export default function TransactionForm({
         }
         return;
       }
+      // The keypad writes straight to the field, so it has to honour the same
+      // cap the text input enforces on typed input.
+      if (current.length >= AMOUNT_MAX_LENGTH && !/[+-]$/.test(current)) return;
+
       if (key === "+" || key === "-") {
         if (!current || current.endsWith(".")) return;
         if (/[+-]$/.test(current)) {
@@ -187,12 +208,12 @@ export default function TransactionForm({
               setAmountFocused(true);
               setPurposeFocused(false);
             }}
-            style={styles.amountInput}
+            style={[styles.amountInput, amountTextStyle]}
             placeholder="0"
             placeholderTextColor={colors.textTertiary}
             selectionColor={colors.brand}
             caretHidden={false}
-            maxLength={12}
+            maxLength={AMOUNT_MAX_LENGTH}
           />
         </View>
         {!amountFocused &&
@@ -362,7 +383,13 @@ export default function TransactionForm({
                       key === "backspace" ? "Delete digit" : `Digit ${key}`
                     }
                     key={key}
-                    onPress={() => handleKeyPress(key)}
+                    hitSlop={KEY_HIT_SLOP}
+                    onPress={() =>
+                      withHaptic(
+                        () => handleKeyPress(key),
+                        ImpactFeedbackStyle.Light,
+                      )
+                    }
                     style={({ pressed }) => [
                       styles.key,
                       styles.numberKey,
@@ -372,7 +399,7 @@ export default function TransactionForm({
                     {key === "backspace" ? (
                       <MaterialCommunityIcons
                         name="backspace"
-                        size={22}
+                        size={24}
                         color={colors.textPrimary}
                       />
                     ) : (
@@ -394,7 +421,15 @@ export default function TransactionForm({
                       : `${key === "+" ? "Add" : "Subtract"} operator`
                   }
                   key={key}
-                  onPress={() => handleKeyPress(key)}
+                  hitSlop={KEY_HIT_SLOP}
+                  onPress={() =>
+                    withHaptic(
+                      () => handleKeyPress(key),
+                      // Operators and clear get a firmer tap than the digits so
+                      // the two halves of the keypad feel distinct.
+                      ImpactFeedbackStyle.Medium,
+                    )
+                  }
                   style={({ pressed }) => [
                     styles.key,
                     styles.actionKey,
@@ -411,6 +446,18 @@ export default function TransactionForm({
     </View>
   );
 }
+
+// Keys are sized for a comfortable thumb target (Apple/Material both ask for
+// ~44dp); the hit slop reclaims the gutters so there is no dead space between
+// neighbouring keys.
+const KEY_HEIGHT = 54;
+const KEY_GAP = 8;
+const KEY_HIT_SLOP = {
+  top: KEY_GAP / 2,
+  bottom: KEY_GAP / 2,
+  left: KEY_GAP / 2,
+  right: KEY_GAP / 2,
+};
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
@@ -440,15 +487,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "700",
     },
     amountInput: {
-      width: 220,
-      maxWidth: "75%",
+      width: 300,
+      maxWidth: "88%",
       padding: 0,
       color: colors.textPrimary,
       fontFamily: designTokens.font.bold,
-      fontSize: 48,
-      lineHeight: 62,
       fontWeight: "700",
-      letterSpacing: -1.44,
       textAlign: "center",
       fontVariant: ["tabular-nums"],
       paddingTop: 4,
@@ -539,13 +583,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     keypad: {
       flexDirection: "row",
-      gap: 5,
+      gap: KEY_GAP,
+      marginTop: 4,
     },
-    keypadNumbers: { flex: 3, gap: 5 },
-    keypadRow: { flexDirection: "row", gap: 5 },
-    keypadActions: { flex: 1, gap: 5 },
+    keypadNumbers: { flex: 3, gap: KEY_GAP },
+    keypadRow: { flexDirection: "row", gap: KEY_GAP },
+    keypadActions: { flex: 1, gap: KEY_GAP },
     key: {
-      height: 42,
+      height: KEY_HEIGHT,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.md,
@@ -566,8 +611,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     keyText: {
       color: colors.textPrimary,
       fontFamily: designTokens.font.semibold,
-      fontSize: 19,
-      lineHeight: 24,
+      fontSize: 22,
+      lineHeight: 28,
       fontWeight: "600",
       fontVariant: ["tabular-nums"],
     },
