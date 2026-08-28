@@ -210,7 +210,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       justifyContent: 'center',
     },
     selectedItem: {
-      borderColor: colors.glassBorder,
+      borderColor: colors.brand,
     },
     selectedColorItem: {
       borderWidth: 2,

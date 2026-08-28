@@ -297,9 +297,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       height: AVATAR_SIZE + 12,
       borderRadius: (AVATAR_SIZE + 12) / 2,
       padding: 4,
-      backgroundColor: colors.surfaceAlt,
+      backgroundColor: colors.surfaceRaised,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
       alignItems: "center",
       justifyContent: "center",
       shadowColor: "#000",
@@ -341,12 +341,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     detailCard: {
       width: "100%",
-      backgroundColor: colors.cardBg,
+      backgroundColor: colors.surface,
       borderRadius: 24,
       padding: 20,
       gap: 20,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     detailRow: {
       flexDirection: "row",
@@ -377,18 +377,18 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     divider: {
       height: 1,
-      backgroundColor: colors.glassBorder,
+      backgroundColor: colors.border,
     },
     actionRow: {
       width: "100%",
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.cardBg,
+      backgroundColor: colors.surface,
       borderRadius: 20,
       padding: 16,
       gap: 14,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     actionLabel: {
       flex: 1,
@@ -416,14 +416,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       backgroundColor: colors.overlay,
     },
     modalSheet: {
-      backgroundColor: colors.cardBg,
+      backgroundColor: colors.surface,
       borderTopLeftRadius: 32,
       borderTopRightRadius: 32,
       paddingHorizontal: 24,
       paddingTop: 24,
       paddingBottom: 36,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
       marginTop: "auto",
     },
     modalScrollContent: {
@@ -446,7 +446,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       justifyContent: "flex-end",
     },
     deleteInput: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceSunken,
       borderRadius: 16,
       paddingHorizontal: 20,
       paddingVertical: 16,
@@ -455,7 +455,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "600",
       marginBottom: 24,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.border,
     },
     modalButtonsGroup: {
       flexDirection: "row",
@@ -469,7 +469,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       justifyContent: "center",
     },
     cancelButton: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceRaised,
     },
     cancelButtonText: {
       color: colors.text,

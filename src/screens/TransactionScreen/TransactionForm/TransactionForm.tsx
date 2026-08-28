@@ -19,6 +19,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import ScalarCalendar from "@trackingPortal/components/ScalarCalendar";
 import { withHaptic } from "@trackingPortal/utils/haptic";
 import { ImpactFeedbackStyle } from "expo-haptics";
@@ -67,6 +74,22 @@ export default function TransactionForm({
   const dateValue = values[EAddTransactionFields.DATE];
   const categoryValue = values[EAddTransactionFields.CATEGORY_ID];
   const amountValue = String(values[EAddTransactionFields.AMOUNT] || "");
+
+  // Every keypad tap gives the amount a short scale pulse so the digit that
+  // just landed is visible without looking away from the thumb.
+  const amountScale = useSharedValue(1);
+  const pulseAmount = useCallback(
+    (peak: number) => {
+      amountScale.value = withSequence(
+        withTiming(peak, { duration: 70 }),
+        withSpring(1, { damping: 12, stiffness: 320, mass: 0.5 }),
+      );
+    },
+    [amountScale],
+  );
+  const amountAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: amountScale.value }],
+  }));
 
   const currentDate = useMemo(() => {
     if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
@@ -186,7 +209,7 @@ export default function TransactionForm({
         style={styles.amountContainer}
       >
         <Text style={styles.capsLabel}>AMOUNT · {currency.code}</Text>
-        <View style={styles.amountRow}>
+        <Animated.View style={[styles.amountRow, amountAnimatedStyle]}>
           <Text style={styles.currencySymbol}>{currency.symbol}</Text>
           <TextInput
             ref={amountInputRef}
@@ -215,7 +238,7 @@ export default function TransactionForm({
             caretHidden={false}
             maxLength={AMOUNT_MAX_LENGTH}
           />
-        </View>
+        </Animated.View>
         {!amountFocused &&
           touched[EAddTransactionFields.AMOUNT] &&
           errors[EAddTransactionFields.AMOUNT] && (
@@ -371,9 +394,9 @@ export default function TransactionForm({
         <View style={styles.keypad}>
           <View style={styles.keypadNumbers}>
             {[
-              ["1", "2", "3"],
-              ["4", "5", "6"],
               ["7", "8", "9"],
+              ["4", "5", "6"],
+              ["1", "2", "3"],
               [".", "0", "backspace"],
             ].map((row) => (
               <View key={row.join("-")} style={styles.keypadRow}>
@@ -385,10 +408,10 @@ export default function TransactionForm({
                     key={key}
                     hitSlop={KEY_HIT_SLOP}
                     onPress={() =>
-                      withHaptic(
-                        () => handleKeyPress(key),
-                        ImpactFeedbackStyle.Light,
-                      )
+                      withHaptic(() => {
+                        handleKeyPress(key);
+                        pulseAmount(key === "backspace" ? 0.96 : 1.05);
+                      }, ImpactFeedbackStyle.Light)
                     }
                     style={({ pressed }) => [
                       styles.key,
@@ -411,7 +434,7 @@ export default function TransactionForm({
             ))}
           </View>
           <View style={styles.keypadActions}>
-            {["clear", "+", "-", "="].map((key) => (
+            {["clear", "-", "+", "="].map((key) => (
                 <Pressable
                   accessibilityLabel={
                     key === "clear"
@@ -424,20 +447,37 @@ export default function TransactionForm({
                   hitSlop={KEY_HIT_SLOP}
                   onPress={() =>
                     withHaptic(
-                      () => handleKeyPress(key),
+                      () => {
+                        handleKeyPress(key);
+                        pulseAmount(
+                          key === "clear" ? 0.94 : key === "=" ? 1.12 : 1.06,
+                        );
+                      },
                       // Operators and clear get a firmer tap than the digits so
                       // the two halves of the keypad feel distinct.
-                      ImpactFeedbackStyle.Medium,
+                      key === "="
+                        ? ImpactFeedbackStyle.Heavy
+                        : ImpactFeedbackStyle.Medium,
                     )
                   }
                   style={({ pressed }) => [
                     styles.key,
                     styles.actionKey,
-                    styles.operatorKey,
-                    pressed && styles.keyPressed,
+                    key === "clear" ? styles.clearKey : styles.operatorKey,
+                    pressed &&
+                      (key === "clear"
+                        ? styles.keyPressed
+                        : styles.operatorKeyPressed),
                   ]}
                 >
-                  <Text style={styles.keyText}>{key === "clear" ? "C" : key}</Text>
+                  <Text
+                    style={[
+                      styles.keyText,
+                      key !== "clear" && styles.operatorKeyText,
+                    ]}
+                  >
+                    {OPERATOR_GLYPHS[key] ?? key}
+                  </Text>
                 </Pressable>
               ))}
           </View>
@@ -451,6 +491,14 @@ export default function TransactionForm({
 // ~44dp); the hit slop reclaims the gutters so there is no dead space between
 // neighbouring keys.
 const KEY_HEIGHT = 54;
+// The keypad mirrors the iOS calculator: a neutral clear key above filled
+// operator keys, with the typographic minus/multiplication glyphs.
+const OPERATOR_GLYPHS: Record<string, string> = {
+  clear: "C",
+  "-": "\u2212",
+  "+": "+",
+  "=": "=",
+};
 const KEY_GAP = 8;
 const KEY_HIT_SLOP = {
   top: KEY_GAP / 2,
@@ -600,10 +648,19 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     numberKey: { flex: 1 },
     actionKey: { width: "100%", flex: 1 },
+    clearKey: {
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceRaised,
+    },
     operatorKey: {
       borderColor: colors.brand,
-      backgroundColor: colors.brandWash,
+      backgroundColor: colors.brand,
     },
+    operatorKeyPressed: {
+      backgroundColor: colors.brandText,
+      borderColor: colors.brandText,
+    },
+    operatorKeyText: { color: colors.onBrand },
     keyPressed: {
       backgroundColor: colors.surfaceRaised,
       borderColor: colors.borderStrong,
