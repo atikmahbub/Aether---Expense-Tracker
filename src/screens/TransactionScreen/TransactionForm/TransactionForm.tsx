@@ -30,7 +30,12 @@ import ScalarCalendar from "@trackingPortal/components/ScalarCalendar";
 import { withHaptic } from "@trackingPortal/utils/haptic";
 import { ImpactFeedbackStyle } from "expo-haptics";
 
-const AMOUNT_MAX_LENGTH = 18;
+// Effectively no limit on how long a chained expression can get — high enough
+// that a keypad user never reaches it, low enough to stop pathological input.
+const AMOUNT_MAX_LENGTH = 120;
+// Past this many characters the expression stops shrinking and starts
+// scrolling horizontally instead, so digits stay readable however long it runs.
+const AMOUNT_SCROLL_THRESHOLD = 16;
 
 interface TransactionFormProps {
   categories: ExpenseCategoryModel[];
@@ -99,8 +104,10 @@ export default function TransactionForm({
     return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   }, [dateValue]);
 
-  // A long calculator expression is shrunk to fit instead of scrolling out of
-  // view: the field is centred, so overflow would hide the digits just typed.
+  // A long calculator expression shrinks down to a readable floor; beyond that
+  // the field left-aligns and scrolls horizontally, keeping the caret — and so
+  // the digit just typed — at the visible end.
+  const isAmountScrolling = amountValue.length > AMOUNT_SCROLL_THRESHOLD;
   const amountTextStyle = useMemo(() => {
     const length = amountValue.length;
     const fontSize =
@@ -109,6 +116,9 @@ export default function TransactionForm({
       fontSize,
       lineHeight: Math.round(fontSize * 1.3),
       letterSpacing: fontSize >= 48 ? -1.44 : -0.5,
+      textAlign: (length > AMOUNT_SCROLL_THRESHOLD ? "left" : "center") as
+        | "left"
+        | "center",
     };
   }, [amountValue]);
 
@@ -209,7 +219,13 @@ export default function TransactionForm({
         style={styles.amountContainer}
       >
         <Text style={styles.capsLabel}>AMOUNT · {currency.code}</Text>
-        <Animated.View style={[styles.amountRow, amountAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.amountRow,
+            isAmountScrolling && styles.amountRowScrolling,
+            amountAnimatedStyle,
+          ]}
+        >
           <Text style={styles.currencySymbol}>{currency.symbol}</Text>
           <TextInput
             ref={amountInputRef}
@@ -236,6 +252,7 @@ export default function TransactionForm({
             placeholderTextColor={colors.textTertiary}
             selectionColor={colors.brand}
             caretHidden={false}
+            scrollEnabled
             maxLength={AMOUNT_MAX_LENGTH}
           />
         </Animated.View>
@@ -527,6 +544,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
     },
+    // Once the expression overflows, the row hugs the left edge so the input
+    // owns the remaining width and can scroll within it.
+    amountRowScrolling: {
+      justifyContent: "flex-start",
+      alignSelf: "stretch",
+      paddingHorizontal: 16,
+      gap: 8,
+    },
     currencySymbol: {
       color: colors.textSecondary,
       fontFamily: designTokens.font.bengali,
@@ -535,6 +560,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "700",
     },
     amountInput: {
+      flexShrink: 1,
       width: 300,
       maxWidth: "88%",
       padding: 0,

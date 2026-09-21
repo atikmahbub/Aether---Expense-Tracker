@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "postinstall": "node ./scripts/patch-expo-xcode27.js"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",

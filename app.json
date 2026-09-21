@@ -46,6 +46,8 @@
       "expo-secure-store",
       "expo-font",
       "./plugins/withAndroidTransparentSplashIcon",
+      "./plugins/withIosPodMinDeploymentTarget",
+      "./plugins/withIosSceneLifecycle",
       [
         "expo-splash-screen",
         {
