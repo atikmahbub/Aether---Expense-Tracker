@@ -75,6 +75,10 @@ export default function TransactionForm({
   const [purposeFocused, setPurposeFocused] = useState(false);
   const [amountFocused, setAmountFocused] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
+  // The caret is controlled so it can be pushed back to the end after every
+  // keypad tap. Left to itself the input stops following the caret once the
+  // expression overflows, which hides the digits just entered.
+  const [amountSelection, setAmountSelection] = useState({ start: 0, end: 0 });
   const { currency } = useStoreContext();
   const dateValue = values[EAddTransactionFields.DATE];
   const categoryValue = values[EAddTransactionFields.CATEGORY_ID];
@@ -108,6 +112,13 @@ export default function TransactionForm({
   // the field left-aligns and scrolls horizontally, keeping the caret — and so
   // the digit just typed — at the visible end.
   const isAmountScrolling = amountValue.length > AMOUNT_SCROLL_THRESHOLD;
+
+  // Every value change lands at the end, so put the caret there and let the
+  // input scroll to it. Tapping elsewhere in the field still moves the caret
+  // freely — that goes through onSelectionChange without touching the value.
+  useEffect(() => {
+    setAmountSelection({ start: amountValue.length, end: amountValue.length });
+  }, [amountValue]);
   const amountTextStyle = useMemo(() => {
     const length = amountValue.length;
     const fontSize =
@@ -252,6 +263,10 @@ export default function TransactionForm({
             placeholderTextColor={colors.textTertiary}
             selectionColor={colors.brand}
             caretHidden={false}
+            selection={amountSelection}
+            onSelectionChange={(event) =>
+              setAmountSelection(event.nativeEvent.selection)
+            }
             scrollEnabled
             maxLength={AMOUNT_MAX_LENGTH}
           />
