@@ -308,7 +308,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 54,
       fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
+      fontFamily: 'Outfit_700Bold',
       letterSpacing: -2.8,
       includeFontPadding: false,
       flexShrink: 1,
@@ -317,7 +317,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.muted,
       fontSize: 12,
       fontWeight: '600',
-      fontFamily: 'Manrope_600SemiBold',
+      fontFamily: 'Outfit_600SemiBold',
     },
     summaryFooter: {
       flexDirection: 'row',
@@ -344,7 +344,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     netValue: {
       fontSize: 12,
       fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
+      fontFamily: 'Outfit_700Bold',
     },
     percentageContainer: {
       paddingHorizontal: 8,
@@ -356,7 +356,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     percentageInline: {
       fontSize: 10,
       fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
+      fontFamily: 'Outfit_700Bold',
     },
     percentageSub: {
       fontSize: 10,

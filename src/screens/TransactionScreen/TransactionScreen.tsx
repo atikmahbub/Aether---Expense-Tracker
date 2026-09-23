@@ -15,7 +15,7 @@ import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import HomeDashboard from "@trackingPortal/screens/TransactionScreen/components/HomeDashboard";
-import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
+import { PillChip, ScalarSheet } from "@trackingPortal/components/scalar";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
 import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
@@ -371,12 +371,16 @@ export default function TransactionScreen() {
         loading={summaryInitialLoading}
         onAdjustLimit={() => setLimitModalVisible(true)}
         ledgerControl={
-          <TransactionSegmentedControl
-            panel
-            options={["expense", "income"]}
-            selectedOption={typeFilter}
-            onOptionPress={handleTypeFilterChange}
-          />
+          <View style={styles.ledgerChips}>
+            {(["expense", "income"] as const).map((option) => (
+              <PillChip
+                key={option}
+                label={option === "expense" ? "Expense" : "Income"}
+                active={typeFilter === option}
+                onPress={() => handleTypeFilterChange(option)}
+              />
+            ))}
+          </View>
         }
       />
     ),
@@ -389,6 +393,32 @@ export default function TransactionScreen() {
       currency,
       transactions,
       handleTypeFilterChange,
+    ],
+  );
+
+  const cashFlowComponent = useMemo(
+    () => (
+      <HomeDashboard
+        section="sheet"
+        month={filterMonth}
+        type={typeFilter}
+        summary={summary}
+        monthlyLimit={monthLimit}
+        transactions={transactions}
+        currency={currency}
+        loading={summaryInitialLoading}
+        onAdjustLimit={() => setLimitModalVisible(true)}
+        ledgerControl={null}
+      />
+    ),
+    [
+      typeFilter,
+      summary,
+      summaryInitialLoading,
+      filterMonth,
+      monthLimit,
+      currency,
+      transactions,
     ],
   );
 
@@ -476,7 +506,7 @@ export default function TransactionScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: 20, flexGrow: 1 },
+          { paddingBottom: 0, flexGrow: 1 },
         ]}
         refreshControl={
           <RefreshControl
@@ -486,27 +516,15 @@ export default function TransactionScreen() {
           />
         }
       >
-        <RNAnimated.View
-          style={{
-            transform: [
-              {
-                translateY: scrollY.interpolate({
-                  inputRange: [-100, 0, 100],
-                  outputRange: [50, 0, -20],
-                  extrapolate: "clamp",
-                }),
-              },
-            ],
-            opacity: scrollY.interpolate({
-              inputRange: [0, 150],
-              outputRange: [1, 0.9],
-              extrapolate: "clamp",
-            }),
-          }}
-        >
+        {/* No parallax on the hero: sliding or fading it uncovers the page
+            colour behind the sheet's rounded corners. */}
+        <View>
           {headerComponent}
-        </RNAnimated.View>
-        {footerComponent}
+        </View>
+        <ScalarSheet>
+          {cashFlowComponent}
+          {footerComponent}
+        </ScalarSheet>
       </AnimatedKeyboardAwareScrollView>
 
       {(openCreationForm || isCreationPreloaded) && (
@@ -568,8 +586,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: "transparent",
     },
+    ledgerChips: { flexDirection: "row", gap: 6 },
     listContent: {
       paddingTop: 0,
     },

@@ -109,7 +109,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontWeight: '600',
       letterSpacing: 0.4,
       color: colors.text,
-      fontFamily: 'Manrope_600SemiBold',
+      fontFamily: 'Outfit_600SemiBold',
     },
     menuLabelCompact: {
       fontSize: 11,
@@ -140,7 +140,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     menuItemLabelCompact: {
       fontSize: 13,
-      fontFamily: 'Manrope_600SemiBold',
+      fontFamily: 'Outfit_600SemiBold',
     },
     menuSurface: {
       backgroundColor: 'transparent',

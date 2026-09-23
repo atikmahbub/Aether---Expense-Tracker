@@ -3,6 +3,7 @@ import {TextInput, TextInputProps} from 'react-native-paper';
 import {useField} from 'formik';
 import {View, Text, StyleSheet} from 'react-native';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface FormikTextInputProps extends TextInputProps {
   name: string;
@@ -20,7 +21,7 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
   autoFocus,
   ...props
 }) => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [field, meta] = useField(name);
   const inputRef = React.useRef<any>(null);
@@ -47,11 +48,19 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
         multiline={multiline}
         numberOfLines={multiline ? minRows : undefined}
         style={[styles.input, multiline && {height: minRows * 20}]}
-        outlineColor={colors.glassBorder}
-        activeOutlineColor={colors.primary}
-        textColor={colors.text}
-        placeholderTextColor={colors.placeholder}
-        theme={{colors: {background: isDark ? colors.surface : colors.cardBg}}}
+        outlineStyle={styles.outline}
+        outlineColor={colors.groupBorder}
+        activeOutlineColor={colors.chipActiveBg}
+        textColor={colors.sheetText}
+        placeholderTextColor={colors.textMuted}
+        contentStyle={styles.content}
+        theme={{
+          roundness: 18,
+          colors: {
+            background: colors.groupBg,
+            onSurfaceVariant: colors.textMuted,
+          },
+        }}
         {...props}
       />
       {meta.touched && meta.error && (
@@ -68,7 +77,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     input: {
       fontSize: 16,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.groupBg,
+    },
+    outline: {
+      borderRadius: 18,
+      borderWidth: 1,
+    },
+    content: {
+      fontFamily: designTokens.font.regular,
     },
     errorText: {
       color: colors.error,

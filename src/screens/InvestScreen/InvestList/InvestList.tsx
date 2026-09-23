@@ -6,6 +6,7 @@ import {
   makeUnixTimestampToNumber,
 } from "@trackingPortal/api/primitives";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
+import { PillChip, ScalarSheet, SheetHeader } from "@trackingPortal/components/scalar";
 import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
@@ -16,7 +17,6 @@ import {
   AddInvestSchema,
   EAddInvestFormFields,
 } from "@trackingPortal/screens/InvestScreen";
-import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import {
   triggerSuccessHaptic,
@@ -190,36 +190,40 @@ const InvestList: FC<IInvestList> = ({
   const active = status === EInvestStatus.Active;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Investment History</Text>
-      <TransactionSegmentedControl
-        options={["Active", "Completed"]}
-        selectedOption={active ? "Active" : "Completed"}
-        onOptionPress={(option) =>
-          setStatus(
-            option === "Active"
-              ? EInvestStatus.Active
-              : EInvestStatus.Completed,
-          )
-        }
-      />
+    <ScalarSheet>
+      <SheetHeader title="Investment history" />
+      <View style={styles.filters}>
+        <PillChip
+          variant="sheet"
+          label="Active"
+          active={active}
+          onPress={() => setStatus(EInvestStatus.Active)}
+        />
+        <PillChip
+          variant="sheet"
+          label="Completed"
+          active={!active}
+          onPress={() => setStatus(EInvestStatus.Completed)}
+        />
+      </View>
       <View style={styles.card}>
         {invests.length ? (
           invests.map((invest, index) => {
             const completed = invest.status === EInvestStatus.Completed;
             const open = expandedRowId === invest.id;
             const returnLabel =
-              completed && invest.earned != null && invest.amount > 0
-                ? ` · ${formatNumber(
+              invest.earned != null && invest.amount > 0
+                ? formatNumber(
                     ((invest.earned - invest.amount) / invest.amount) * 100,
-                    { maximumFractionDigits: 1, suffix: "%" },
-                  )}`
-                : "";
+                    { maximumFractionDigits: 1, minimumFractionDigits: 1, suffix: "%" },
+                  ).replace("-", "−")
+                : undefined;
             return (
               <View key={invest.id}>
                 <ScalarListRow
                   title={invest.name}
-                  meta={`${completed ? "Completed" : "Active"}${returnLabel} · ${dayjs(
+                  status={returnLabel}
+                  meta={`${completed ? "Completed" : "Active"} · since ${dayjs(
                     makeUnixTimestampToNumber(Number(invest.startDate)),
                   ).format("D MMM YYYY")}`}
                   amount={formatCurrency(invest.amount, currency, {
@@ -227,10 +231,8 @@ const InvestList: FC<IInvestList> = ({
                     maximumFractionDigits: 0,
                   })}
                   icon={completed ? "check-bold" : "rhombus"}
-                  categoryColor={completed ? colors.positive : colors.assetGold}
-                  iconGlyphColor={
-                    completed ? colors.onPositiveFill : colors.onAssetGold
-                  }
+                  categoryColor={completed ? colors.positiveTile : colors.goldTile}
+                  iconGlyphColor={completed ? colors.positive : colors.assetGold}
                   showDivider={index < invests.length - 1 || open}
                   onPress={() => {
                     const next = open ? null : invest.id;
@@ -254,7 +256,7 @@ const InvestList: FC<IInvestList> = ({
           <Text style={styles.assetHintText}>Add a second to compare returns over time.</Text>
         </View>
       )}
-    </View>
+    </ScalarSheet>
   );
 };
 
@@ -262,18 +264,11 @@ export default React.memo(InvestList);
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { paddingHorizontal: 20, paddingTop: 6, gap: 12 },
-    title: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.section,
-    },
+    filters: { flexDirection: "row", gap: 6, paddingTop: 4, paddingBottom: 6 },
     card: {
-      gap: 8,
       backgroundColor: "transparent",
     },
-    editor: { gap: 12, padding: 16, backgroundColor: colors.bg },
+    editor: { gap: 12, paddingVertical: 16, backgroundColor: "transparent" },
     deleteButton: {
       height: 48,
       alignItems: "center",
@@ -295,27 +290,24 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontFamily: designTokens.font.medium,
     },
     assetHint: {
-      gap: 4,
-      alignItems: "center",
-      paddingVertical: 18,
-      paddingHorizontal: 16,
-      borderRadius: designTokens.radius.tile,
-      borderWidth: 1,
+      marginTop: 8,
+      gap: 3,
+      paddingVertical: 16,
+      paddingHorizontal: 18,
+      borderRadius: designTokens.radius.group,
+      borderWidth: 1.5,
       borderStyle: "dashed",
-      borderColor: colors.border,
+      borderColor: colors.dashedBorder,
     },
     assetHintTitle: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
-      fontSize: 14,
-      fontWeight: "700",
+      color: colors.sheetText,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 15,
     },
     assetHintText: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.medium,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
       fontSize: 13,
-      fontWeight: "500",
-      textAlign: "center",
     },
   });
 }

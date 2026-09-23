@@ -1,14 +1,10 @@
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { EInvestStatus } from "@trackingPortal/api/enums";
 import { InvestModel } from "@trackingPortal/api/models";
-import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
-import { CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
+import { CurvyHeroPanel, CustomAppBar, HeroFigure, HeroStatCard } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
-import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
-import { designTokens } from "@trackingPortal/themes/designTokens";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
 import React, { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 interface ISummary {
   investList: InvestModel[];
@@ -16,8 +12,6 @@ interface ISummary {
 }
 
 const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { currency } = useStoreContext();
   const isActive = status === EInvestStatus.Active;
   const totalAmount = investList.reduce((sum, item) => sum + item.amount, 0);
@@ -41,69 +35,46 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
     return `${count} · ${names.join(", ")}${suffix}`;
   }, [investList]);
 
-  const returnIcon =
-    averageReturn < 0 ? "triangle-down" : averageReturn > 0 ? "triangle" : null;
-  const returnColor =
-    averageReturn < 0
-      ? colors.panelNegative
-      : averageReturn > 0
-        ? colors.panelPositive
-        : colors.panelText;
+  const returnGlyph = averageReturn < 0 ? "▼ " : averageReturn > 0 ? "▲ " : "";
 
   return (
     <CurvyHeroPanel>
       <CustomAppBar />
       <View style={styles.container}>
-      <View style={styles.hero}>
-        <Text style={styles.label}>
-          {isActive ? "ACTIVE INVESTMENTS" : "COMPLETED INVESTMENTS"}
-        </Text>
-        {/* See HomeDashboard: adjustsFontSizeToFit collapses multi-font-run
-            amounts (the ৳ is Noto Sans Bengali) at this size on iOS. */}
-        <ScalarAmountText numberOfLines={1} style={styles.heroAmount}>
-          {formatCurrency(totalAmount, currency, {
+        <HeroFigure
+          label={isActive ? "Active investments" : "Completed investments"}
+          amount={formatCurrency(totalAmount, currency, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
           })}
-        </ScalarAmountText>
-        <Text style={styles.heroFooter} numberOfLines={1}>
-          {assetSubtitle}
-        </Text>
-      </View>
-      <View style={styles.metrics}>
-        <View style={styles.metricCard}>
-          <Text style={styles.label}>AVERAGE RETURN</Text>
-          {/* Direction carries a glyph as well as the sign and colour. */}
-          <View style={styles.metricValueRow}>
-            {returnIcon && (
-              <MaterialCommunityIcons
-                name={returnIcon}
-                size={13}
-                color={returnColor}
-              />
-            )}
-            <Text
-              numberOfLines={1}
-              style={[styles.metricValue, { color: returnColor }]}
-            >
-              {formatNumber(averageReturn, {
+          footer={assetSubtitle}
+        />
+        {/* Direction carries a glyph as well as the sign and colour. */}
+        <HeroStatCard
+          stats={[
+            {
+              label: `${returnGlyph}Average return`,
+              value: formatNumber(averageReturn, {
                 maximumFractionDigits: 1,
                 minimumFractionDigits: 1,
                 suffix: "%",
-              })}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.label}>ASSET COUNT</Text>
-          <Text style={styles.metricValue}>
-            {formatNumber(investList.length, {
-              maximumFractionDigits: 0,
-              useGrouping: false,
-            })}
-          </Text>
-        </View>
-      </View>
+              }).replace("-", "−"),
+              tone:
+                averageReturn < 0
+                  ? "negative"
+                  : averageReturn > 0
+                    ? "positive"
+                    : "neutral",
+            },
+            {
+              label: "Asset count",
+              value: formatNumber(investList.length, {
+                maximumFractionDigits: 0,
+                useGrouping: false,
+              }),
+            },
+          ]}
+        />
       </View>
     </CurvyHeroPanel>
   );
@@ -111,61 +82,6 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
 
 export default InvestSummary;
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
-  return StyleSheet.create({
-    container: { paddingHorizontal: 20, gap: 10 },
-    hero: {
-      gap: 10,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.panelTileBorder,
-      backgroundColor: colors.panelTile,
-    },
-    label: {
-      color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.caps,
-    },
-    heroAmount: {
-      color: colors.panelText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      fontVariant: ["tabular-nums"],
-      ...designTokens.typography.heroAmount,
-    },
-    heroFooter: {
-      color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.medium,
-      ...designTokens.typography.caption,
-    },
-    metrics: { flexDirection: "row", gap: 12 },
-    metricCard: {
-      flex: 1,
-      minWidth: 0,
-      gap: 3,
-      paddingVertical: 11,
-      paddingHorizontal: 14,
-      borderRadius: designTokens.radius.tile,
-      borderWidth: 1,
-      borderColor: colors.panelTileBorder,
-      backgroundColor: colors.panelTile,
-    },
-    metricValueRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      minWidth: 0,
-    },
-    metricValue: {
-      flexShrink: 1,
-      color: colors.panelText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      fontVariant: ["tabular-nums"],
-      ...designTokens.typography.metric,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  container: { paddingHorizontal: 22, gap: 16 },
+});

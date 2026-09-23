@@ -23,6 +23,10 @@ export const designTokens = {
     // Hero tile.
     lg: 20,
     hero: 28,
+    // Stat card on the tinted top and the sheet that rises under it.
+    statCard: 26,
+    sheet: 36,
+    group: 22,
     analytics: 30,
     full: 999,
     // Compatibility aliases while untouched screens migrate.
@@ -42,11 +46,15 @@ export const designTokens = {
     micro: { fontSize: 11, lineHeight: 14, letterSpacing: 0.88 },
   },
   font: {
-    regular: "PlusJakartaSans_400Regular",
-    medium: "PlusJakartaSans_500Medium",
-    semibold: "PlusJakartaSans_600SemiBold",
-    bold: "PlusJakartaSans_700Bold",
-    extraBold: "PlusJakartaSans_800ExtraBold",
+    regular: "Outfit_400Regular",
+    medium: "Outfit_500Medium",
+    semibold: "Outfit_600SemiBold",
+    bold: "Outfit_700Bold",
+    // Outfit tops out visually at 700 for this system; the wide Unbounded
+    // face carries emphasis for figures instead.
+    extraBold: "Outfit_700Bold",
+    // Wide display face for figures and screen titles.
+    display: "Unbounded_500Medium",
     bengali: "NotoSansBengali_600SemiBold",
   },
   controlHeight: 48,

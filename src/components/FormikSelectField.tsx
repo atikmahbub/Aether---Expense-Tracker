@@ -122,13 +122,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], paperTheme
     container: {
       marginBottom: 16,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
-      borderRadius: 14,
+      borderColor: colors.groupBorder,
+      borderRadius: 18,
       overflow: 'hidden',
     },
     input: {
-      backgroundColor: paperTheme.colors.surface,
-      color: colors.text,
+      backgroundColor: colors.groupBg,
+      color: colors.sheetText,
     },
     dropdownOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -136,8 +136,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], paperTheme
     },
     dropdown: {
       position: 'absolute',
-      backgroundColor: paperTheme.colors.surface,
-      borderRadius: 18,
+      backgroundColor: colors.sheet,
+      borderRadius: 26,
       paddingVertical: 4,
       paddingHorizontal: 10,
       zIndex: 999,

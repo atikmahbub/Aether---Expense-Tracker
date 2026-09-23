@@ -89,7 +89,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 16,
       fontWeight: '800',
       color: colors.text,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: 'Outfit_400Regular',
     },
     systemBadge: {
       fontSize: 10,

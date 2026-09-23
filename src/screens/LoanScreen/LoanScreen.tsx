@@ -166,7 +166,7 @@ export default function LoanScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: 20, flexGrow: 1 }
+          { paddingBottom: 0, flexGrow: 1 }
         ]}
       >
         {headerComponent}

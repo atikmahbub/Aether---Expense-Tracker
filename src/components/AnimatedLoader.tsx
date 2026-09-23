@@ -1,75 +1,98 @@
+import dayjs from "dayjs";
+import * as Font from "expo-font";
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RollingDigit } from "@trackingPortal/components/ScalarLoadingMarks";
+import { DotField, SpentRamp } from "@trackingPortal/components/scalar/SplitBar";
+import ScreenGradient from "@trackingPortal/components/scalar/ScreenGradient";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 
-const COLUMN_DURATIONS = [1050, 820, 1280, 940, 1160, 760];
+const BAR_WIDTH = 220;
+const KNOB = 44;
 
+/** Wordmark plus the Wallet hero's split bar, filling as data loads. */
 const AnimatedLoader: React.FC = () => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
   const progress = useRef(new Animated.Value(0)).current;
+  const [pct, setPct] = React.useState(20);
 
   useEffect(() => {
+    const id = progress.addListener(({ value }) =>
+      setPct(Math.round(20 + value * 70)),
+    );
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(progress, {
           toValue: 1,
-          duration: 1400,
+          duration: 1600,
           easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(progress, {
           toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
+          duration: 500,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: false,
         }),
       ]),
     );
     loop.start();
-    return () => loop.stop();
+    return () => {
+      loop.stop();
+      progress.removeListener(id);
+    };
   }, [progress]);
+
+  // Re-read every frame (the % label re-renders), so it flips as soon as the
+  // font lands.
+  const displayReady = Font.isLoaded(designTokens.font.display);
+
+  const spentWidth = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [BAR_WIDTH * 0.2, BAR_WIDTH * 0.9],
+  });
 
   return (
     <View style={styles.container}>
-      <View style={styles.brandRow}>
-        <Text style={styles.brand}>scalar</Text>
-        <View style={styles.brandDot} />
-      </View>
-
-      <View style={styles.amountRow}>
-        <Text style={styles.currency}>৳</Text>
-        {COLUMN_DURATIONS.slice(0, 3).map(duration => (
-          <RollingDigit key={duration} size="large" duration={duration} />
-        ))}
-        <Text style={styles.comma}>,</Text>
-        {COLUMN_DURATIONS.slice(3).map(duration => (
-          <RollingDigit key={duration} size="large" duration={duration} />
-        ))}
-      </View>
-
-      <View style={styles.status}>
-        <View style={styles.track}>
-          <Animated.View
-            style={[
-              styles.progress,
-              {
-                transform: [
-                  {
-                    translateX: progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-82, 172],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
+      <ScreenGradient />
+      <View style={styles.center}>
+        {/* This also renders as the launch splash, before fonts finish
+            loading. Android keeps the width measured for the fallback face
+            when Unbounded swaps in and clips the word, so remount it once
+            the font is ready and let it span the full width. */}
+        <Text
+          key={displayReady ? "display" : "fallback"}
+          numberOfLines={1}
+          style={[styles.brand, !displayReady && styles.brandFallback]}
+        >
+          scalar
+        </Text>
+        <View style={styles.bar}>
+          <Animated.View style={[styles.spent, { width: spentWidth }]}>
+            {/* Drawn at full bar width and clipped by the growing fill: an SVG
+                sized to an animating parent doesn't redraw on every frame. */}
+            <View style={styles.ramp}>
+              <SpentRamp from={colors.splitSpentFrom} to={colors.splitSpentTo} />
+            </View>
+            <View style={styles.knob}>
+              <Text style={styles.knobText}>{pct}%</Text>
+            </View>
+          </Animated.View>
+          <View style={[styles.rest, { flex: 1 }]}>
+            <View style={styles.dots}>
+              <DotField color={colors.heroDots} spacing={10} radius={2} />
+            </View>
+          </View>
         </View>
-        <Text style={styles.caption}>BALANCING YOUR LEDGER</Text>
+        <Text style={styles.caption}>Syncing your {dayjs().format("MMMM")}…</Text>
       </View>
+      <Text style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 28 }]}>
+        Offline-first · your entries are saved on this device
+      </Text>
     </View>
   );
 };
@@ -79,63 +102,65 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     container: {
       flex: 1,
       alignItems: "center",
+      backgroundColor: colors.heroGradBottom,
+    },
+    center: {
+      flex: 1,
+      alignSelf: "stretch",
+      alignItems: "center",
       justifyContent: "center",
-      gap: 34,
-      backgroundColor: colors.background,
+      gap: 28,
     },
-    brandRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     brand: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.extraBold,
-      fontSize: 24,
-      fontWeight: "800",
-      letterSpacing: -0.72,
-    },
-    brandDot: {
-      width: 9,
-      height: 9,
-      borderRadius: 2,
-      backgroundColor: colors.brand,
-    },
-    amountRow: { flexDirection: "row", alignItems: "center", gap: 1 },
-    currency: {
-      marginRight: 4,
-      color: colors.textTertiary,
-      fontFamily: designTokens.font.bengali,
-      fontSize: 30,
-      lineHeight: 44,
-      fontWeight: "700",
-    },
-    comma: {
-      width: 12,
-      color: colors.textTertiary,
-      fontFamily: designTokens.font.bold,
-      fontSize: 38,
-      lineHeight: 44,
-      fontWeight: "700",
+      alignSelf: "stretch",
       textAlign: "center",
+      color: colors.heroInk,
+      fontFamily: designTokens.font.display,
+      fontSize: 40,
+      lineHeight: 50,
+      letterSpacing: -1.2,
     },
-    status: { alignItems: "center", gap: 16 },
-    track: {
-      width: 132,
-      height: 3,
-      borderRadius: 2,
+    brandFallback: { fontFamily: undefined, fontWeight: "600", letterSpacing: -0.5 },
+    bar: { width: BAR_WIDTH, height: KNOB, flexDirection: "row" },
+    spent: {
+      height: KNOB,
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      borderTopLeftRadius: 999,
+      borderBottomLeftRadius: 999,
       overflow: "hidden",
-      backgroundColor: colors.border,
     },
-    progress: {
-      width: 50,
-      height: 3,
-      borderRadius: 2,
-      backgroundColor: colors.brand,
+    dots: { position: "absolute", right: 0, top: 0, bottom: 0, width: BAR_WIDTH },
+    ramp: { position: "absolute", left: 0, top: 0, bottom: 0, width: BAR_WIDTH },
+    knob: {
+      width: KNOB,
+      height: KNOB,
+      borderRadius: KNOB / 2,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.splitSpentKnob,
+    },
+    knobText: {
+      color: colors.splitSpentKnobInk,
+      fontFamily: designTokens.font.display,
+      fontSize: 11,
+    },
+    rest: {
+      flex: 1,
+      overflow: "hidden",
+      borderTopRightRadius: 999,
+      borderBottomRightRadius: 999,
     },
     caption: {
-      color: colors.textTertiary,
-      fontFamily: designTokens.font.bold,
+      color: colors.heroTextSecondary,
+      fontFamily: designTokens.font.medium,
+      fontSize: 15,
+    },
+    footer: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.medium,
       fontSize: 12,
-      lineHeight: 16,
-      fontWeight: "700",
-      letterSpacing: 1.68,
     },
   });
 }

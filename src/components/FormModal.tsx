@@ -15,6 +15,7 @@ import {
 import LoadingButton from '@trackingPortal/components/LoadingButton';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import useKeyboardHeight from '@trackingPortal/hooks/useKeyboardHeight';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface IFormModal {
   isVisible: boolean;
@@ -126,7 +127,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      backgroundColor: 'rgba(5,8,7,0.6)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -137,11 +138,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     floatingCard: {
       width: SCREEN_WIDTH * 0.9,
-      backgroundColor: colors.surface,
-      borderRadius: 24,
-      padding: 24,
+      maxWidth: 380,
+      backgroundColor: colors.sheet,
+      borderRadius: 30,
+      borderCurve: 'continuous',
+      paddingTop: 24,
+      paddingHorizontal: 22,
+      paddingBottom: 20,
       borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderColor: colors.groupBorder,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.3,
@@ -152,14 +157,16 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       marginBottom: 20,
     },
     title: {
+      fontFamily: designTokens.font.display,
       fontSize: 20,
-      fontWeight: '700',
-      color: colors.text,
-      letterSpacing: 0.4,
+      lineHeight: 26,
+      color: colors.sheetText,
+      letterSpacing: -0.4,
     },
     subtitle: {
-      fontSize: 13,
-      color: colors.subText,
+      fontFamily: designTokens.font.regular,
+      fontSize: 14,
+      color: colors.textMuted,
       marginTop: 6,
     },
     formContainer: {
@@ -172,16 +179,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       gap: 12,
     },
     cancelButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      height: 50,
+      justifyContent: 'center',
+      paddingHorizontal: 22,
+      borderRadius: 999,
+      backgroundColor: colors.softChipBg,
     },
     buttonText: {
-      color: colors.subText,
-      fontWeight: '600',
+      color: colors.softChipInk,
+      fontFamily: designTokens.font.semibold,
       fontSize: 15,
     },
   });

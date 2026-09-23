@@ -12,17 +12,23 @@ import {
   Text,
   View,
 } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import Toast from "react-native-toast-message";
 
 import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
-import { AnimatedLoader, CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
+import {
+  AnimatedLoader,
+  CurvyHeroPanel,
+  CustomAppBar,
+  PillChip,
+  ScalarSheet,
+} from "@trackingPortal/components";
 import { SUPPORTED_CURRENCIES } from "@trackingPortal/constants/currency";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import {
   ThemeMode,
   useAppTheme,
 } from "@trackingPortal/contexts/ThemeContext";
-import TransactionSegmentedControl from "@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 
 const STORE_URL =
@@ -31,7 +37,7 @@ const STORE_URL =
 export default function SettingsScreen() {
   const { colors, themeMode, setThemeMode } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { logout, loading } = useAuth();
+  const { logout, loading, user } = useAuth();
   const { currency, setCurrencyPreference } = useStoreContext();
   const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
@@ -69,20 +75,26 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <CurvyHeroPanel>
-        <CustomAppBar />
+        <CustomAppBar
+          title="Settings"
+          subtitle={(user?.name as string | undefined) || undefined}
+        />
         <View style={styles.panelContent}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={[styles.sectionLabel, styles.panelSectionLabel]}>APPEARANCE</Text>
-          <TransactionSegmentedControl
-            panel
-            options={["Light", "Dark", "System"]}
-            selectedOption={themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
-            onOptionPress={(option) => setThemeMode(option.toLowerCase() as ThemeMode)}
-          />
+          <Text style={styles.panelLabel}>Appearance</Text>
+          <View style={styles.chips}>
+            {(["light", "dark", "system"] as ThemeMode[]).map((mode) => (
+              <PillChip
+                key={mode}
+                label={mode.charAt(0).toUpperCase() + mode.slice(1)}
+                active={themeMode === mode}
+                onPress={() => setThemeMode(mode)}
+              />
+            ))}
+          </View>
         </View>
       </CurvyHeroPanel>
 
-      <View style={styles.bodyContent}>
+      <ScalarSheet>
 
       <Text style={styles.sectionLabel}>PREFERENCES</Text>
       <View style={styles.card}>
@@ -108,7 +120,7 @@ export default function SettingsScreen() {
       <View style={styles.card}>
         <SettingsRow
           icon="shield-account"
-          label="Privacy Policy"
+          label="Privacy policy"
           external
           onPress={() =>
             openLink("https://atikmahbub.github.io/aether-privacy-policy/")
@@ -142,14 +154,15 @@ export default function SettingsScreen() {
           pressed && styles.rowPressed,
         ]}
       >
-        <MaterialCommunityIcons
-          name="logout"
-          size={20}
-          color={colors.negative}
-        />
+        <View style={styles.signOutTile}>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path d="M12 3v8" stroke={colors.negative} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M6.6 6.6a8 8 0 1 0 10.8 0" stroke={colors.negative} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </View>
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
-      </View>
+      </ScalarSheet>
 
       <Modal
         visible={currencyModalVisible}
@@ -233,16 +246,16 @@ function SettingsRow({
       <View style={styles.iconTile}>
         <MaterialCommunityIcons
           name={icon}
-          size={20}
-          color={colors.brandText}
+          size={17}
+          color={colors.groupIconInk}
         />
       </View>
       <Text style={styles.rowLabel}>{label}</Text>
       {value && <Text style={styles.rowValue}>{value}</Text>}
       <MaterialCommunityIcons
         name={external ? "open-in-new" : "chevron-right"}
-        size={19}
-        color={colors.textSecondary}
+        size={17}
+        color={colors.textMuted}
       />
     </Pressable>
   );
@@ -250,94 +263,96 @@ function SettingsRow({
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg },
+    container: { flex: 1, backgroundColor: "transparent" },
     content: {
-      paddingBottom: 28,
-      gap: 0,
+      flexGrow: 1,
     },
-    panelContent: { paddingHorizontal: 20, gap: 8 },
+    panelContent: { paddingHorizontal: 22, gap: 8 },
+    panelLabel: {
+      color: colors.heroText,
+      fontFamily: designTokens.font.medium,
+      fontSize: 14,
+    },
+    chips: { flexDirection: "row", gap: 6 },
+    sectionLabel: {
+      flexShrink: 0,
+      paddingTop: 6,
+      paddingHorizontal: 4,
+      paddingBottom: 2,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 12,
+      letterSpacing: 0.96,
+    },
     // Nothing in this column may shrink: with flex sizing the last About row
     // gets clipped instead of the column simply being as tall as its content.
-    bodyContent: { paddingHorizontal: 20, gap: 8 },
-    title: {
-      color: colors.panelText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.title,
-    },
-    sectionLabel: {
-      flex: 0,
-      flexShrink: 0,
-      marginTop: 6,
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.caps,
-    },
-    // 8 here plus the column's 8 gap = the spec's 16 above APPEARANCE.
-    panelSectionLabel: { color: colors.panelTextSecondary, marginTop: 8 },
     card: {
-      flex: 0,
       flexShrink: 0,
       overflow: "hidden",
-      borderRadius: designTokens.radius.tile,
+      borderRadius: designTokens.radius.group,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
+      borderColor: colors.groupBorder,
+      backgroundColor: colors.groupBg,
     },
     row: {
-      minHeight: 62,
+      minHeight: 56,
       paddingHorizontal: 14,
       paddingVertical: 11,
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
     },
-    rowPressed: { backgroundColor: colors.surfaceSunken },
+    rowPressed: { opacity: 0.7 },
     iconTile: {
-      width: 40,
-      height: 40,
+      width: 34,
+      height: 34,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: designTokens.radius.md,
-      backgroundColor: colors.panel,
+      borderRadius: 12,
+      backgroundColor: colors.groupIconBg,
     },
     rowLabel: {
       flex: 1,
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.semibold,
-      fontSize: 16,
-      fontWeight: "600",
+      color: colors.sheetText,
+      fontFamily: designTokens.font.medium,
+      fontSize: 15,
     },
     rowValue: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.bold,
-      fontSize: 15,
-      fontWeight: "700",
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 14,
     },
     divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: colors.divider,
+      height: 1,
+      backgroundColor: colors.rowDivider,
     },
+    // A grouped row like the ones above it, in negative ink.
     signOut: {
-      flex: 0,
       flexShrink: 0,
-      height: 50,
-      marginTop: 6,
+      marginTop: 10,
       flexDirection: "row",
       alignItems: "center",
+      gap: 12,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+      borderRadius: designTokens.radius.group,
+      borderWidth: 1,
+      borderColor: colors.groupBorder,
+      backgroundColor: colors.groupBg,
+    },
+    signOutTile: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
       justifyContent: "center",
-      gap: 8,
-      borderRadius: designTokens.radius.button,
-      borderWidth: 1.5,
-      borderColor: colors.negative,
-      backgroundColor: "transparent",
+      borderRadius: 12,
+      backgroundColor: colors.signOutTile,
     },
     signOutText: {
+      flex: 1,
       color: colors.negative,
-      fontFamily: designTokens.font.extraBold,
-      fontSize: 16,
-      fontWeight: "800",
+      fontFamily: designTokens.font.semibold,
+      fontSize: 15,
     },
     modalBackdrop: {
       ...StyleSheet.absoluteFillObject,

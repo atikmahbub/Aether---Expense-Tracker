@@ -1,36 +1,12 @@
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
-import { AnimatedLoader } from "@trackingPortal/components";
+import { AnimatedLoader, ScreenGradient } from "@trackingPortal/components";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import React, { useMemo } from "react";
-import {
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const FEATURES = [
-  {
-    icon: "shield-check" as const,
-    title: "Private",
-    detail: "Secure account access",
-  },
-  {
-    icon: "lightning-bolt" as const,
-    title: "Fast",
-    detail: "Capture entries quickly",
-  },
-  {
-    icon: "cloud-check" as const,
-    title: "Offline",
-    detail: "Sync when reconnected",
-  },
-];
+const PRIVACY_URL = "https://atikmahbub.github.io/aether-privacy-policy/";
 
 export default function LoginScreen() {
   const { colors } = useAppTheme();
@@ -41,248 +17,108 @@ export default function LoginScreen() {
   if (loading) return <AnimatedLoader />;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
+    <View
+      style={[
+        styles.container,
         {
-          paddingTop: insets.top + 20,
-          paddingBottom: Math.max(insets.bottom, 20),
+          paddingTop: insets.top + 34,
+          paddingBottom: Math.max(insets.bottom, 12) + 22,
         },
       ]}
-      showsVerticalScrollIndicator={false}
     >
-      <View style={styles.brandRow}>
-        <View style={styles.brandMark}>
-          <Text style={styles.brandMarkText}>S</Text>
-        </View>
-        <Text style={styles.brandName}>Scalar</Text>
-      </View>
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroIcon}>
-          <MaterialCommunityIcons
-            name="wallet"
-            size={34}
-            color={colors.panelText}
-          />
-        </View>
-        <Text style={styles.eyebrow}>YOUR MONEY, MADE CLEAR</Text>
-        <Text style={styles.heroTitle}>Stay on top of every taka.</Text>
-        <Text style={styles.heroDescription}>
-          Track spending, income, loans, and investments in one calm,
-          dependable workspace.
+      <ScreenGradient />
+      <View style={styles.intro}>
+        <Text style={styles.wordmark}>scalar</Text>
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.body}>
+          Sign in with Google to sync your wallet across devices.
         </Text>
-      </View>
-
-      <View style={styles.features}>
-        {FEATURES.map((feature, index) => (
-          <View key={feature.title}>
-            <View style={styles.featureRow}>
-              <View style={styles.featureIcon}>
-                <MaterialCommunityIcons
-                  name={feature.icon}
-                  size={20}
-                  color={colors.brandText}
-                />
-              </View>
-              <View style={styles.featureCopy}>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDetail}>{feature.detail}</Text>
-              </View>
-            </View>
-            {index < FEATURES.length - 1 && <View style={styles.divider} />}
-          </View>
-        ))}
       </View>
 
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
           onPress={login}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.primaryButtonPressed,
-          ]}
+          style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
-          <Text style={styles.primaryButtonText}>Continue securely</Text>
-          <MaterialCommunityIcons
-            name="arrow-right"
-            size={20}
-            color={colors.onBrand}
-          />
+          <View style={styles.gBadge}>
+            <Text style={styles.gText}>G</Text>
+          </View>
+          <Text style={styles.primaryText}>Continue with Google</Text>
         </Pressable>
-        <Text style={styles.legalNotice}>
-          By continuing, you agree to our{" "}
-          <Text
-            style={styles.legalLink}
-            onPress={() =>
-              Linking.openURL(
-                "https://atikmahbub.github.io/aether-privacy-policy/",
-              )
-            }
-          >
+        <Text style={styles.notice}>
+          We only use your Google account to sign you in and back up your
+          data.{" "}
+          <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>
             Terms and Privacy Policy
           </Text>
-          .
         </Text>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg },
-    content: {
-      flexGrow: 1,
-      paddingHorizontal: 20,
-      gap: 20,
-    },
-    brandRow: {
-      minHeight: 48,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-    },
-    brandMark: {
-      width: 36,
-      height: 36,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.md,
-      backgroundColor: colors.brand,
-    },
-    brandMarkText: {
-      color: colors.onBrand,
-      fontFamily: designTokens.font.bold,
-      fontSize: 17,
-      fontWeight: "700",
-    },
-    brandName: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
-      fontSize: 18,
-      fontWeight: "700",
-    },
-    heroCard: {
-      minHeight: 310,
-      padding: 24,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 14,
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.panelEdge,
-      backgroundColor: colors.panel,
-    },
-    heroIcon: {
-      width: 72,
-      height: 72,
-      marginBottom: 4,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.panelTileBorder,
-      backgroundColor: colors.panelTile,
-    },
-    eyebrow: {
-      color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
-      textAlign: "center",
-      ...designTokens.typography.caps,
-    },
-    heroTitle: {
-      maxWidth: 300,
-      color: colors.panelText,
-      fontFamily: designTokens.font.bold,
-      fontSize: 30,
-      lineHeight: 37,
-      fontWeight: "700",
-      letterSpacing: -0.6,
-      textAlign: "center",
-    },
-    heroDescription: {
-      maxWidth: 310,
-      color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.regular,
-      fontSize: 15,
-      lineHeight: 23,
-      textAlign: "center",
-    },
-    features: {
-      overflow: "hidden",
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    featureRow: {
-      minHeight: 64,
-      paddingHorizontal: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-    },
-    featureIcon: {
-      width: 40,
-      height: 40,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.md,
-      backgroundColor: colors.brandWash,
-    },
-    featureCopy: { flex: 1 },
-    featureTitle: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.semibold,
-      fontSize: 15,
-      fontWeight: "600",
-    },
-    featureDetail: {
-      marginTop: 2,
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.medium,
-      fontSize: 12,
-      fontWeight: "500",
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      marginLeft: 68,
-      backgroundColor: colors.divider,
-    },
-    actions: { marginTop: "auto", gap: 14 },
-    primaryButton: {
-      height: 54,
+    container: {
+      flex: 1,
       paddingHorizontal: 22,
+      justifyContent: "space-between",
+      backgroundColor: colors.heroGradBottom,
+    },
+    intro: { gap: 10 },
+    wordmark: {
+      color: colors.heroInk,
+      fontFamily: designTokens.font.display,
+      fontSize: 22,
+      letterSpacing: -0.66,
+    },
+    title: {
+      marginTop: 18,
+      color: colors.heroText,
+      fontFamily: designTokens.font.display,
+      fontSize: 30,
+      lineHeight: 35,
+      letterSpacing: -0.75,
+    },
+    body: {
+      color: colors.heroTextSecondary,
+      fontFamily: designTokens.font.regular,
+      fontSize: 16,
+      lineHeight: 24,
+    },
+    actions: { gap: 14 },
+    primary: {
+      height: 58,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 10,
+      gap: 12,
       borderRadius: designTokens.radius.full,
-      backgroundColor: colors.brand,
+      backgroundColor: colors.primaryButtonBg,
     },
-    primaryButtonPressed: { backgroundColor: colors.brandText },
-    primaryButtonText: {
-      color: colors.onBrand,
-      fontFamily: designTokens.font.bold,
+    pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+    gBadge: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#FFFFFF",
+    },
+    gText: { color: "#1F6B4F", fontFamily: designTokens.font.bold, fontSize: 15 },
+    primaryText: {
+      color: colors.primaryButtonInk,
+      fontFamily: designTokens.font.semibold,
       fontSize: 16,
-      fontWeight: "700",
     },
-    legalNotice: {
-      color: colors.textTertiary,
-      fontFamily: designTokens.font.medium,
-      fontSize: 12,
-      lineHeight: 18,
+    notice: {
       textAlign: "center",
+      color: colors.heroTextSecondary,
+      fontFamily: designTokens.font.regular,
+      fontSize: 13,
+      lineHeight: 20,
     },
-    legalLink: {
-      color: colors.brandText,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
-      textDecorationLine: "underline",
-    },
+    link: { fontFamily: designTokens.font.semibold, textDecorationLine: "underline" },
   });
 }

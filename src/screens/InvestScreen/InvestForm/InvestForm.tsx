@@ -7,6 +7,7 @@ import {FormikCheckboxField, FormikTextInput, LoadingButton} from '@trackingPort
 import ScalarCalendar from '@trackingPortal/components/ScalarCalendar';
 import dayjs from 'dayjs';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface IInvestForm {
   update?: boolean;
@@ -190,15 +191,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       gap: 8,
     },
     sectionLabel: {
-      color: colors.muted,
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 2,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 12,
+      letterSpacing: 0.96,
       textTransform: 'uppercase',
     },
     inputWrapper: {
       position: 'relative',
-      borderRadius: 24,
+      borderRadius: 18,
       overflow: 'hidden',
     },
     footer: {
@@ -214,15 +215,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       height: 48,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 12,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderRadius: 999,
+      backgroundColor: colors.softChipBg,
     },
     cancelButtonText: {
-      color: colors.subText,
+      color: colors.softChipInk,
+      fontFamily: designTokens.font.semibold,
       fontSize: 15,
-      fontWeight: '600',
     },
     saveButtonWrapper: {
       minWidth: 140,

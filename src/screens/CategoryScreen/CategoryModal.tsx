@@ -163,7 +163,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 24,
       fontWeight: '800',
       color: colors.text,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: 'Outfit_400Regular',
       marginBottom: 24,
       letterSpacing: -0.5,
     },
@@ -174,15 +174,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       gap: 12,
     },
     label: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: colors.muted,
+      fontSize: 12,
+      fontFamily: 'Outfit_600SemiBold',
+      color: colors.textMuted,
       textTransform: 'uppercase',
-      letterSpacing: 1,
+      letterSpacing: 0.96,
     },
     input: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
+      backgroundColor: colors.groupBg,
+      borderRadius: 18,
     },
     errorText: {
       color: colors.error,
@@ -210,7 +210,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       justifyContent: 'center',
     },
     selectedItem: {
-      borderColor: colors.brand,
+      borderColor: colors.chipActiveBg,
+      borderWidth: 2,
     },
     selectedColorItem: {
       borderWidth: 2,
@@ -220,14 +221,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       marginTop: 12,
     },
     saveButton: {
-      borderRadius: 20,
-      height: 60,
+      borderRadius: 999,
+      height: 56,
     },
     saveButtonText: {
-      color: '#000',
+      color: colors.primaryButtonInk,
       fontSize: 16,
-      fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
+      fontFamily: 'Outfit_600SemiBold',
     },
   });
 }

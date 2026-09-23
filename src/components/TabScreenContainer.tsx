@@ -1,6 +1,5 @@
 import React from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   FadeInDown,
@@ -15,15 +14,15 @@ type Props = {
 
 const TabScreenContainer: React.FC<Props> = ({ children }) => {
   const { colors } = useAppTheme();
-  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={[
         styles.safeArea,
         {
-          backgroundColor: colors.panel,
-          paddingTop: insets.top,
+          // Matches the top of the hero tint, so nothing seams under the status
+          // bar on Android while the screen fades in or overscrolls.
+          backgroundColor: colors.heroGradTop,
         },
       ]}
     >
@@ -38,7 +37,7 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
             style={[
               styles.content,
               {
-                backgroundColor: colors.background,
+                backgroundColor: "transparent",
                 paddingBottom: 0,
               },
             ]}
@@ -52,7 +51,7 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
           style={[
             styles.content,
             {
-              backgroundColor: colors.background,
+              backgroundColor: "transparent",
               paddingBottom: 0,
             },
           ]}

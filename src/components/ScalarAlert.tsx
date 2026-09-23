@@ -70,12 +70,6 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
           >
             <View
               style={[
-                styles.accent,
-                destructive ? styles.destructiveAccent : styles.infoAccent,
-              ]}
-            />
-            <View
-              style={[
                 styles.iconTile,
                 destructive ? styles.destructiveTile : styles.infoTile,
               ]}
@@ -83,7 +77,7 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
               <MaterialCommunityIcons
                 name={destructive ? "alert-outline" : "information-outline"}
                 size={24}
-                color={destructive ? colors.negative : colors.brandText}
+                color={destructive ? colors.negative : colors.groupIconInk}
               />
             </View>
             <Text style={styles.title}>{alert?.title}</Text>
@@ -117,6 +111,7 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
                       style={[
                         styles.buttonText,
                         isPrimary && styles.primaryButtonText,
+                        isDestructive && styles.destructiveButtonText,
                       ]}
                     >
                       {button.text}
@@ -138,89 +133,73 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      padding: designTokens.spacing.xxl,
-      backgroundColor: `${colors.backdrop}CC`,
+      padding: 22,
+      backgroundColor: "rgba(5,8,7,0.6)",
     },
+    // Same surface as the sheet: white in light, graphite-green in dark.
     card: {
       width: "100%",
       maxWidth: 360,
-      padding: designTokens.spacing.xxl,
-      borderRadius: designTokens.radius.lg,
+      paddingTop: 24,
+      paddingHorizontal: 22,
+      paddingBottom: 20,
+      borderRadius: 30,
+      borderCurve: "continuous",
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceRaised,
-      overflow: "hidden",
+      borderColor: colors.groupBorder,
+      backgroundColor: colors.sheet,
     },
-    accent: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 5,
-    },
-    infoAccent: { backgroundColor: colors.panel },
-    destructiveAccent: { backgroundColor: colors.negative },
     iconTile: {
       width: 48,
       height: 48,
-      marginBottom: designTokens.spacing.lg,
+      marginBottom: 16,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: designTokens.radius.md,
+      borderRadius: 24,
     },
-    infoTile: {
-      borderWidth: 1,
-      borderColor: colors.panelEdge,
-      backgroundColor: colors.brandWash,
-    },
-    destructiveTile: { backgroundColor: colors.errorSoft },
+    infoTile: { backgroundColor: colors.groupIconBg },
+    destructiveTile: { backgroundColor: colors.negativeTile },
     title: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.bold,
+      color: colors.sheetText,
+      fontFamily: designTokens.font.display,
       fontSize: 20,
       lineHeight: 26,
-      fontWeight: "700",
       letterSpacing: -0.4,
     },
     message: {
-      marginTop: designTokens.spacing.sm,
-      color: colors.textSecondary,
+      marginTop: 8,
+      color: colors.textMuted,
       fontFamily: designTokens.font.regular,
       fontSize: 15,
       lineHeight: 22,
     },
     actions: {
-      marginTop: designTokens.spacing.xxl,
+      marginTop: 24,
       flexDirection: "row",
-      justifyContent: "flex-end",
-      gap: designTokens.spacing.sm,
+      gap: 8,
     },
     button: {
-      minWidth: 88,
-      minHeight: 46,
-      paddingHorizontal: designTokens.spacing.lg,
+      flex: 1,
+      minHeight: 50,
+      paddingHorizontal: 16,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
-      borderWidth: 1,
-      borderColor: colors.borderStrong,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.softChipBg,
     },
     primaryButton: {
-      borderColor: colors.brand,
-      backgroundColor: colors.brand,
+      backgroundColor: colors.primaryButtonBg,
     },
     destructiveButton: {
-      borderColor: colors.negative,
-      backgroundColor: colors.negative,
+      backgroundColor: colors.negativeFill,
     },
-    pressed: { opacity: 0.78 },
+    pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
     buttonText: {
-      color: colors.textSecondary,
+      color: colors.softChipInk,
       fontFamily: designTokens.font.semibold,
-      fontSize: 14,
-      fontWeight: "600",
+      fontSize: 15,
     },
-    primaryButtonText: { color: colors.onBrand },
+    primaryButtonText: { color: colors.primaryButtonInk },
+    destructiveButtonText: { color: colors.onNegativeFill },
   });
 }

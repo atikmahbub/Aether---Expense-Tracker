@@ -372,7 +372,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 10,
       fontWeight: '700',
       letterSpacing: 1.2,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: 'Outfit_400Regular',
     },
     trendContainer: {
       alignItems: 'flex-end',
@@ -389,7 +389,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     trendPillText: {
       fontSize: 10,
       fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
+      fontFamily: 'Outfit_700Bold',
     },
     graphWrapper: {
       height: 120,
@@ -414,13 +414,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 10,
       fontWeight: '700',
       letterSpacing: 1.2,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: 'Outfit_400Regular',
     },
     previewAmount: {
       color: colors.text,
       fontSize: 14,
       fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
+      fontFamily: 'Outfit_700Bold',
     },
     previewMain: {
       gap: 6,
@@ -434,13 +434,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 18,
       fontWeight: '800',
-      fontFamily: 'Manrope_800ExtraBold',
+      fontFamily: 'Outfit_700Bold',
     },
     percentageText: {
       color: colors.primary,
       fontSize: 13,
       fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
+      fontFamily: 'Outfit_700Bold',
     },
     miniBarTrack: {
       height: 4,
@@ -471,7 +471,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 10,
       fontWeight: '700',
       letterSpacing: 1.2,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: 'Outfit_400Regular',
     },
     listContainer: {
       gap: 12,
@@ -503,7 +503,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.text,
       fontSize: 13,
       fontWeight: '700',
-      fontFamily: 'Manrope_700Bold',
+      fontFamily: 'Outfit_700Bold',
     },
     loadingRow: {
       padding: 16,
@@ -534,7 +534,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.muted,
       fontSize: 10,
       fontWeight: '500',
-      fontFamily: 'Manrope_500Medium',
+      fontFamily: 'Outfit_500Medium',
     },
     categoryTopRow: {
       flexDirection: 'row',

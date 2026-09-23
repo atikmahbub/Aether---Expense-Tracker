@@ -1,20 +1,25 @@
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import * as Haptics from "expo-haptics";
-import React, { ComponentProps, useCallback, useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useMemo } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import Animated, { Easing, FadeIn, LinearTransition } from "react-native-reanimated";
+import DockIcon, { DockIconName } from "@trackingPortal/components/scalar/DockIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
-type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
+const FADE = 32;
+// The selected tab widens into an icon + label pill; neighbours glide aside.
+// Spec: 260ms ease on width, fill and padding; the label fades in 200ms.
+const TAB_LAYOUT = LinearTransition.duration(260).easing(Easing.ease);
 
-const TABS: { name: string; label: string; icon: IconName }[] = [
+const TABS: { name: string; label: string; icon: DockIconName }[] = [
   { name: "transactions", label: "Wallet", icon: "wallet" },
-  { name: "loan", label: "Loans", icon: "bank" },
-  { name: "investment", label: "Invest", icon: "chart-box" },
-  { name: "settings", label: "Settings", icon: "cog" },
+  { name: "loan", label: "Loans", icon: "loans" },
+  { name: "investment", label: "Invest", icon: "invest" },
+  { name: "settings", label: "Settings", icon: "settings" },
 ];
 
 export default function CustomTabBar({
@@ -22,8 +27,8 @@ export default function CustomTabBar({
   navigation,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const isSettings = state.routes[state.index]?.name === "settings";
 
   const handleTabPress = useCallback(
@@ -47,34 +52,57 @@ export default function CustomTabBar({
     const focused = state.index === routeIndex;
 
     return (
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityState={{ selected: focused }}
-        key={name}
-        onPress={() => handleTabPress(route.name)}
-        style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
-      >
-        <View style={[styles.rule, focused && styles.activeRule]} />
-        <MaterialCommunityIcons
-          name={tab.icon}
-          size={19}
-          color={focused ? colors.brandText : colors.textSecondary}
-        />
-        <Text style={[styles.label, focused && styles.activeLabel]}>
-          {tab.label}
-        </Text>
-      </Pressable>
+      <Animated.View key={name} layout={TAB_LAYOUT}>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityLabel={tab.label}
+          accessibilityState={{ selected: focused }}
+          onPress={() => handleTabPress(route.name)}
+          style={({ pressed }) => [
+            styles.tab,
+            focused && styles.tabActive,
+            pressed && styles.pressed,
+          ]}
+        >
+          <DockIcon
+            name={tab.icon}
+            color={focused ? colors.dockActive : colors.dockIcon}
+          />
+          {focused && (
+            <Animated.Text
+              entering={FadeIn.duration(200)}
+              numberOfLines={1}
+              style={styles.tabLabel}
+            >
+              {tab.label}
+            </Animated.Text>
+          )}
+        </Pressable>
+      </Animated.View>
     );
   };
 
   return (
     <View
-      style={[
-        styles.container,
-        { paddingBottom: Math.max(insets.bottom, 18) },
-      ]}
+      pointerEvents="box-none"
+      style={[styles.container, { paddingBottom: Math.max(insets.bottom - 16, 8) }]}
     >
-      <View style={styles.row}>
+      {/* Content fades out above the dock, and a solid backing hides it
+          beside and below — nothing scrolls visibly around the dock. */}
+      <View
+        pointerEvents="none"
+        style={[styles.backing, { backgroundColor: colors.sheet }]}
+      />
+      <Svg style={styles.fade} pointerEvents="none">
+        <Defs>
+          <LinearGradient id="dockFade" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={colors.sheet} stopOpacity={0} />
+            <Stop offset="1" stopColor={colors.sheet} stopOpacity={1} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="url(#dockFade)" />
+      </Svg>
+      <View style={styles.dock}>
         {renderTab("transactions")}
         {renderTab("loan")}
         <Pressable
@@ -88,11 +116,7 @@ export default function CustomTabBar({
             pressed && !isSettings && styles.addButtonPressed,
           ]}
         >
-          <MaterialCommunityIcons
-            name={isSettings ? "book-open-page-variant-outline" : "plus"}
-            size={isSettings ? 23 : 28}
-            color={isSettings ? colors.textSecondary : colors.onAccent}
-          />
+          <DockIcon name="plus" color={colors.dockPlusInk} />
         </Pressable>
         {renderTab("investment")}
         {renderTab("settings")}
@@ -101,80 +125,78 @@ export default function CustomTabBar({
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
+function makeStyles(
+  colors: ReturnType<typeof useAppTheme>["colors"],
+  isDark: boolean,
+) {
   return StyleSheet.create({
+    // Floats over the sheet; screens pad their content by DOCK_CLEARANCE.
     container: {
-      backgroundColor: colors.nav,
-      borderTopWidth: 1,
-      borderTopColor: colors.navBorder,
-      paddingHorizontal: 8,
-      paddingTop: 8,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      paddingTop: FADE,
     },
-    row: {
-      height: 58,
+    fade: { position: "absolute", top: 0, left: 0, right: 0, height: FADE },
+    backing: { position: "absolute", top: FADE, left: 0, right: 0, bottom: 0 },
+    dock: {
+      alignSelf: "stretch",
+      height: 64,
+      marginHorizontal: 16,
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 0,
-      overflow: "visible",
+      justifyContent: "space-between",
+      paddingHorizontal: 8,
+      borderRadius: designTokens.radius.full,
+      backgroundColor: colors.dock,
+      borderWidth: 1,
+      borderColor: colors.dockBorder,
+      // Light dock gets a soft green-tinted lift instead of the heavy black drop.
+      // Spec: 0 12 28 rgba(0,0,0,.5) dark / rgba(20,60,45,.16) light.
+      shadowColor: isDark ? "#000000" : "#143C2D",
+      shadowOpacity: isDark ? 0.5 : 0.16,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 12,
     },
     tab: {
-      flex: 1,
-      height: 54,
-      minWidth: 52,
+      minWidth: 48,
+      height: 48,
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 3,
-      position: "relative",
+      gap: 8,
+      borderRadius: designTokens.radius.full,
     },
-    rule: {
-      position: "absolute",
-      top: 0,
-      width: 30,
-      height: 4,
-      borderRadius: 999,
-      backgroundColor: "transparent",
+    tabActive: {
+      paddingLeft: 14,
+      paddingRight: 16,
+      backgroundColor: colors.dockActiveBg,
     },
-    activeRule: { backgroundColor: colors.brand },
-    pressed: {
-      backgroundColor: colors.surfaceSunken,
-      borderRadius: 18,
-      transform: [{ scale: 0.96 }],
-    },
-    label: {
-      color: colors.textSecondary,
+    tabLabel: {
+      color: colors.dockActive,
       fontFamily: designTokens.font.semibold,
-      fontSize: 11,
-      lineHeight: 14,
-      fontWeight: "600",
+      fontSize: 14,
+      letterSpacing: 0.14,
     },
-    activeLabel: {
-      color: colors.brandText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
+    pressed: {
+      backgroundColor: colors.dockPressed,
+      transform: [{ scale: 0.94 }],
     },
     addButton: {
-      width: 58,
-      height: 58,
-      marginHorizontal: 6,
+      width: 48,
+      height: 48,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
-      backgroundColor: colors.brand,
-      borderWidth: 0,
-      shadowColor: colors.brand,
-      shadowOpacity: 0.30,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 8,
+      backgroundColor: colors.dockPlus,
     },
     addButtonPressed: {
-      backgroundColor: colors.brandText,
-      transform: [{ scale: 0.91 }],
+      transform: [{ scale: 0.9 }],
     },
     addButtonDisabled: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSunken,
+      opacity: 0.35,
     },
   });
 }

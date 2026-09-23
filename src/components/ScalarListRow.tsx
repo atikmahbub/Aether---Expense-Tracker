@@ -26,6 +26,8 @@ interface ScalarListRowProps {
   onPress?: () => void;
   showDivider?: boolean;
   grouped?: boolean;
+  /** Small line under the amount (loan status, return %). */
+  status?: string;
 }
 
 export default function ScalarListRow({
@@ -41,6 +43,7 @@ export default function ScalarListRow({
   onPress,
   showDivider = true,
   grouped = false,
+  status,
 }: ScalarListRowProps) {
   const { colors, isDark } = useAppTheme();
   const palette = isDark ? categoryTokens.dark : categoryTokens.light;
@@ -73,12 +76,19 @@ export default function ScalarListRow({
           {meta}
         </Text>
       </View>
-      <ScalarAmountText
-        numberOfLines={1}
-        style={[styles.amount, positive && styles.positiveAmount, negative && styles.negativeAmount]}
-      >
-        {amount}
-      </ScalarAmountText>
+      <View style={styles.right}>
+        <ScalarAmountText
+          numberOfLines={1}
+          style={[styles.amount, positive && styles.positiveAmount, negative && styles.negativeAmount]}
+        >
+          {amount}
+        </ScalarAmountText>
+        {status ? (
+          <Text numberOfLines={1} style={styles.status}>
+            {status}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -86,32 +96,26 @@ export default function ScalarListRow({
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     row: {
-      minHeight: 68,
+      minHeight: 66,
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: colors.surface,
-      borderRadius: designTokens.radius.tile,
-      borderWidth: 1,
-      borderColor: colors.border,
+      gap: 14,
+      paddingVertical: 11,
     },
     divider: {
       borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomColor: colors.rowDivider,
     },
     groupedRow: {
-      borderWidth: 0,
-      borderRadius: 0,
+      paddingHorizontal: 14,
     },
     pressed: {
-      backgroundColor: colors.surfaceSunken,
+      opacity: 0.7,
     },
     tile: {
       width: 44,
       height: 44,
-      borderRadius: designTokens.radius.icon,
+      borderRadius: designTokens.radius.full,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -123,21 +127,28 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     title: {
       color: colors.textPrimary,
       fontFamily: designTokens.font.semibold,
-      fontWeight: "600",
       ...designTokens.typography.rowTitle,
     },
     meta: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.medium,
-      fontWeight: "500",
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
       ...designTokens.typography.caption,
     },
     amount: {
       color: colors.textPrimary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
+      fontFamily: designTokens.font.bold,
       fontVariant: ["tabular-nums"],
       ...designTokens.typography.rowAmount,
+    },
+    right: {
+      alignItems: "flex-end",
+      gap: 2,
+    },
+    status: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 12,
+      lineHeight: 16,
     },
     positiveAmount: {
       color: colors.positive,

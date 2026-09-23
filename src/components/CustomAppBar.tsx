@@ -2,31 +2,29 @@ import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import {getGreeting} from '@trackingPortal/utils/utils';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import dayjs from 'dayjs';
-import React, {useEffect, useMemo} from 'react';
-import {View, StyleSheet, Text, TouchableOpacity} from 'react-native';
+import React, {useMemo} from 'react';
+import {View, StyleSheet, Text, TouchableOpacity, Platform} from 'react-native';
 import {Avatar} from 'react-native-paper';
 import {useRouter} from 'expo-router';
-import {MaterialCommunityIcons} from '@expo/vector-icons';
-import Animated, {
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  useSharedValue,
-  FadeInLeft,
-  FadeInRight
-} from 'react-native-reanimated';
+import Animated, {FadeInLeft, FadeInRight} from 'react-native-reanimated';
 import {triggerSuccessHaptic} from '@trackingPortal/utils/haptic';
 import SyncStatusIndicator from '@trackingPortal/components/SyncStatusIndicator';
 import {designTokens} from '@trackingPortal/themes/designTokens';
 
-const AVATAR_SIZE = 44;
+const AVATAR_SIZE = 48;
 
-const CustomAppBar: React.FC = () => {
+interface CustomAppBarProps {
+  /** Replaces the greeting with a wide-face screen title (Settings). */
+  title?: string;
+  /** Small line above the title; defaults to today's date. */
+  subtitle?: string;
+}
+
+const CustomAppBar: React.FC<CustomAppBarProps> = ({title, subtitle}) => {
   const {user} = useAuth();
   const router = useRouter();
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   const greeting = React.useMemo(() => getGreeting(), []);
   const userName = React.useMemo(
@@ -47,52 +45,20 @@ const CustomAppBar: React.FC = () => {
     router.push('/profile');
   }, [router]);
 
-  const glowValue = useSharedValue(0.08);
-  const glowScale = useSharedValue(1.08);
-  useEffect(() => {
-    glowValue.value = withRepeat(
-      withSequence(
-        withTiming(0.16, { duration: 2200 }),
-        withTiming(0.08, { duration: 2200 })
-      ),
-      2,
-      true
-    );
-    glowScale.value = withRepeat(
-      withSequence(
-        withTiming(1.22, { duration: 2200 }),
-        withTiming(1.08, { duration: 2200 })
-      ),
-      2,
-      true
-    );
-  }, [glowValue, glowScale]);
-
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowValue.value,
-    transform: [{ scale: glowScale.value }],
-  }));
-
-  const timeIcon = React.useMemo(() => {
-    const hour = dayjs().hour();
-    if (hour < 12) return 'weather-sunset-up';
-    if (hour < 18) return 'weather-sunny';
-    return 'weather-night';
-  }, []);
-
   return (
     <View style={styles.container}>
       <Animated.View
         entering={FadeInLeft.delay(100).duration(500)}
         style={styles.textBlock}>
-        <View style={styles.dateRow}>
-          <MaterialCommunityIcons name={timeIcon} size={14} color={colors.panelTextSecondary} />
-          <Text style={styles.dateLabel}>{todayLabel.toUpperCase()}</Text>
-        </View>
-        <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>{greeting},</Text>
-          <Text style={styles.userNameText}>{userName}</Text>
-        </View>
+        <Text style={styles.dateLabel}>{subtitle ?? todayLabel}</Text>
+        {title ? (
+          <Text style={styles.title}>{title}</Text>
+        ) : (
+          <Text style={styles.greetingText} numberOfLines={1}>
+            {greeting},{' '}
+            <Text style={styles.userNameText}>{userName}</Text>
+          </Text>
+        )}
       </Animated.View>
 
       <SyncStatusIndicator />
@@ -103,118 +69,91 @@ const CustomAppBar: React.FC = () => {
         style={styles.avatarTapArea}>
         <Animated.View
           entering={FadeInRight.delay(200).duration(500)}
-          style={styles.avatarContainer}>
-          <View style={styles.avatarBorder}>
-             {userPicture ? (
-              <Avatar.Image
-                size={AVATAR_SIZE}
-                style={styles.avatarImage}
-                source={{ uri: userPicture }}
-              />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarInitial}>{userInitials}</Text>
-              </View>
-            )}
-          </View>
-          <Animated.View style={[styles.avatarGlow, glowStyle]} />
+          style={styles.avatarBorder}>
+          {userPicture ? (
+            <Avatar.Image
+              size={AVATAR_SIZE - 4}
+              style={styles.avatarImage}
+              source={{ uri: userPicture }}
+            />
+          ) : (
+            <Text style={styles.avatarInitial}>{userInitials}</Text>
+          )}
         </Animated.View>
       </TouchableOpacity>
     </View>
   );
 };
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: boolean) {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
-      paddingHorizontal: 20,
-      paddingTop: 0,
-      paddingBottom: 0,
-      minHeight: 60,
+      paddingHorizontal: 22,
+      paddingTop: 6,
+      minHeight: 54,
       justifyContent: 'space-between',
       alignItems: 'center',
+      gap: 8,
     },
     textBlock: {
       flex: 1,
-    },
-    dateRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginBottom: 3,
+      gap: 2,
     },
     dateLabel: {
-      color: colors.panelTextSecondary,
-      fontSize: 11,
-      fontWeight: '800',
-      letterSpacing: 1.5,
-      fontFamily: designTokens.font.bold,
-    },
-    greetingRow: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      gap: 5,
+      color: colors.heroTextSecondary,
+      fontSize: 13,
+      lineHeight: 17,
+      fontFamily: designTokens.font.medium,
     },
     greetingText: {
-      color: colors.panelTextSecondary,
-      fontSize: 21,
+      color: colors.heroText,
+      fontSize: 20,
       lineHeight: 26,
       fontFamily: designTokens.font.medium,
-      fontWeight: '500',
-      letterSpacing: -0.4,
     },
     userNameText: {
-      color: colors.panelText,
-      fontSize: 21,
-      lineHeight: 26,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: '800',
-      letterSpacing: -0.7,
+      fontFamily: designTokens.font.bold,
+    },
+    title: {
+      color: colors.heroInk,
+      fontSize: 28,
+      lineHeight: 36,
+      letterSpacing: -0.56,
+      fontFamily: designTokens.font.display,
     },
     avatarTapArea: {
       padding: 2,
     },
-    avatarContainer: {
-      position: 'relative',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     avatarBorder: {
-      width: AVATAR_SIZE + 4,
-      height: AVATAR_SIZE + 4,
-      borderRadius: (AVATAR_SIZE + 4) / 2,
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
       borderWidth: 2,
-      borderColor: colors.panelText,
+      borderColor: colors.avatarBorder,
+      backgroundColor: colors.avatarBg,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'transparent',
-      zIndex: 2,
+      ...(isDark
+        ? {}
+        : Platform.select({
+            ios: {
+              shadowColor: '#143C2D',
+              shadowOpacity: 0.14,
+              shadowRadius: 8,
+              shadowOffset: {width: 0, height: 2},
+            },
+            android: {elevation: 3},
+            default: {},
+          })),
     },
     avatarImage: {
-      backgroundColor: colors.panelTile,
-    },
-    avatarGlow: {
-      position: 'absolute',
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
-      borderRadius: AVATAR_SIZE / 2,
-      backgroundColor: colors.brand,
-      zIndex: 1,
-    },
-    avatarFallback: {
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
-      borderRadius: AVATAR_SIZE / 2,
-      backgroundColor: colors.panelTile,
-      alignItems: 'center',
-      justifyContent: 'center',
+      backgroundColor: colors.avatarBg,
     },
     avatarInitial: {
-      color: colors.primaryDark,
+      color: colors.avatarInk,
       fontSize: 16,
-      fontWeight: '800',
-      fontFamily: designTokens.font.extraBold,
+      fontFamily: designTokens.font.bold,
     },
   });
 }

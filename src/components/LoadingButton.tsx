@@ -37,7 +37,7 @@ const LoadingButton: React.FC<ILoadingButtonProps> = ({
     >
       {loading ? (
         <View accessibilityLabel={`${label}, loading`} style={styles.loader}>
-          <LoadingSquares color={colors.onBrand} />
+          <LoadingSquares color={colors.primaryButtonInk} />
         </View>
       ) : (
         <Text style={[styles.buttonText, textStyle]}>{label}</Text>
@@ -51,23 +51,18 @@ export default LoadingButton;
 function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     buttonContainer: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.primaryButtonBg,
       paddingVertical: 13,
-      paddingHorizontal: 16,
-      borderRadius: designTokens.radius.md,
+      paddingHorizontal: 22,
+      borderRadius: designTokens.radius.full,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: designTokens.controlHeight,
-      shadowColor: colors.primary,
-      shadowOffset: {width: 0, height: 6},
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 4,
+      minHeight: 50,
     },
     buttonText: {
-      color: colors.background,
-      fontWeight: '800',
+      color: colors.primaryButtonInk,
+      fontFamily: designTokens.font.semibold,
       fontSize: 15,
       textAlign: 'center',
     },

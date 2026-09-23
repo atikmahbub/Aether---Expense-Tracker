@@ -6,6 +6,7 @@ import {
   makeUnixTimestampToNumber,
 } from "@trackingPortal/api/primitives";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
+import { ScalarSheet, SheetHeader } from "@trackingPortal/components/scalar";
 import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
@@ -150,8 +151,8 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Loan History</Text>
+    <ScalarSheet>
+      <SheetHeader title="Loan history" />
       <View style={styles.card}>
         {loans.length ? (
           loans.map((loan, index) => {
@@ -172,9 +173,13 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
                   positive={given}
                   negative={!given}
                   icon={given ? "arrow-top-right" : "arrow-bottom-left"}
-                  categoryColor={given ? colors.positive : colors.negativeFill}
-                  iconGlyphColor={
-                    given ? colors.onPositiveFill : colors.onNegativeFill
+                  categoryColor={given ? colors.positiveTile : colors.negativeTile}
+                  iconGlyphColor={given ? colors.positive : colors.negative}
+                  status={
+                    loan.deadLine &&
+                    dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).isBefore(dayjs(), "day")
+                      ? "Overdue"
+                      : "Open"
                   }
                   showDivider={index < loans.length - 1 || open}
                   onPress={() => {
@@ -191,7 +196,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
           <Text style={styles.empty}>No loan entries yet</Text>
         )}
       </View>
-    </View>
+    </ScalarSheet>
   );
 };
 
@@ -199,18 +204,10 @@ export default React.memo(LoanList);
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: { paddingHorizontal: 20, paddingTop: 6, gap: 12 },
-    title: {
-      color: colors.textPrimary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.section,
-    },
     card: {
-      gap: 8,
       backgroundColor: "transparent",
     },
-    editor: { gap: 12, padding: 16, backgroundColor: colors.bg },
+    editor: { gap: 12, paddingVertical: 16, backgroundColor: "transparent" },
     deleteButton: {
       height: 48,
       alignItems: "center",

@@ -14,6 +14,17 @@ import {
   PlusJakartaSans_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import {
+  Outfit_400Regular,
+  Outfit_500Medium,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+} from "@expo-google-fonts/outfit";
+import {
+  Unbounded_400Regular,
+  Unbounded_500Medium,
+  Unbounded_600SemiBold,
+} from "@expo-google-fonts/unbounded";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -67,7 +78,7 @@ const applyDefaultFont = () => {
     const target = component as any;
     target.defaultProps = target.defaultProps || {};
     const existingStyle = target.defaultProps.style;
-    const fontStyle = { fontFamily: "PlusJakartaSans_400Regular" };
+    const fontStyle = { fontFamily: "Outfit_400Regular" };
     if (Array.isArray(existingStyle)) {
       target.defaultProps.style = [...existingStyle, fontStyle];
     } else if (existingStyle) {
@@ -229,7 +240,11 @@ function ThemedApp() {
     >
       <SafeAreaProvider style={{ backgroundColor: colors.background }}>
         <PaperProvider theme={paperTheme}>
-          <StatusBar style={isDark ? "light" : "dark"} />
+          <StatusBar
+            style={isDark ? "light" : "dark"}
+            translucent
+            backgroundColor="transparent"
+          />
           <Auth0ProviderWithHistory>
             <DatabaseProvider>
               <StoreProvider>
@@ -275,6 +290,13 @@ export default function RootLayout() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Unbounded_400Regular,
+    Unbounded_500Medium,
+    Unbounded_600SemiBold,
   });
   const [splashComplete, setSplashComplete] = useState(false);
 

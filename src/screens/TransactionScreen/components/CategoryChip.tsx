@@ -38,10 +38,10 @@ const CategoryChip: React.FC<CategoryChipProps> = ({
       style={({ pressed }) => [
         styles.container,
         {
-          backgroundColor: active ? fill : colors.surface,
-          borderColor: active ? fill : colors.border,
+          backgroundColor: active ? fill : colors.softChipBg,
+          borderColor: active ? fill : colors.softChipBg,
         },
-        pressed && { backgroundColor: colors.surfaceSunken },
+        pressed && { opacity: 0.75 },
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
@@ -58,7 +58,7 @@ const CategoryChip: React.FC<CategoryChipProps> = ({
       <Text
         style={[
           styles.label,
-          { color: active ? glyph : colors.textPrimary },
+          { color: active ? glyph : colors.softChipInk },
         ]}
         numberOfLines={1}
       >
@@ -86,8 +86,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: "600",
-    fontFamily: designTokens.font.semibold,
+    fontFamily: designTokens.font.medium,
   },
 });
 

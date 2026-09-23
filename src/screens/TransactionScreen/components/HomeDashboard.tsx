@@ -2,7 +2,13 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { MonthlyLimitModel, TransactionModel } from "@trackingPortal/api/models";
 import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
-import { CurvyHeroPanel, CustomAppBar } from "@trackingPortal/components";
+import {
+  CurvyHeroPanel,
+  CustomAppBar,
+  HeroFigure,
+  HeroStatCard,
+  SplitBar,
+} from "@trackingPortal/components";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { CurrencyPreference } from "@trackingPortal/constants/currency";
 import { designTokens } from "@trackingPortal/themes/designTokens";
@@ -11,7 +17,6 @@ import { parseDate } from "@trackingPortal/utils/date";
 import dayjs, { Dayjs } from "dayjs";
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { LinearTransition } from "react-native-reanimated";
 
 interface HomeDashboardProps {
   month: Dayjs;
@@ -23,6 +28,8 @@ interface HomeDashboardProps {
   loading?: boolean;
   ledgerControl: React.ReactNode;
   onAdjustLimit: () => void;
+  /** "hero" renders the tinted top; "sheet" renders the cash-flow block. */
+  section?: "hero" | "sheet";
 }
 
 const money = (value: number, currency: CurrencyPreference) =>
@@ -31,37 +38,9 @@ const money = (value: number, currency: CurrencyPreference) =>
     maximumFractionDigits: 0,
   });
 
-const signedMoney = (
-  value: number,
-  currency: CurrencyPreference,
-  positive: boolean,
-) => `${positive ? "+" : "−"}${money(Math.abs(value), currency)}`;
-
 // Proposed in the v4 handoff as the point where the limit bar drops its
 // positive colour; still listed there as an open question.
 const LIMIT_WARNING_RATIO = 0.85;
-
-// Round the axis up to the nearest "readable" number just above the data, so
-// the tallest bar nearly fills the plot. Fixed 20k steps left the chart
-// two-thirds empty whenever the month's peak sat just over a boundary.
-const niceCeil = (value: number) => {
-  if (value <= 0) return 1000;
-  const magnitude = 10 ** Math.floor(Math.log10(value));
-  const normalized = value / magnitude;
-  const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(
-    (candidate) => normalized <= candidate,
-  );
-  return (step ?? 10) * magnitude;
-};
-
-const compact = (value: number) => {
-  if (value >= 1000) {
-    return `${formatNumber(value / 1000, {
-      maximumFractionDigits: 0,
-    })}k`;
-  }
-  return formatNumber(value, { maximumFractionDigits: 0 });
-};
 
 export default function HomeDashboard({
   month,
@@ -73,6 +52,7 @@ export default function HomeDashboard({
   loading,
   ledgerControl,
   onAdjustLimit,
+  section = "hero",
 }: HomeDashboardProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -91,35 +71,21 @@ export default function HomeDashboard({
   const limitState: "under" | "approaching" | "over" =
     ratio >= 1 ? "over" : ratio >= LIMIT_WARNING_RATIO ? "approaching" : "under";
   const isOver = type === "expense" && limitState === "over";
-  const progress = type === "expense" && limit > 0 ? Math.min(ratio, 1) : 0;
-  // In the over state the bar is full width and represents total spend, so the
-  // limit falls at limit/spent along it. The distance past the notch reads as
-  // the overage.
-  const notchLeft = ratio > 1 ? (1 / ratio) * 100 : 100;
-
-  const limitFillColor =
-    limitState === "over"
-      ? colors.panelNegative
-      : limitState === "approaching"
-        ? colors.panelText
-        : colors.panelPositive;
+  const today = dayjs();
+  // Weeks that have not started yet render as empty tracks, not zero bars.
+  const weekStarted = (index: number) =>
+    !month.isSame(today, "month") || index * 7 + 1 <= today.date();
 
   const weekly = useMemo(() => {
-    const values = Array.from({ length: 4 }, () => ({ income: 0, expense: 0 }));
+    const values = Array.from({ length: 5 }, () => ({ income: 0, expense: 0 }));
     transactions.forEach((transaction) => {
       const date = dayjs(parseDate(transaction.date));
       if (!date.isValid()) return;
-      const week = Math.min(Math.floor((date.date() - 1) / 7), 3);
+      const week = Math.min(Math.floor((date.date() - 1) / 7), 4);
       values[week][transaction.type] += Math.abs(transaction.amount);
     });
     return values;
   }, [transactions]);
-
-  const chartMax = Math.max(
-    ...weekly.flatMap((week) => [week.income, week.expense]),
-    1,
-  );
-  const axisMax = niceCeil(chartMax);
 
   const categoryBreakdown = useMemo(() => {
     const totals = new Map<
@@ -145,282 +111,180 @@ export default function HomeDashboard({
     1,
   );
 
-  return (
-    <View style={styles.container}>
+  if (section === "hero") {
+    return (
       <CurvyHeroPanel>
         <CustomAppBar />
         <View style={styles.panelContent}>
           {ledgerControl}
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroHeader}>
-          <Text style={styles.capsLabel}>
-            {type === "expense"
-              ? `SPENT IN ${month.format("MMMM").toUpperCase()}`
-              : `EARNED IN ${month.format("MMMM").toUpperCase()}`}
-          </Text>
-          {isOver && (
-            <View style={styles.overBadge}>
-              <MaterialCommunityIcons
-                name="triangle"
-                size={8}
-                color={colors.onNegative}
-              />
-              <Text style={styles.overBadgeText}>
-                {formatNumber(ratio * 100, { maximumFractionDigits: 0 })}% OVER
-              </Text>
-            </View>
-          )}
+          <HeroFigure
+            size={40}
+            label={`${type === "expense" ? "Spent" : "Earned"} in ${month.format("MMMM")}`}
+            amount={loading ? "…" : money(activeTotal, currency)}
+          />
+          {type === "expense" &&
+            (limit > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={isOver ? "Raise limit" : "Adjust limit"}
+                onPress={onAdjustLimit}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <SplitBar
+                  ratio={ratio}
+                  limitLabel={`Limit ${money(limit, currency)}`}
+                  leftLabel={isOver ? "Over" : "Left"}
+                  leftAmount={money(difference, currency)}
+                />
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={onAdjustLimit}
+                style={({ pressed }) => [styles.setLimit, pressed && styles.pressed]}
+              >
+                <Text style={styles.setLimitText}>No monthly limit</Text>
+                <Text style={styles.setLimitAction}>Set limit ›</Text>
+              </Pressable>
+            ))}
+          <HeroStatCard
+            size={26}
+            stats={[
+              { label: "Daily average", value: money(activeTotal / days, currency) },
+              type === "expense"
+                ? { label: "Earned", value: money(incomeTotal, currency), badge: "+ in" }
+                : { label: "Spent", value: money(expenseTotal, currency) },
+            ]}
+          />
         </View>
-        {/* No adjustsFontSizeToFit here: the ৳ is a second font run (Noto Sans
-            Bengali), and iOS mis-measures multi-run text badly enough at this
-            size to shrink it to a few pixels, ignoring minimumFontScale. The
-            tile is full-bleed, so the amount fits without shrinking. */}
-        <ScalarAmountText numberOfLines={1} style={styles.heroAmount}>
-          {loading ? "…" : money(activeTotal, currency)}
-        </ScalarAmountText>
-        {type === "expense" && (
-          <>
-            {limit > 0 && (
-              <View style={styles.limitTrack}>
-                <Animated.View
-                  layout={LinearTransition.springify().damping(20).stiffness(180)}
+      </CurvyHeroPanel>
+    );
+  }
+
+  const barMax = Math.max(
+    ...weekly.flatMap((week) => [week.income, week.expense]),
+    1,
+  );
+  // Bars top out below the track so the value labels fit above them.
+  const BAR_MAX = 42;
+  const barHeight = (value: number) =>
+    Math.max(Math.round((value / barMax) * BAR_MAX), 6);
+  const compact = (value: number) =>
+    `${currency.symbol}${
+      value >= 1000
+        ? `${formatNumber(value / 1000, { maximumFractionDigits: value >= 10000 ? 0 : 1 })}k`
+        : formatNumber(value, { maximumFractionDigits: 0 })
+    }`;
+
+  return (
+    <View style={styles.flow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: chartExpanded }}
+        onPress={() => setChartExpanded((current) => !current)}
+        style={styles.chartHeader}
+      >
+        <Text style={styles.sheetTitle}>Cash flow</Text>
+        <View style={styles.legend}>
+          <Legend color={colors.chartIn} label="In" styles={styles} />
+          <Legend color={colors.chartOut} label="Out" styles={styles} />
+          <Text style={styles.byWeek}>By week</Text>
+          <MaterialCommunityIcons
+            name={chartExpanded ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={colors.textMuted}
+          />
+        </View>
+      </Pressable>
+      <View style={styles.weeks}>
+        {weekly.map((week, index) => {
+          const started = weekStarted(index);
+          return (
+            <View key={index} style={styles.week}>
+              <View style={styles.barPair}>
+                {started && (week.income > 0 || week.expense > 0) && (
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.barLabels,
+                      {
+                        bottom:
+                          Math.max(
+                            week.income > 0 ? barHeight(week.income) : 0,
+                            week.expense > 0 ? barHeight(week.expense) : 0,
+                          ) + 3,
+                      },
+                    ]}
+                  >
+                    {week.income > 0 && (
+                      <ScalarAmountText numberOfLines={1} style={[styles.barLabel, { color: colors.chartIn }]}>
+                        {compact(week.income)}
+                      </ScalarAmountText>
+                    )}
+                    {week.expense > 0 && (
+                      <ScalarAmountText numberOfLines={1} style={[styles.barLabel, { color: colors.chartOut }]}>
+                        {compact(week.expense)}
+                      </ScalarAmountText>
+                    )}
+                  </View>
+                )}
+                <View
                   style={[
-                    styles.limitFill,
+                    styles.bar,
+                    started
+                      ? { height: barHeight(week.income), backgroundColor: colors.chartIn }
+                      : styles.emptyBar,
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.bar,
+                    started
+                      ? { height: barHeight(week.expense), backgroundColor: colors.chartOut }
+                      : styles.emptyBar,
+                  ]}
+                />
+              </View>
+              <Text style={styles.xLabel}>w{index + 1}</Text>
+            </View>
+          );
+        })}
+      </View>
+      {chartExpanded && (
+        <View style={styles.breakdown}>
+          <Text style={styles.breakdownTitle}>
+            {type === "expense" ? "Expense" : "Income"} by category
+          </Text>
+          {categoryBreakdown.map((category) => (
+            <View key={category.name} style={styles.breakdownRow}>
+              <Text numberOfLines={1} style={styles.breakdownLabel}>
+                {category.name}
+              </Text>
+              <View style={styles.breakdownTrack}>
+                <View
+                  style={[
+                    styles.breakdownFill,
                     {
-                      width: `${progress * 100}%`,
-                      backgroundColor: limitFillColor,
+                      width: `${(category.total / categoryMax) * 100}%`,
+                      backgroundColor:
+                        category.color ||
+                        (type === "expense" ? colors.chartOut : colors.chartIn),
                     },
                   ]}
                 />
-                {isOver && (
-                  <View style={[styles.limitNotch, { left: `${notchLeft}%` }]} />
-                )}
               </View>
-            )}
-            <View style={styles.limitFooter}>
-              <View style={styles.limitActionGroup}>
-                <ScalarAmountText style={styles.limitText}>
-                  {limit > 0
-                    ? `Limit ${money(limit, currency)}`
-                    : "No monthly limit"}
-                </ScalarAmountText>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={onAdjustLimit}
-                  // The pill is 23px tall by design; hitSlop keeps the touch
-                  // area near the 44px minimum without enlarging the visual.
-                  hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
-                  style={({ pressed }) => [
-                    styles.limitAction,
-                    { borderColor: limitFillColor },
-                    pressed && styles.limitActionPressed,
-                  ]}
-                >
-                  <Text style={[styles.limitActionText, { color: limitFillColor }]}>
-                    {limit <= 0
-                      ? "Set limit"
-                      : isOver
-                        ? "Raise limit"
-                        : "Adjust limit"}
-                  </Text>
-                </Pressable>
-              </View>
-              {limit > 0 && (
-                <ScalarAmountText
-                  style={[
-                    styles.limitStatus,
-                    isOver && styles.negativeText,
-                  ]}
-                >
-                  {isOver
-                    ? `${money(difference, currency)} over`
-                    : limitState === "approaching"
-                      ? `${money(difference, currency)} left · ${formatNumber(
-                          ratio * 100,
-                          { maximumFractionDigits: 0 },
-                        )}%`
-                      : `${money(difference, currency)} left`}
-                </ScalarAmountText>
-              )}
+              <ScalarAmountText style={styles.breakdownAmount}>
+                {money(category.total, currency)}
+              </ScalarAmountText>
             </View>
-          </>
-        )}
-      </View>
-
-      <View style={styles.metrics}>
-        <View style={styles.metricCard}>
-          <Text style={styles.capsLabel}>
-            {type === "expense" ? "EARNED" : "SPENT"}
-          </Text>
-          <ScalarAmountText
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            style={[
-              styles.metricValue,
-              type === "expense" && styles.positiveText,
-            ]}
-          >
-            {type === "expense"
-              ? signedMoney(incomeTotal, currency, true)
-              : signedMoney(expenseTotal, currency, false)}
-          </ScalarAmountText>
-        </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.capsLabel}>DAILY AVG</Text>
-          <ScalarAmountText numberOfLines={1} adjustsFontSizeToFit style={styles.metricValue}>
-            {money(activeTotal / days, currency)}
-          </ScalarAmountText>
-        </View>
-      </View>
-
-        </View>
-      </CurvyHeroPanel>
-
-      <View style={styles.bodyContent}>
-        <View style={styles.chartCard}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: chartExpanded }}
-          onPress={() => setChartExpanded((current) => !current)}
-          style={({ pressed }) => [
-            styles.chartHeader,
-            pressed && styles.chartHeaderPressed,
-          ]}
-        >
-          <View style={styles.chartTitleRow}>
-            <Text style={styles.cardCapsLabel}>IN VS OUT · BY WEEK</Text>
-            <View style={styles.chartToggle}>
-              <MaterialCommunityIcons
-                name={chartExpanded ? "chevron-up" : "chevron-down"}
-                size={16}
-                color={colors.brandText}
-              />
-            </View>
-          </View>
-          <View style={styles.legend}>
-            <Legend color={colors.positive} label="In" styles={styles} />
-            <Legend color={colors.negativeFill} label="Out" styles={styles} />
-          </View>
-        </Pressable>
-        <View style={styles.chartBody}>
-              <View style={styles.axis}>
-                {[axisMax, axisMax * 0.66, axisMax * 0.33, 0].map((value) => (
-                  <Text key={value} style={styles.axisLabel}>
-                    {compact(value)}
-                  </Text>
-                ))}
-              </View>
-              <View style={styles.plot}>
-                {/* Aligned to the top three axis labels (which space-between at
-                    0/33/66/100%); the 0 line is the plot's own baseline. These
-                    sat at 25/50/75% and so lined up with nothing. */}
-                {[0, 1, 2].map((line) => (
-                  <View
-                    key={line}
-                    style={[styles.gridline, { top: `${(line * 100) / 3}%` }]}
-                  />
-                ))}
-                <View style={styles.weeks}>
-                  {weekly.map((week, index) => (
-                    <View key={index} style={styles.week}>
-                      <View
-                        style={[
-                          styles.bar,
-                          styles.inBar,
-                          {
-                            height: `${Math.max(
-                              (week.income / axisMax) * 100,
-                              2,
-                            )}%`,
-                          },
-                        ]}
-                      />
-                      <View style={styles.outBarSlot}>
-                        <View
-                          style={[
-                            styles.bar,
-                            styles.outBar,
-                            {
-                              height: `${Math.max(
-                                (week.expense / axisMax) * 100,
-                                2,
-                              )}%`,
-                            },
-                          ]}
-                        />
-                        {week.expense > 0 && (
-                          <Text
-                            numberOfLines={1}
-                            style={[
-                              styles.expenseBarLabel,
-                              {
-                                bottom: `${Math.min(
-                                  (week.expense / axisMax) * 100 + 4,
-                                  86,
-                                )}%`,
-                              },
-                            ]}
-                          >
-                            {`${currency.symbol}${compact(week.expense)}`}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-        </View>
-        <View style={styles.xLabels}>
-          {weekly.map((_, index) => (
-            <Text key={index} style={styles.xLabel}>
-              W{index + 1}
-            </Text>
           ))}
-        </View>
-        {chartExpanded && (
-          <>
-            <View style={styles.breakdownDivider} />
-            <Text style={styles.cardCapsLabel}>
-              {type === "expense" ? "EXPENSE" : "INCOME"} BY CATEGORY
+          {!categoryBreakdown.length && (
+            <Text style={styles.breakdownEmpty}>
+              No {type} category data this month
             </Text>
-            <View style={styles.breakdown}>
-              {categoryBreakdown.map((category) => (
-                <View key={category.name} style={styles.breakdownRow}>
-                  <Text numberOfLines={1} style={styles.breakdownLabel}>
-                    {category.name}
-                  </Text>
-                  <View style={styles.breakdownTrack}>
-                    <View
-                      style={[
-                        styles.breakdownFill,
-                        {
-                          width: `${(category.total / categoryMax) * 100}%`,
-                          backgroundColor:
-                            category.color ||
-                            (type === "expense"
-                              ? colors.negative
-                              : colors.positive),
-                        },
-                      ]}
-                    />
-                  </View>
-                  <ScalarAmountText style={styles.breakdownAmount}>
-                    {money(category.total, currency)}
-                  </ScalarAmountText>
-                </View>
-              ))}
-              {!categoryBreakdown.length && (
-                <Text style={styles.breakdownEmpty}>
-                  No {type} category data this month
-                </Text>
-              )}
-            </View>
-          </>
-        )}
+          )}
         </View>
-      </View>
-
+      )}
     </View>
   );
 }
@@ -444,298 +308,96 @@ function Legend({
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
-    container: {
-      gap: 0,
-    },
-    panelContent: { paddingHorizontal: 20, gap: 12 },
-    bodyContent: { paddingHorizontal: 20, paddingTop: 6 },
-    heroCard: {
-      gap: 10,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: designTokens.radius.lg,
-      borderWidth: 1,
-      borderColor: colors.panelTileBorder,
-      backgroundColor: colors.panelTile,
-    },
-    heroHeader: {
+    panelContent: { paddingHorizontal: 22, gap: 16 },
+    pressed: { opacity: 0.75 },
+    setLimit: {
+      height: 52,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: 8,
-    },
-    capsLabel: {
-      color: colors.panelTextSecondary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.caps,
-    },
-    overBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
+      paddingHorizontal: 18,
       borderRadius: designTokens.radius.full,
-      paddingVertical: 5,
-      paddingHorizontal: 9,
-      backgroundColor: colors.negative,
+      backgroundColor: colors.chipIdleBg,
     },
-    overBadgeText: {
-      color: colors.onNegative,
-      fontFamily: designTokens.font.extraBold,
-      fontSize: 11,
-      lineHeight: 15,
-      letterSpacing: 1.32,
-      fontWeight: "800",
-    },
-    heroAmount: {
-      color: colors.panelText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      fontVariant: ["tabular-nums"],
-      ...designTokens.typography.heroAmount,
-    },
-    limitTrack: {
-      height: 8,
-      overflow: "hidden",
-      borderRadius: 999,
-      backgroundColor: "rgba(0,0,0,0.20)",
-    },
-    limitFill: {
-      height: 8,
-      borderRadius: 999,
-    },
-    // Marks where the limit fell once the bar is full width, so the run past it
-    // is legible as the overage.
-    limitNotch: {
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      width: 2,
-      marginLeft: -1,
-      backgroundColor: "#FFFFFF",
-    },
-    limitFooter: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
-    },
-    limitActionGroup: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      flexShrink: 1,
-    },
-    limitText: {
-      color: colors.panelTextSecondary,
+    setLimitText: {
+      color: colors.heroTextSecondary,
       fontFamily: designTokens.font.medium,
-      fontWeight: "500",
-      ...designTokens.typography.caption,
+      fontSize: 14,
     },
-    limitStatus: {
-      color: colors.panelText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.caption,
+    setLimitAction: {
+      color: colors.heroText,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 14,
     },
-    // Outlined in the current limit-state colour, not filled — the pill has to
-    // read as a control without competing with the bar.
-    limitAction: {
-      minHeight: 23,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.full,
-      borderWidth: 1.25,
-      backgroundColor: "transparent",
-    },
-    limitActionPressed: {
-      backgroundColor: colors.panelTile,
-    },
-    limitActionText: {
-      fontFamily: designTokens.font.extraBold,
-      fontSize: 11,
-      lineHeight: 14,
-      fontWeight: "800",
-    },
-    negativeText: { color: colors.panelNegative },
-    positiveText: { color: colors.panelPositive },
-    metrics: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    metricCard: {
-      flex: 1,
-      minWidth: 0,
-      gap: 3,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-      borderRadius: designTokens.radius.tile,
-      borderWidth: 1,
-      borderColor: colors.panelTileBorder,
-      backgroundColor: colors.panelTile,
-    },
-    metricValue: {
-      color: colors.panelText,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      fontVariant: ["tabular-nums"],
-      ...designTokens.typography.metric,
-    },
-    chartCard: {
-      gap: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: designTokens.radius.tile,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
+    flow: { gap: 12, paddingBottom: 8 },
     chartHeader: {
+      minHeight: 32,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 8,
-      minHeight: 44,
     },
-    chartHeaderPressed: {
-      backgroundColor: colors.surfaceSunken,
-      borderRadius: designTokens.radius.md,
+    sheetTitle: {
+      color: colors.sheetText,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 18,
+      lineHeight: 24,
     },
-    chartTitleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      flexShrink: 1,
-    },
-    // The bare caret the spec draws is too faint to find on a dark card, so the
-    // chevron gets a tinted disc to read as a control. Tap target stays the
-    // whole 44px header row.
-    chartToggle: {
-      width: 22,
-      height: 22,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.full,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.brandWash,
-    },
-    legend: { flexDirection: "row", gap: 10 },
-    legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-    legendSwatch: { width: 9, height: 9, borderRadius: 2 },
+    legend: { flexDirection: "row", alignItems: "center", gap: 12 },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+    legendSwatch: { width: 8, height: 8, borderRadius: 4 },
     legendText: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.bold,
-      fontWeight: "700",
-      ...designTokens.typography.micro,
-      letterSpacing: 0,
+      color: colors.softChipInk,
+      fontFamily: designTokens.font.medium,
+      fontSize: 12,
     },
-    chartBody: {
-      height: designTokens.chart.plotHeight,
+    byWeek: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.medium,
+      fontSize: 13,
+    },
+    weeks: {
+      height: 86,
       flexDirection: "row",
-      gap: 8,
-    },
-    axis: {
-      width: 32,
       alignItems: "flex-end",
       justifyContent: "space-between",
+      paddingHorizontal: 8,
     },
-    axisLabel: {
-      color: colors.textTertiary,
+    week: { alignItems: "center", gap: 6 },
+    barPair: {
+      height: 68,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 5,
+    },
+    bar: { width: 7, borderRadius: 999 },
+    // Wider than the bar pair and centred on it; labels stack In over Out.
+    barLabels: {
+      position: "absolute",
+      left: -26,
+      right: -26,
+      alignItems: "center",
+    },
+    barLabel: {
+      fontFamily: designTokens.font.semibold,
       fontSize: 10,
       lineHeight: 12,
       fontVariant: ["tabular-nums"],
     },
-    plot: {
-      flex: 1,
-      position: "relative",
-      borderBottomWidth: 1.5,
-      borderBottomColor: colors.borderStrong,
-    },
-    // Full-strength 1px rules, as in the spec. At hairline width and 0.42 alpha
-    // these were effectively invisible, so the plot read as an empty box.
-    gridline: {
-      position: "absolute",
-      left: 0,
-      right: 0,
-      height: 1,
-      backgroundColor: colors.chartGrid,
-    },
-    weeks: {
-      position: "absolute",
-      inset: 0,
-      flexDirection: "row",
-      alignItems: "flex-end",
-      justifyContent: "space-around",
-    },
-    week: {
-      height: "100%",
-      flexDirection: "row",
-      alignItems: "flex-end",
-      gap: designTokens.chart.barGap,
-    },
-    // Wider than the bar so the value label fits inside the slot's own bounds
-    // rather than overflowing it (Android clips overflow). The negative margins
-    // cancel the extra width, so the slot still occupies exactly one bar and the
-    // In/Out pair keeps its 4px gap.
-    outBarSlot: {
-      width: designTokens.chart.barWidth + 26,
-      marginHorizontal: -13,
-      height: "100%",
-      alignItems: "center",
-      justifyContent: "flex-end",
-    },
-    expenseBarLabel: {
-      position: "absolute",
-      zIndex: 10,
-      elevation: 10,
-      color: colors.negative,
-      // Matches the card so the label reads over a gridline without colliding.
-      backgroundColor: colors.surface,
-      paddingHorizontal: 3,
-      borderRadius: 3,
-      textAlign: "center",
-      fontFamily: designTokens.font.bold,
-      fontSize: 9,
-      lineHeight: 11,
-      fontWeight: "700",
-      fontVariant: ["tabular-nums"],
-    },
-    bar: {
-      width: designTokens.chart.barWidth,
-      minHeight: 3,
-      borderTopLeftRadius: 3,
-      borderTopRightRadius: 3,
-    },
-    inBar: { backgroundColor: colors.positive },
-    outBar: { backgroundColor: colors.negativeFill },
-    xLabels: {
-      paddingLeft: 40,
-      flexDirection: "row",
-      justifyContent: "space-around",
-    },
+    emptyBar: { height: 68, backgroundColor: colors.chartEmpty },
     xLabel: {
-      color: colors.textSecondary,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 11,
+    },
+    breakdown: { gap: 12, paddingTop: 4 },
+    breakdownTitle: {
+      color: colors.textMuted,
       fontFamily: designTokens.font.semibold,
-      fontWeight: "600",
-      ...designTokens.typography.micro,
-      letterSpacing: 0,
+      fontSize: 12,
+      letterSpacing: 0.96,
+      textTransform: "uppercase",
     },
-    breakdownDivider: {
-      height: 1,
-      backgroundColor: colors.divider,
-    },
-    // Same eyebrow, but off the panel — body-secondary ink instead of
-    // panel-secondary.
-    cardCapsLabel: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.extraBold,
-      fontWeight: "800",
-      ...designTokens.typography.caps,
-    },
-    breakdown: { gap: 12 },
     breakdownRow: {
       minHeight: 24,
       flexDirection: "row",
@@ -744,34 +406,32 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     breakdownLabel: {
       width: 76,
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.semibold,
+      color: colors.softChipInk,
+      fontFamily: designTokens.font.medium,
       fontSize: 12,
-      fontWeight: "600",
     },
     breakdownTrack: {
       flex: 1,
-      height: 10,
+      height: 8,
       overflow: "hidden",
-      borderRadius: 5,
-      backgroundColor: colors.surfaceSunken,
+      borderRadius: 999,
+      backgroundColor: colors.softChipBg,
     },
     breakdownFill: {
-      height: 10,
-      borderRadius: 5,
+      height: 8,
+      borderRadius: 999,
     },
     breakdownAmount: {
       width: 78,
       textAlign: "right",
-      color: colors.textPrimary,
+      color: colors.sheetText,
       fontFamily: designTokens.font.bold,
       fontSize: 12,
-      fontWeight: "700",
       fontVariant: ["tabular-nums"],
     },
     breakdownEmpty: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.medium,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
       fontSize: 13,
     },
   });

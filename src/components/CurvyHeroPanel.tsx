@@ -1,62 +1,49 @@
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
+import { SHEET_OVERLAP } from "@trackingPortal/components/scalar/ScalarSheet";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 
 /**
- * The hero slab every tab screen opens with. It reads as its own surface —
- * a deep panel that ends in a wide, continuous curve and casts a soft shadow
- * onto the content scrolling beneath it, rather than being fenced off by a
- * drawn line. The shadow lives on an outer view because the inner one clips
- * its children to the curve.
+ * The tinted top every tab screen opens with. The tint is sized to the hero
+ * itself (not the screen), so it always lands on the same end colour where
+ * the sheet rises — short heroes (Loans, Invest) separate as clearly as the
+ * Wallet one. It also reaches under the status bar.
  */
 export default function CurvyHeroPanel({ children }: { children: React.ReactNode }) {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.shell, { shadowColor: colors.background }]}>
-      <View
-        style={[
-          styles.panel,
-          {
-            backgroundColor: colors.panel,
-            borderBottomColor: colors.panelTileBorder,
-          },
-        ]}
-      >
-        {children}
-      </View>
+    <View
+      style={[
+        styles.panel,
+        { paddingTop: insets.top, backgroundColor: colors.heroGradEnd },
+      ]}
+    >
+      <Svg style={styles.tint} pointerEvents="none">
+        <Defs>
+          <LinearGradient id="scalarHero" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={colors.heroGradTop} />
+            <Stop offset="0.5" stopColor={colors.heroGradMid} />
+            <Stop offset="1" stopColor={colors.heroGradEnd} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="url(#scalarHero)" />
+      </Svg>
+      {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  shell: {
-    width: "100%",
-    // Ambient depth only — no offset blur halo, just enough to lift the slab
-    // off whatever scrolls under it.
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-      },
-      android: { elevation: 10 },
-      default: {},
-    }),
-  },
-  // The gap separates the greeting row from the panel body. Every screen passes
-  // <CustomAppBar /> plus one content view, so setting it here spaces all four
-  // consistently — the spec allows 14-16px depending on what follows.
   panel: {
-    paddingBottom: 26,
-    gap: 14,
-    // A wide squircle: `continuous` is the Apple curve rather than a circular
-    // arc. Android ignores it and falls back to a plain radius, which is fine.
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
-    borderCurve: "continuous",
-    // A whisper of a rim light along the curve — felt, not read as a border.
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    overflow: "hidden",
+    width: "100%",
+    // 20 of breathing room plus the sheet's radius, which it overlaps.
+    paddingBottom: 20 + SHEET_OVERLAP,
+    gap: 18,
   },
+  // Starts a pixel high to cover Android's sub-pixel seam at the top edge.
+  tint: { position: "absolute", top: -1, left: 0, right: 0, bottom: 0 },
 });

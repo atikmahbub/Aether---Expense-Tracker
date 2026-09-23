@@ -6,11 +6,11 @@ import {
 import {colors} from '@trackingPortal/themes/colors';
 
 const baseFonts = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semiBold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extraBold: 'PlusJakartaSans_800ExtraBold',
+  regular: 'Outfit_400Regular',
+  medium: 'Outfit_500Medium',
+  semiBold: 'Outfit_600SemiBold',
+  bold: 'Outfit_700Bold',
+  extraBold: 'Outfit_700Bold',
 };
 
 const fontConfig = configureFonts({

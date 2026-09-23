@@ -110,7 +110,7 @@ const CategoryScreen = () => {
         icon="plus"
         style={styles.fab}
         onPress={handleAdd}
-        color="#000"
+        color={colors.primaryButtonInk}
       />
 
       <CategoryModal
@@ -156,7 +156,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontSize: 20,
       fontWeight: '800',
       color: colors.text,
-      fontFamily: 'Manrope_400Regular',
+      fontFamily: 'Outfit_400Regular',
       letterSpacing: -0.5,
     },
     segmentedControl: {
@@ -183,7 +183,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       margin: 16,
       right: 16,
       bottom: 32,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.primaryButtonBg,
       borderRadius: 28,
     },
   });

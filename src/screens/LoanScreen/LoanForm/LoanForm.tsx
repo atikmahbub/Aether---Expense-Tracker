@@ -8,6 +8,8 @@ import ScalarCalendar from '@trackingPortal/components/ScalarCalendar';
 import dayjs from 'dayjs';
 import {LoanType} from '@trackingPortal/api/enums';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { designTokens } from '@trackingPortal/themes/designTokens';
+import PillChip from '@trackingPortal/components/scalar/PillChip';
 
 const LOAN_TYPE_OPTIONS = [
   {
@@ -50,29 +52,15 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
     <View style={styles.formRoot}>
       <View style={styles.toggleContainer}>
         <View style={styles.toggleGroup}>
-          {LOAN_TYPE_OPTIONS.map(option => {
-            const isSelected = values[EAddLoanFields.LOAN_TYPE] === option.value;
-            return (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.toggleOption,
-                  isSelected && styles.toggleOptionSelected,
-                ]}
-                activeOpacity={0.85}
-                onPress={() => setFieldValue(EAddLoanFields.LOAN_TYPE, option.value)}>
-                <Text
-                  style={[
-                    styles.toggleTitle,
-                    isSelected && styles.toggleTitleSelected,
-                    option.value === LoanType.GIVEN && !isSelected && styles.givenTitle,
-                    option.value === LoanType.TAKEN && !isSelected && styles.takenTitle,
-                  ]}>
-                  {option.label.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {LOAN_TYPE_OPTIONS.map(option => (
+            <PillChip
+              key={option.value}
+              variant="sheet"
+              label={option.label}
+              active={values[EAddLoanFields.LOAN_TYPE] === option.value}
+              onPress={() => setFieldValue(EAddLoanFields.LOAN_TYPE, option.value)}
+            />
+          ))}
         </View>
       </View>
       <View style={styles.fieldSection}>
@@ -175,33 +163,33 @@ function makeStyles(
     },
     toggleGroup: {
       flexDirection: 'row',
-      gap: 12,
+      gap: 6,
     },
     toggleOption: {
       flex: 1,
-      paddingVertical: 14,
+      height: 44,
       paddingHorizontal: 16,
-      borderRadius: 24,
-      backgroundColor: colors.surface,
+      borderRadius: 999,
+      backgroundColor: colors.softChipBg,
       alignItems: 'center',
       justifyContent: 'center',
     },
     toggleOptionSelected: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.chipActiveBg,
     },
     toggleTitle: {
+      fontFamily: designTokens.font.semibold,
       fontSize: 14,
-      fontWeight: '700',
-      letterSpacing: 1,
+      letterSpacing: 0.5,
     },
     toggleTitleSelected: {
-      color: isDark ? colors.onBrand : '#FFFFFF',
+      color: colors.chipActiveInk,
     },
     givenTitle: {
-      color: colors.primary,
+      color: colors.softChipInk,
     },
     takenTitle: {
-      color: colors.text,
+      color: colors.softChipInk,
     },
     toggleDescription: {
       display: 'none',
@@ -210,10 +198,11 @@ function makeStyles(
       gap: 8,
     },
     sectionLabel: {
-      color: colors.muted,
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 1,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 12,
+      letterSpacing: 0.96,
+      textTransform: 'uppercase',
     },
     footer: {
       flexDirection: 'row',
@@ -228,15 +217,13 @@ function makeStyles(
       height: 48,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 12,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
+      borderRadius: 999,
+      backgroundColor: colors.softChipBg,
     },
     cancelButtonText: {
-      color: colors.subText,
+      color: colors.softChipInk,
+      fontFamily: designTokens.font.semibold,
       fontSize: 15,
-      fontWeight: '600',
     },
     saveButtonWrapper: {
       minWidth: 140,

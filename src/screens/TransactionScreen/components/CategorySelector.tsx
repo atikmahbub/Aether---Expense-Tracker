@@ -99,13 +99,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     fallbackContainer: {
       minHeight: 48,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.dashedBorder,
       alignItems: 'center',
       justifyContent: 'center',
       padding: 12,
-      backgroundColor: colors.surface,
     },
     placeholder: {
       color: colors.textSecondary,
@@ -120,8 +120,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       color: colors.warning,
       fontSize: 12,
       marginTop: 6,
-      fontFamily: 'PlusJakartaSans_600SemiBold',
-      fontWeight: '600',
+      fontFamily: 'Outfit_600SemiBold',
     },
   });
 }
