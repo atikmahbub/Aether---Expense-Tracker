@@ -27,7 +27,7 @@ import Toast from "react-native-toast-message";
 const AVATAR_SIZE = 120;
 const DEFAULT_AVATAR =
   "https://api.dicebear.com/7.x/avataaars/png?seed=Scalar&backgroundColor=transparent";
-const APP_VERSION = Constants.expoConfig?.version ?? "3.0.0";
+const APP_VERSION = Constants.expoConfig?.version ?? "4.0.0";
 
 const ProfileScreen: React.FC = () => {
   const { colors } = useAppTheme();
