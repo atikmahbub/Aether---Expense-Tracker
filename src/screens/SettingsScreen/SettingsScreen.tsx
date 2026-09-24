@@ -156,8 +156,8 @@ export default function SettingsScreen() {
       >
         <View style={styles.signOutTile}>
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Path d="M12 3v8" stroke={colors.negative} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            <Path d="M6.6 6.6a8 8 0 1 0 10.8 0" stroke={colors.negative} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M12 3v8" stroke={colors.signOutInk} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M6.6 6.6a8 8 0 1 0 10.8 0" stroke={colors.signOutInk} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
         </View>
         <Text style={styles.signOutText}>Sign out</Text>
@@ -350,7 +350,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     signOutText: {
       flex: 1,
-      color: colors.negative,
+      color: colors.signOutInk,
       fontFamily: designTokens.font.semibold,
       fontSize: 15,
     },

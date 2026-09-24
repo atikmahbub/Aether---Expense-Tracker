@@ -27,7 +27,13 @@ export function DotField({
 }) {
   const id = React.useId().replace(/:/g, "");
   return (
-    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Svg
+      style={StyleSheet.absoluteFill}
+      width="100%"
+      height="100%"
+      preserveAspectRatio="none"
+      pointerEvents="none"
+    >
       <Defs>
         <Pattern
           id={`dots${id}`}
@@ -43,19 +49,38 @@ export function DotField({
   );
 }
 
+// SVG stops drop the alpha of an rgba() colour, so split it into
+// stopColor + stopOpacity.
+function stopProps(color: string) {
+  const m = color.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/);
+  if (!m) return { stopColor: color, stopOpacity: 1 };
+  return { stopColor: `rgb(${m[1]},${m[2]},${m[3]})`, stopOpacity: Number(m[4]) };
+}
+
 /** Horizontal fade from nearly transparent into the spent colour. */
 export function SpentRamp({ from, to }: { from: string; to: string }) {
   const id = React.useId().replace(/:/g, "");
+  // Size the SVG in real pixels: percentage sizing leaves it at its intrinsic
+  // width on some devices, so the fade stops short of the knob.
+  const [size, setSize] = React.useState({ width: 0, height: 0 });
   return (
-    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Defs>
-        <LinearGradient id={`ramp${id}`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={from} />
-          <Stop offset="1" stopColor={to} />
-        </LinearGradient>
-      </Defs>
-      <Rect width="100%" height="100%" fill={`url(#ramp${id})`} />
-    </Svg>
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      onLayout={(e) => setSize(e.nativeEvent.layout)}
+    >
+      {size.width > 0 ? (
+        <Svg width={size.width} height={size.height}>
+          <Defs>
+            <LinearGradient id={`ramp${id}`} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" {...stopProps(from)} />
+              <Stop offset="1" {...stopProps(to)} />
+            </LinearGradient>
+          </Defs>
+          <Rect width={size.width} height={size.height} fill={`url(#ramp${id})`} />
+        </Svg>
+      ) : null}
+    </View>
   );
 }
 

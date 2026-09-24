@@ -138,7 +138,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors'], isDark: bo
         ? {}
         : Platform.select({
             ios: {
-              shadowColor: '#143C2D',
+              shadowColor: '#2D4263',
               shadowOpacity: 0.14,
               shadowRadius: 8,
               shadowOffset: {width: 0, height: 2},

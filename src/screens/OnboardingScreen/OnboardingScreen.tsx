@@ -304,7 +304,7 @@ const illus = StyleSheet.create({
     overflow: 'hidden',
   },
   knob: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  knobText: { color: '#07110E', fontFamily: designTokens.font.display, fontSize: 10 },
+  knobText: { color: '#111A28', fontFamily: designTokens.font.display, fontSize: 10 },
   float: {
     position: 'absolute',
     borderRadius: 22,
@@ -314,7 +314,7 @@ const illus = StyleSheet.create({
   },
   floatShadow: Platform.select({
     ios: {
-      shadowColor: '#143C2D',
+      shadowColor: '#2D4263',
       shadowOpacity: 0.14,
       shadowRadius: 14,
       shadowOffset: { width: 0, height: 10 },

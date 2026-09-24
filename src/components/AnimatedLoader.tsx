@@ -76,7 +76,7 @@ const AnimatedLoader: React.FC = () => {
             {/* Drawn at full bar width and clipped by the growing fill: an SVG
                 sized to an animating parent doesn't redraw on every frame. */}
             <View style={styles.ramp}>
-              <SpentRamp from={colors.splitSpentFrom} to={colors.splitSpentTo} />
+              <SpentRamp from={colors.loaderFrom} to={colors.loaderTo} />
             </View>
             <View style={styles.knob}>
               <Text style={styles.knobText}>{pct}%</Text>
@@ -139,10 +139,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       borderRadius: KNOB / 2,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.splitSpentKnob,
+      backgroundColor: colors.loaderKnob,
     },
     knobText: {
-      color: colors.splitSpentKnobInk,
+      color: colors.loaderKnobInk,
       fontFamily: designTokens.font.display,
       fontSize: 11,
     },

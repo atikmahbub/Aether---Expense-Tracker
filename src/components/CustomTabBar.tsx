@@ -154,7 +154,7 @@ function makeStyles(
       borderColor: colors.dockBorder,
       // Light dock gets a soft green-tinted lift instead of the heavy black drop.
       // Spec: 0 12 28 rgba(0,0,0,.5) dark / rgba(20,60,45,.16) light.
-      shadowColor: isDark ? "#000000" : "#143C2D",
+      shadowColor: isDark ? "#000000" : "#2D4263",
       shadowOpacity: isDark ? 0.5 : 0.16,
       shadowRadius: 14,
       shadowOffset: { width: 0, height: 12 },

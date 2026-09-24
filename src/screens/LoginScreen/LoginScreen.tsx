@@ -106,7 +106,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       justifyContent: "center",
       backgroundColor: "#FFFFFF",
     },
-    gText: { color: "#1F6B4F", fontFamily: designTokens.font.bold, fontSize: 15 },
+    gText: { color: "#2D4263", fontFamily: designTokens.font.bold, fontSize: 15 },
     primaryText: {
       color: colors.primaryButtonInk,
       fontFamily: designTokens.font.semibold,
