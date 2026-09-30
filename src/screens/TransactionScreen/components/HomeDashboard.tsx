@@ -63,7 +63,6 @@ export default function HomeDashboard({
   const limit = monthlyLimit?.limit ?? 0;
   const ratio = limit > 0 ? expenseTotal / limit : 0;
   const difference = Math.abs(expenseTotal - limit);
-  const days = Math.max(month.daysInMonth(), 1);
 
   // Three limit states with transitions at 85% and 100%. "Approaching" uses
   // neutral ink rather than a new hue, so the only colour shift on the bar is
@@ -72,6 +71,10 @@ export default function HomeDashboard({
     ratio >= 1 ? "over" : ratio >= LIMIT_WARNING_RATIO ? "approaching" : "under";
   const isOver = type === "expense" && limitState === "over";
   const today = dayjs();
+  // Current month averages over days elapsed so far, not the full month.
+  const days = month.isSame(today, "month")
+    ? today.date()
+    : Math.max(month.daysInMonth(), 1);
   // Weeks that have not started yet render as empty tracks, not zero bars.
   const weekStarted = (index: number) =>
     !month.isSame(today, "month") || index * 7 + 1 <= today.date();

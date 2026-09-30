@@ -3,7 +3,7 @@ import React, {useState, useMemo, useCallback} from 'react';
 import {Text} from 'react-native-paper';
 import {FormikTextInput, CommonCard, StatCard, HeroGlow} from '@trackingPortal/components';
 import FormModal from '@trackingPortal/components/FormModal';
-import {Dayjs} from 'dayjs';
+import dayjs, {Dayjs} from 'dayjs';
 import {MonthlyLimitModel} from '@trackingPortal/api/models';
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
@@ -217,7 +217,11 @@ const TransactionSummary: React.FC<ISummary> = ({
             icon="chart-line"
             label="Daily Avg"
             value={(() => {
-              const divisor = Math.max(filterMonth.daysInMonth(), 1);
+              const today = dayjs();
+              // Current month averages over days elapsed so far.
+              const divisor = filterMonth.isSame(today, 'month')
+                ? today.date()
+                : Math.max(filterMonth.daysInMonth(), 1);
 
               return formatCurrency(
                 totalValue / divisor,
