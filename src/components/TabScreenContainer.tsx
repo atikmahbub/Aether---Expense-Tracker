@@ -14,7 +14,7 @@ type Props = {
 };
 
 const TabScreenContainer: React.FC<Props> = ({ children }) => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
 
   return (
     <View
@@ -27,8 +27,8 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
         },
       ]}
     >
-      {/* Light mode: one fixed glow behind the hero and the glass sheet. */}
-      {!isDark && <ScreenGradient />}
+      {/* One fixed glow behind the hero and the glass sheet. */}
+      <ScreenGradient />
       {Platform.OS === 'ios' ? (
         <KeyboardAvoidingView
           style={{ flex: 1 }}

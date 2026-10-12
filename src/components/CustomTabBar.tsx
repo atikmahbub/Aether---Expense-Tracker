@@ -9,6 +9,7 @@ import Animated, { Easing, FadeIn, LinearTransition } from "react-native-reanima
 import DockIcon, { DockIconName } from "@trackingPortal/components/scalar/DockIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import GlassSurface from "@trackingPortal/components/scalar/GlassSurface";
 
 const FADE = 32;
 // The selected tab widens into an icon + label pill; neighbours glide aside.
@@ -87,22 +88,26 @@ export default function CustomTabBar({
       pointerEvents="box-none"
       style={[styles.container, { paddingBottom: Math.max(insets.bottom - 16, 8) }]}
     >
-      {/* Content fades out above the dock, and a solid backing hides it
-          beside and below — nothing scrolls visibly around the dock. */}
+      {/* Content fades out above the dock, and a backing hides it beside
+          and below — nothing scrolls visibly around the frosted dock. */}
       <View
         pointerEvents="none"
-        style={[styles.backing, { backgroundColor: colors.sheet }]}
+        style={[styles.backing, { backgroundColor: colors.dockBacking }]}
       />
       <Svg style={styles.fade} pointerEvents="none">
         <Defs>
           <LinearGradient id="dockFade" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={colors.sheet} stopOpacity={0} />
-            <Stop offset="1" stopColor={colors.sheet} stopOpacity={1} />
+            <Stop offset="0" stopColor={colors.dockBacking} stopOpacity={0} />
+            <Stop offset="1" stopColor={colors.dockBacking} stopOpacity={1} />
           </LinearGradient>
         </Defs>
         <Rect width="100%" height="100%" fill="url(#dockFade)" />
       </Svg>
-      <View style={styles.dock}>
+      <GlassSurface
+        style={styles.dock}
+        contentStyle={styles.dockRow}
+        radius={designTokens.radius.full}
+      >
         {renderTab("transactions")}
         {renderTab("loan")}
         <Pressable
@@ -120,7 +125,7 @@ export default function CustomTabBar({
         </Pressable>
         {renderTab("investment")}
         {renderTab("settings")}
-      </View>
+      </GlassSurface>
     </View>
   );
 }
@@ -144,21 +149,18 @@ function makeStyles(
       alignSelf: "stretch",
       height: 64,
       marginHorizontal: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 8,
-      borderRadius: designTokens.radius.full,
-      backgroundColor: colors.dock,
-      borderWidth: 1,
-      borderColor: colors.dockBorder,
-      // Light dock gets a soft green-tinted lift instead of the heavy black drop.
-      // Spec: 0 12 28 rgba(0,0,0,.5) dark / rgba(20,60,45,.16) light.
+      // Soft navy lift in light, a deeper drop in dark.
       shadowColor: isDark ? "#000000" : "#2D4263",
       shadowOpacity: isDark ? 0.5 : 0.16,
       shadowRadius: 14,
       shadowOffset: { width: 0, height: 12 },
-      elevation: 12,
+    },
+    dockRow: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 8,
     },
     tab: {
       minWidth: 48,

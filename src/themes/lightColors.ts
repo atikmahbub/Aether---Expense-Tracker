@@ -104,6 +104,10 @@ export const lightColors = {
   sheet: "#F5F7FA",
   // The list sheet on tab screens: glass over the fixed glow behind it.
   sheetGlass: "rgba(255,255,255,0.42)",
+  // Frosted surfaces (GlassSurface): tint over the blur, and the bright rim.
+  dockBacking: "#F8F9FB",
+  glassFill: "rgba(255,255,255,0.45)",
+  glassRim: "rgba(255,255,255,0.9)",
   sheetBorder: "rgba(255,255,255,0.9)",
   sheetText: "#1B2940",
   rowDivider: "#EEF1F6",
