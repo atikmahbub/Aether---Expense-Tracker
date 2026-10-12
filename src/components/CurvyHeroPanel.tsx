@@ -13,15 +13,16 @@ import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
  * Wallet one. It also reaches under the status bar.
  */
 export default function CurvyHeroPanel({ children }: { children: React.ReactNode }) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   return (
     <View
       style={[
         styles.panel,
-        { paddingTop: insets.top, backgroundColor: colors.heroGradEnd },
+        { paddingTop: insets.top, backgroundColor: isDark ? colors.heroGradEnd : "transparent" },
       ]}
     >
+      {isDark && (
       <Svg style={styles.tint} pointerEvents="none">
         <Defs>
           <LinearGradient id="scalarHero" x1="0" y1="0" x2="0" y2="1">
@@ -32,6 +33,7 @@ export default function CurvyHeroPanel({ children }: { children: React.ReactNode
         </Defs>
         <Rect width="100%" height="100%" fill="url(#scalarHero)" />
       </Svg>
+      )}
       {children}
     </View>
   );

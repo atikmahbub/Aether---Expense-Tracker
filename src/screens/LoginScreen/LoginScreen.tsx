@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PRIVACY_URL = "https://atikmahbub.github.io/aether-privacy-policy/";
 
 export default function LoginScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { login, loading } = useAuth();
   const insets = useSafeAreaInsets();
@@ -41,7 +41,7 @@ export default function LoginScreen() {
           onPress={login}
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
-          <View style={styles.gBadge}>
+          <View style={[styles.gBadge, !isDark && styles.gBadgeGlass]}>
             <Text style={styles.gText}>G</Text>
           </View>
           <Text style={styles.primaryText}>Continue with Google</Text>
@@ -105,6 +105,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "#FFFFFF",
+    },
+    gBadgeGlass: {
+      backgroundColor: "rgba(255,255,255,0.42)",
+      borderWidth: 1.5,
+      borderColor: "rgba(255,255,255,0.9)",
     },
     gText: { color: "#2D4263", fontFamily: designTokens.font.bold, fontSize: 15 },
     primaryText: {

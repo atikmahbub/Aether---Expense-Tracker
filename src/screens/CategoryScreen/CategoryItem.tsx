@@ -14,7 +14,7 @@ interface CategoryItemProps {
 }
 
 const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isSystem = item.userId === null;
 
@@ -31,7 +31,10 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
   return (
     <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
       <TouchableOpacity
-        style={styles.container}
+        style={[
+          styles.container,
+          !isDark && { backgroundColor: colors.sheet, borderColor: colors.sheetBorder, borderWidth: 1.5 },
+        ]}
         onPress={onEdit}
         activeOpacity={0.7}
       >

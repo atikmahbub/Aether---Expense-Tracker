@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
+import LightGlow from "@trackingPortal/components/scalar/LightGlow";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 
 /**
@@ -9,7 +10,7 @@ import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
  * top, fading into the page colour by ~60% of the height.
  */
 export default function ScreenGradient() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   // Size the SVG in real pixels: percentage sizing leaves it at its intrinsic
   // size on some devices, so the tint stops short of the screen edges.
   const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -19,7 +20,9 @@ export default function ScreenGradient() {
       pointerEvents="none"
       onLayout={(e) => setSize(e.nativeEvent.layout)}
     >
-      {size.width > 0 ? (
+      {size.width > 0 && !isDark ? (
+        <LightGlow width={size.width} height={size.height} />
+      ) : size.width > 0 ? (
         <Svg width={size.width} height={size.height}>
           <Defs>
             <LinearGradient id="scalarScreen" x1="0" y1="0" x2="0" y2="1">

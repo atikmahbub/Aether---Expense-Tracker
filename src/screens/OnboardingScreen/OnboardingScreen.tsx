@@ -83,7 +83,9 @@ function FloatCard({
     <View
       style={[
         illus.float,
-        { backgroundColor: colors.sheet, borderColor: colors.sheetBorder },
+        isDark
+          ? { backgroundColor: colors.sheet, borderColor: colors.sheetBorder }
+          : { backgroundColor: colors.groupBg, borderColor: colors.groupBorder, borderWidth: 1.5 },
         !isDark && illus.floatShadow,
         style,
       ]}
@@ -141,7 +143,7 @@ function Illustration({ index, colors, isDark }: { index: number; colors: Colors
         </ScalarAmountText>
         <View style={illus.split}>
           <View style={[illus.spent, { flex: spentRatio }]}>
-            <SpentRamp from="rgba(255,255,255,0.02)" to="rgba(166,240,127,0.5)" />
+            <SpentRamp from="rgba(255,255,255,0.02)" to="rgba(236,219,186,0.5)" />
             <View style={[illus.knob, { backgroundColor: colors.lime }]}>
               <Text style={illus.knobText}>{Math.round(spentRatio * 100)}%</Text>
             </View>

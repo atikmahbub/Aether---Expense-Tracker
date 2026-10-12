@@ -4,6 +4,7 @@ import Animated, {
   Easing,
   FadeInDown,
 } from "react-native-reanimated";
+import ScreenGradient from "@trackingPortal/components/scalar/ScreenGradient";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 
 const TAB_CONTENT_BOTTOM_PADDING = 24; // slightly increased
@@ -13,7 +14,7 @@ type Props = {
 };
 
 const TabScreenContainer: React.FC<Props> = ({ children }) => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   return (
     <View
@@ -26,6 +27,8 @@ const TabScreenContainer: React.FC<Props> = ({ children }) => {
         },
       ]}
     >
+      {/* Light mode: one fixed glow behind the hero and the glass sheet. */}
+      {!isDark && <ScreenGradient />}
       {Platform.OS === 'ios' ? (
         <KeyboardAvoidingView
           style={{ flex: 1 }}

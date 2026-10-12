@@ -23,7 +23,7 @@ export default function ScalarSheet({
     <View
       style={[
         styles.sheet,
-        { backgroundColor: colors.sheet, borderColor: colors.sheetBorder },
+        { backgroundColor: colors.sheetGlass, borderColor: colors.sheetBorder },
         style,
       ]}
     >

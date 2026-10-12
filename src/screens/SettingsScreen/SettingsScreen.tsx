@@ -310,6 +310,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       justifyContent: "center",
       borderRadius: 12,
       backgroundColor: colors.groupIconBg,
+      borderWidth: 1.5,
+      borderColor: colors.groupIconBorder,
     },
     rowLabel: {
       flex: 1,

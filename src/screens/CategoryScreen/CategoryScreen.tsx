@@ -10,9 +10,10 @@ import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/m
 import { useNavigation } from 'expo-router';
 import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
 import { useScalarAlert } from '@trackingPortal/components/ScalarAlert';
+import { ScreenGradient } from '@trackingPortal/components/scalar';
 
 const CategoryScreen = () => {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
@@ -72,6 +73,7 @@ const CategoryScreen = () => {
 
   return (
     <View style={styles.container}>
+      {!isDark && <ScreenGradient />}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialCommunityIcons name="chevron-left" size={32} color={colors.text} />
