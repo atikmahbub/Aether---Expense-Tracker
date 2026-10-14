@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import type { IApiGateWay } from "@trackingPortal/api/interfaces";
-import { getMonthTimestamp } from "@trackingPortal/utils/date";
+import { getMonthTimestamp, parseDate } from "@trackingPortal/utils/date";
 import type { Repositories } from "@trackingPortal/db/repositories";
 import type { Outbox } from "@trackingPortal/db/sync/Outbox";
 import type { BaseRepository } from "@trackingPortal/db/repositories/BaseRepository";
@@ -412,6 +412,16 @@ export class SyncEngine {
           for (const model of list) {
             await this.repos.transactions.upsertFromServer({ ...model, type });
           }
+          // The endpoint returns the complete month, so any synced local row of
+          // this type dated in this month that the server no longer has was
+          // deleted elsewhere (e.g. the web app). Only runs on a successful
+          // fetch — a failed month never infers deletes.
+          await this.reconcileMonthTransactionDeletes(
+            userId,
+            type,
+            month.format("YYYY-MM"),
+            list.map((m: any) => String(m.id)),
+          );
           return list.length;
         } catch (error) {
           console.log("pull transactions month failed", type, String(date), error);
@@ -419,10 +429,26 @@ export class SyncEngine {
         }
       }),
     );
-    // NOTE: remote-delete inference is intentionally NOT applied to transactions
-    // (per-month scope makes a full-set diff unsafe). Loans/investments below
-    // use full-list endpoints and still reconcile deletes safely.
+    await this.repos.transactions.backfillUserId(userId);
     return counts.reduce((a, b) => a + b, 0);
+  }
+
+  private async reconcileMonthTransactionDeletes(
+    userId: string,
+    type: "expense" | "income",
+    yearMonth: string,
+    serverIds: string[],
+  ): Promise<void> {
+    const present = new Set(serverIds);
+    const rows = (await this.repos.transactions.getAll(
+      "userId = ? AND type = ? AND syncStatus = 'synced' AND serverId IS NOT NULL",
+      [userId, type],
+    )) as { serverId: string | null; date: string | null }[];
+    for (const row of rows) {
+      if (!row.serverId || !row.date || present.has(row.serverId)) continue;
+      if (dayjs(parseDate(row.date)).format("YYYY-MM") !== yearMonth) continue;
+      await this.repos.transactions.markRemotelyDeleted(row.serverId);
+    }
   }
 
   private async pullCategories(

@@ -55,24 +55,52 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setFailedCount(outbox ? await outbox.failedCount() : 0);
   }, [outbox]);
 
+  // Refs (not state) so overlapping callers see the live value. A request that
+  // arrives mid-sync (e.g. a new entry while the foreground sync is still
+  // pulling) is remembered and run once more afterwards instead of dropped —
+  // otherwise that entry would sit unpushed until some later trigger.
+  const syncRunningRef = useRef(false);
+  const syncRequestedRef = useRef(false);
+
   const syncNow = useCallback(async () => {
-    if (syncInProgress) return;
+    if (syncRunningRef.current) {
+      syncRequestedRef.current = true;
+      return;
+    }
+    syncRunningRef.current = true;
     setSyncInProgress(true);
     try {
-      // New SQLite sync (transactions + categories): push pending, pull cloud.
-      if (syncEngine && userId) {
-        await syncEngine.syncAll(userId);
-      }
-      // Legacy queue (loan / invest).
-      await legacySyncService.syncItems();
-      await updatePendingCount();
-      eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
-    } catch (error) {
-      console.log('sync error', error);
+      do {
+        syncRequestedRef.current = false;
+        try {
+          // New SQLite sync (transactions + categories): push pending, pull cloud.
+          if (syncEngine && userId) {
+            await syncEngine.syncAll(userId);
+          }
+          // Legacy queue (loan / invest).
+          await legacySyncService.syncItems();
+          await updatePendingCount();
+          eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
+        } catch (error) {
+          console.log('sync error', error);
+        }
+      } while (syncRequestedRef.current);
     } finally {
+      syncRunningRef.current = false;
       setSyncInProgress(false);
     }
-  }, [syncInProgress, syncEngine, userId, legacySyncService, updatePendingCount]);
+  }, [syncEngine, userId, legacySyncService, updatePendingCount]);
+
+  /**
+   * Sync triggered by the environment (reconnect / foreground). Parked items
+   * get a fresh set of attempts here, so a transient failure (expired token,
+   * server cold start, flaky network) heals on its own instead of staying
+   * "failed" until the user taps the indicator.
+   */
+  const autoSync = useCallback(async () => {
+    if (outbox) await outbox.retryFailed().catch(() => {});
+    await syncNow();
+  }, [outbox, syncNow]);
 
   const retryFailed = useCallback(async () => {
     if (!outbox) return;
@@ -179,12 +207,26 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     updatePendingCount,
   ]);
 
-  // Auto-sync whenever connectivity returns with pending work.
+  // Auto-sync when connectivity comes back. Keyed on the offline→online
+  // transition only — re-firing whenever a sync finished with work still
+  // pending hot-looped a single transient failure through all retries in a
+  // few seconds, parking the entry as "failed".
+  const wasReachableRef = useRef<boolean | null>(null);
   useEffect(() => {
-    if (isOnline && isInternetReachable && pendingCount > 0 && !syncInProgress && !isMigrating) {
+    const reachable = Boolean(isOnline && isInternetReachable);
+    const cameOnline = reachable && wasReachableRef.current === false;
+    wasReachableRef.current = reachable;
+    if (cameOnline && !isMigrating) autoSync();
+  }, [isOnline, isInternetReachable, isMigrating, autoSync]);
+
+  // Covers work queued in a previous session once the count is first loaded.
+  // Deliberately not keyed on syncInProgress (see above) — a failed sync leaves
+  // pendingCount unchanged, so this does not re-fire on its own.
+  useEffect(() => {
+    if (isOnline && isInternetReachable && pendingCount > 0 && !isMigrating) {
       syncNow();
     }
-  }, [isOnline, isInternetReachable, pendingCount, syncInProgress, isMigrating, syncNow]);
+  }, [isOnline, isInternetReachable, pendingCount, isMigrating, syncNow]);
 
   // Re-sync whenever the app returns to the foreground. Without this, a device
   // with nothing of its own pending (pendingCount === 0) never learns about
@@ -193,11 +235,11 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active' && isOnline && isInternetReachable && !isMigrating) {
-        syncNow();
+        autoSync();
       }
     });
     return () => subscription.remove();
-  }, [isOnline, isInternetReachable, isMigrating, syncNow]);
+  }, [isOnline, isInternetReachable, isMigrating, autoSync]);
 
   return (
     <OfflineContext.Provider
