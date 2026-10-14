@@ -399,6 +399,8 @@ export class SyncEngine {
     // fetched concurrently (they're independent requests) and isolated so one
     // bad response doesn't drop the rest.
     const now = dayjs();
+    const fetchedMonths = new Set<string>();
+    const seenServerIds = new Set<string>();
     const counts = await Promise.all(
       Array.from({ length: months }, (_, i) => i).map(async (i) => {
         const month = now.subtract(i, "month");
@@ -411,17 +413,9 @@ export class SyncEngine {
           } as any);
           for (const model of list) {
             await this.repos.transactions.upsertFromServer({ ...model, type });
+            seenServerIds.add(String(model.id));
           }
-          // The endpoint returns the complete month, so any synced local row of
-          // this type dated in this month that the server no longer has was
-          // deleted elsewhere (e.g. the web app). Only runs on a successful
-          // fetch — a failed month never infers deletes.
-          await this.reconcileMonthTransactionDeletes(
-            userId,
-            type,
-            month.format("YYYY-MM"),
-            list.map((m: any) => String(m.id)),
-          );
+          fetchedMonths.add(month.format("YYYY-MM"));
           return list.length;
         } catch (error) {
           console.log("pull transactions month failed", type, String(date), error);
@@ -429,24 +423,34 @@ export class SyncEngine {
         }
       }),
     );
+    // Reconcile only after every month has landed, against the union of all
+    // returned ids: the server buckets months by its own timezone, so a row
+    // dated near a month boundary can come back in the neighbouring month's
+    // list. Diffing month-by-month deleted it, then the other month re-added it.
+    await this.reconcileTransactionDeletes(userId, type, fetchedMonths, seenServerIds);
     await this.repos.transactions.backfillUserId(userId);
     return counts.reduce((a, b) => a + b, 0);
   }
 
-  private async reconcileMonthTransactionDeletes(
+  /**
+   * Soft-removes synced rows dated in a successfully-fetched month whose
+   * serverId the server no longer returns (deleted elsewhere, e.g. the web).
+   * Failed months never infer deletes; pending local rows are never touched.
+   */
+  private async reconcileTransactionDeletes(
     userId: string,
     type: "expense" | "income",
-    yearMonth: string,
-    serverIds: string[],
+    fetchedMonths: Set<string>,
+    present: Set<string>,
   ): Promise<void> {
-    const present = new Set(serverIds);
+    if (fetchedMonths.size === 0) return;
     const rows = (await this.repos.transactions.getAll(
       "userId = ? AND type = ? AND syncStatus = 'synced' AND serverId IS NOT NULL",
       [userId, type],
     )) as { serverId: string | null; date: string | null }[];
     for (const row of rows) {
       if (!row.serverId || !row.date || present.has(row.serverId)) continue;
-      if (dayjs(parseDate(row.date)).format("YYYY-MM") !== yearMonth) continue;
+      if (!fetchedMonths.has(dayjs(parseDate(row.date)).format("YYYY-MM"))) continue;
       await this.repos.transactions.markRemotelyDeleted(row.serverId);
     }
   }
