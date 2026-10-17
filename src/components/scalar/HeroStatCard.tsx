@@ -79,7 +79,7 @@ export default function HeroStatCard({
                 <Text
                   style={[
                     styles.badge,
-                    { backgroundColor: colors.lime, color: colors.onLime },
+                    { backgroundColor: colors.lime, color: colors.statBadgeInk },
                   ]}
                 >
                   {stat.badge}

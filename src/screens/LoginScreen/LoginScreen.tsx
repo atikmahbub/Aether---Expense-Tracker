@@ -42,7 +42,7 @@ export default function LoginScreen() {
           style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
         >
           <View style={[styles.gBadge, !isDark && styles.gBadgeGlass]}>
-            <Text style={styles.gText}>G</Text>
+            <Text style={[styles.gText, isDark && { color: "#4A6390" }]}>G</Text>
           </View>
           <Text style={styles.primaryText}>Continue with Google</Text>
         </Pressable>

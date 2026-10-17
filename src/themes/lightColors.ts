@@ -77,7 +77,7 @@ export const lightColors = {
   heroTextSecondary: "#3E4E6B",
   heroRule: "rgba(27,41,64,0.18)",
   heroDots: "rgba(27,41,64,0.22)",
-  avatarBg: "#FFFFFF",
+  avatarBg: "rgba(255,255,255,0.42)",
   avatarBorder: "#FFFFFF",
   avatarInk: "#2D4263",
   chipActiveBg: "#2D4263",
@@ -101,12 +101,13 @@ export const lightColors = {
   statDivider: "rgba(255,255,255,0.2)",
   statPositive: "#E4E9F2",
   statNegative: "#E36A4E",
+  statBadgeInk: "#1E2E47",
   sheet: "#F5F7FA",
   // The list sheet on tab screens: glass over the fixed glow behind it.
   sheetGlass: "rgba(255,255,255,0.42)",
   // Frosted surfaces (GlassSurface): tint over the blur, and the bright rim.
   dockBacking: "#F8F9FB",
-  glassFill: "rgba(255,255,255,0.45)",
+  glassFill: "rgba(255,255,255,0.42)",
   glassRim: "rgba(255,255,255,0.9)",
   sheetBorder: "rgba(255,255,255,0.9)",
   sheetText: "#1B2940",

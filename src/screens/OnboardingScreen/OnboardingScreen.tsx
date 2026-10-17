@@ -143,9 +143,9 @@ function Illustration({ index, colors, isDark }: { index: number; colors: Colors
         </ScalarAmountText>
         <View style={illus.split}>
           <View style={[illus.spent, { flex: spentRatio }]}>
-            <SpentRamp from="rgba(255,255,255,0.02)" to="rgba(236,223,196,0.5)" />
+            <SpentRamp from="rgba(255,255,255,0.02)" to={isDark ? "rgba(236,223,196,0.5)" : "rgba(236,219,186,0.5)"} />
             <View style={[illus.knob, { backgroundColor: colors.lime }]}>
-              <Text style={illus.knobText}>{Math.round(spentRatio * 100)}%</Text>
+              <Text style={[illus.knobText, { color: colors.onLime }]}>{Math.round(spentRatio * 100)}%</Text>
             </View>
           </View>
           <View style={{ flex: 1 - spentRatio }}>
