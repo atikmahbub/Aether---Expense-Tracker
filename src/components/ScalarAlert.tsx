@@ -134,7 +134,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       padding: 22,
-      backgroundColor: "rgba(5,8,7,0.6)",
+      backgroundColor: "rgba(4,5,10,0.6)",
     },
     // Same surface as the sheet: white in light, graphite-green in dark.
     card: {

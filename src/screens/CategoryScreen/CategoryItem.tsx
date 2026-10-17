@@ -121,7 +121,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       marginBottom: 12,
       marginLeft: 12,
       borderWidth: 1,
-      borderColor: 'rgba(248, 113, 113, 0.2)',
+      borderColor: colors.negativeTile,
     },
   });
 }

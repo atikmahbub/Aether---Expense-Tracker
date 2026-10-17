@@ -24,7 +24,7 @@ export const SPLASH_THEME = {
     text: darkColors.text,
     muted: darkColors.muted,
     primary: darkColors.primary,
-    glow: 'rgba(34, 197, 94, 0.08)',
+    glow: 'rgba(45, 66, 99, 0.35)',
     progressTrack: darkColors.surface,
   },
   light: {

@@ -109,7 +109,7 @@ const ProfileScreen: React.FC = () => {
               <View
                 style={[
                   styles.detailIcon,
-                  { backgroundColor: "rgba(34, 197, 94, 0.1)" },
+                  { backgroundColor: colors.brandWash },
                 ]}
               >
                 <MaterialCommunityIcons
@@ -130,7 +130,7 @@ const ProfileScreen: React.FC = () => {
               <View
                 style={[
                   styles.detailIcon,
-                  { backgroundColor: "rgba(34, 197, 94, 0.1)" },
+                  { backgroundColor: colors.brandWash },
                 ]}
               >
                 <MaterialCommunityIcons
@@ -159,7 +159,7 @@ const ProfileScreen: React.FC = () => {
             <View
               style={[
                 styles.detailIcon,
-                { backgroundColor: "rgba(248, 113, 113, 0.1)" },
+                { backgroundColor: colors.negativeTile },
               ]}
             >
               <MaterialCommunityIcons
@@ -289,7 +289,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       width: 260,
       height: 260,
       borderRadius: 130,
-      backgroundColor: "rgba(34, 197, 94, 0.05)",
+      backgroundColor: colors.brandWash,
       top: -50,
     },
     avatarWrapper: {
@@ -397,7 +397,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontWeight: "600",
     },
     dangerRow: {
-      borderColor: "rgba(248, 113, 113, 0.15)",
+      borderColor: colors.negativeTile,
     },
     dangerHint: {
       color: colors.muted,

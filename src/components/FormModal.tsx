@@ -127,7 +127,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(5,8,7,0.6)',
+      backgroundColor: 'rgba(4,5,10,0.6)',
       justifyContent: 'center',
       alignItems: 'center',
     },

@@ -3,12 +3,12 @@ import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-nat
 
 /**
  * The backdrop glass surfaces sit on. Light: a cool blue-grey wash with soft
- * white and periwinkle glows. Dark: deep navy with faint periwinkle glows, so
+ * white and periwinkle glows. Dark: near-black with navy glows up top, so
  * frosted surfaces still have something to pick up. Blob positions are fractions of the full screen; radii follow CSS
  * `radial-gradient(circle at …)` (stop % of the farthest-corner distance).
  */
 const LIGHT_BASE = ["#E4E9F2", "#EDF0F5", "#F4F6F9"];
-const DARK_BASE = ["#22344F", "#16223A", "#0E1624"];
+const DARK_BASE = ["#04050A", "#04050A", "#04050A"];
 
 const LIGHT_BLOBS = [
   { x: 0.08, y: 0.04, color: "#FFFFFF", opacity: 0.95, stop: 0.38 },
@@ -19,11 +19,9 @@ const LIGHT_BLOBS = [
 ];
 
 const DARK_BLOBS = [
-  { x: 0.08, y: 0.04, color: "#7A94C4", opacity: 0.28, stop: 0.38 },
-  { x: 0.96, y: 0.2, color: "#4A6390", opacity: 0.45, stop: 0.4 },
-  { x: 0, y: 0.58, color: "#4A6390", opacity: 0.32, stop: 0.38 },
-  { x: 0.7, y: 0.5, color: "#7A94C4", opacity: 0.12, stop: 0.34 },
-  { x: 1, y: 0.92, color: "#4A6390", opacity: 0.3, stop: 0.4 },
+  { x: 0.12, y: 0.04, color: "#2D4263", opacity: 0.68, stop: 0.36 },
+  { x: 0.92, y: 0.2, color: "#4A6390", opacity: 0.3, stop: 0.34 },
+  { x: 0.5, y: 0.3, color: "#2D4263", opacity: 0.12, stop: 0.4 },
 ];
 
 type Props = {
