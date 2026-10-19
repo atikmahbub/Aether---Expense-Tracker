@@ -5,7 +5,7 @@ import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import * as Haptics from "expo-haptics";
 import React, { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import Animated, { Easing, FadeIn, LinearTransition } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
 import DockIcon, { DockIconName } from "@trackingPortal/components/scalar/DockIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
@@ -103,29 +103,39 @@ export default function CustomTabBar({
         </Defs>
         <Rect width="100%" height="100%" fill="url(#dockFade)" />
       </Svg>
-      <GlassSurface
-        style={styles.dock}
-        contentStyle={styles.dockRow}
-        radius={designTokens.radius.full}
-      >
-        {renderTab("transactions")}
-        {renderTab("loan")}
-        <Pressable
-          accessibilityLabel={isSettings ? "Settings" : "Add entry"}
-          accessibilityRole="button"
-          onPress={handlePlusPress}
-          disabled={isSettings}
-          style={({ pressed }) => [
-            styles.addButton,
-            isSettings && styles.addButtonDisabled,
-            pressed && !isSettings && styles.addButtonPressed,
-          ]}
-        >
-          <DockIcon name="plus" color={colors.dockPlusInk} />
-        </Pressable>
-        {renderTab("investment")}
-        {renderTab("settings")}
-      </GlassSurface>
+      <View style={styles.dockRowOuter}>
+        <Animated.View layout={TAB_LAYOUT} style={styles.dockWrap}>
+          <GlassSurface
+            style={styles.dock}
+            contentStyle={styles.dockRow}
+            radius={designTokens.radius.full}
+          >
+            {renderTab("transactions")}
+            {renderTab("loan")}
+            {renderTab("investment")}
+            {renderTab("settings")}
+          </GlassSurface>
+        </Animated.View>
+        {!isSettings && (
+          <Animated.View
+            entering={ZoomIn.duration(220)}
+            exiting={ZoomOut.duration(180)}
+            style={styles.addWrap}
+          >
+            <Pressable
+              accessibilityLabel="Add entry"
+              accessibilityRole="button"
+              onPress={handlePlusPress}
+              style={({ pressed }) => [
+                styles.addButton,
+                pressed && styles.addButtonPressed,
+              ]}
+            >
+              <DockIcon name="plus" color={colors.dockPlusInk} />
+            </Pressable>
+          </Animated.View>
+        )}
+      </View>
     </View>
   );
 }
@@ -145,10 +155,16 @@ function makeStyles(
     },
     fade: { position: "absolute", top: 0, left: 0, right: 0, height: FADE },
     backing: { position: "absolute", top: FADE, left: 0, right: 0, bottom: 0 },
+    dockRowOuter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginHorizontal: 16,
+    },
+    dockWrap: { flex: 1 },
     dock: {
       alignSelf: "stretch",
       height: 64,
-      marginHorizontal: 16,
       // Soft navy lift in light, a deeper drop in dark.
       shadowColor: isDark ? "#000000" : "#2D4263",
       shadowOpacity: isDark ? 0.5 : 0.16,
@@ -186,9 +202,16 @@ function makeStyles(
       backgroundColor: colors.dockPressed,
       transform: [{ scale: 0.94 }],
     },
+    addWrap: {
+      // Same lift as the dock so the two read as one floating group.
+      shadowColor: isDark ? "#000000" : "#2D4263",
+      shadowOpacity: isDark ? 0.5 : 0.16,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 12 },
+    },
     addButton: {
-      width: 48,
-      height: 48,
+      width: 64,
+      height: 64,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: designTokens.radius.full,
@@ -196,9 +219,6 @@ function makeStyles(
     },
     addButtonPressed: {
       transform: [{ scale: 0.9 }],
-    },
-    addButtonDisabled: {
-      opacity: 0.35,
     },
   });
 }
