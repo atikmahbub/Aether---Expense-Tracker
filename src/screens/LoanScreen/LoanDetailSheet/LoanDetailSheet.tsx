@@ -18,8 +18,9 @@ import { designTokens } from "@trackingPortal/themes/designTokens";
 import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
 import { formatCurrency } from "@trackingPortal/utils/utils";
 import dayjs from "dayjs";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  InteractionManager,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -54,11 +55,22 @@ const parseAmount = (text: string) => {
  * picks, history); Edit is one tap away on the segmented control.
  */
 export default function LoanDetailSheet({
-  loan,
-  payments,
+  loan: loanProp,
+  payments: paymentsProp,
   onClose,
   onChanged,
 }: LoanDetailSheetProps) {
+  // Keep showing the last loan while the sheet slides away; clearing the
+  // content first left an empty panel animating down.
+  const visible = loanProp !== null;
+  const lastLoan = useRef<LoanModel | null>(loanProp);
+  const lastPayments = useRef<LoanPaymentView[]>(paymentsProp);
+  if (loanProp) {
+    lastLoan.current = loanProp;
+    lastPayments.current = paymentsProp;
+  }
+  const loan = lastLoan.current;
+  const payments = lastPayments.current;
   const { colors, isDark } = useAppTheme();
   const palette = useMemo(() => makePalette(colors, isDark), [colors, isDark]);
   const styles = useMemo(() => makeStyles(colors, palette), [colors, palette]);
@@ -95,13 +107,15 @@ export default function LoanDetailSheet({
     setLoanType(target.loanType);
   };
 
-  // Fresh forms each time a (different) loan opens.
-  const loanId = loan?.id;
+  // Fresh forms each time a loan opens (not when it closes, so the content
+  // stays put during the slide-out).
+  const openId = loanProp?.id;
   useEffect(() => {
+    if (!loanProp) return;
     cancelConfirm();
-    if (loan) resetForms(loan);
+    resetForms(loanProp);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loanId]);
+  }, [openId]);
 
   const fmt = (value: number) =>
     formatCurrency(value, currency, {
@@ -127,17 +141,29 @@ export default function LoanDetailSheet({
     amount > 0 && Math.round(amount * 100) <= Math.round(remaining * 100);
   const amountTooHigh = amount > 0 && !amountValid;
 
-  const run = async (action: () => Promise<void>, success: string, close = false) => {
-    if (!loanData) return;
+  /**
+   * Writes locally, then (by default) closes the sheet straight away and
+   * refreshes the list + syncs only after the slide-out, so the list doesn't
+   * re-render under the animating sheet.
+   */
+  const run = async (action: () => Promise<void>, success: string, close = true) => {
+    if (!loanData || busy) return;
     try {
       setBusy(true);
       Keyboard.dismiss();
       await action();
-      await onChanged();
       triggerSuccessHaptic();
       Toast.show({ type: "success", text1: success });
-      syncNow();
-      if (close) onClose();
+      if (close) {
+        onClose();
+        InteractionManager.runAfterInteractions(async () => {
+          await onChanged();
+          syncNow();
+        });
+      } else {
+        await onChanged();
+        syncNow();
+      }
     } catch {
       Toast.show({ type: "error", text1: "Something went wrong!" });
     } finally {
@@ -173,7 +199,8 @@ export default function LoanDetailSheet({
       message: `Remove the ${fmt(payment.amount)} payment? A settled loan stays settled until you reopen it.`,
       confirmLabel: "Delete",
       destructive: true,
-      onConfirm: () => run(() => loanData!.deletePayment(payment.id), "Payment deleted"),
+      // Stays open so several payments can be removed in a row.
+      onConfirm: () => run(() => loanData!.deletePayment(payment.id), "Payment deleted", false),
     });
 
   const principal = parseAmount(principalText);
@@ -190,7 +217,6 @@ export default function LoanDetailSheet({
           loanType,
         }),
       "Loan updated successfully!",
-      true,
     );
 
   const confirmDeleteLoan = () =>
@@ -199,7 +225,7 @@ export default function LoanDetailSheet({
       message: `Are you sure you want to delete the loan with ${loan.name}? Its repayments are deleted too. This action cannot be undone.`,
       confirmLabel: "Delete",
       destructive: true,
-      onConfirm: () => run(() => loanData!.deleteLoan(loan.id), "Deleted successfully!", true),
+      onConfirm: () => run(() => loanData!.deleteLoan(loan.id), "Deleted successfully!"),
     });
 
   const quickPicks = [
@@ -209,7 +235,7 @@ export default function LoanDetailSheet({
   ].map((pick) => ({ ...pick, value: Math.round(pick.value * 100) / 100 }));
 
   return (
-    <BaseBottomSheet index={1} onClose={onClose}>
+    <BaseBottomSheet index={visible ? 1 : -1} onClose={onClose}>
       {confirmPanel ?? (
       <View style={styles.root}>
         {/* Header */}

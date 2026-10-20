@@ -3,7 +3,7 @@ import BaseBottomSheet from "@trackingPortal/components/BaseBottomSheet";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
-import React, { ComponentProps, useMemo } from "react";
+import React, { ComponentProps, useMemo, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -41,8 +41,19 @@ interface EntityDetailSheetProps {
  * header with close, summary card, then the editor and a delete link. Same
  * look as the loan detail sheet from the Naval redesign.
  */
-export default function EntityDetailSheet({
+export default function EntityDetailSheet(props: EntityDetailSheetProps) {
+  // While closing, keep rendering the last open content so the sheet slides
+  // away with it instead of as an empty panel.
+  const last = useRef(props);
+  if (props.visible) last.current = props;
+  const shown = props.visible ? props : { ...last.current, visible: false, onClose: props.onClose };
+  const hasContent = props.visible || last.current.visible;
+  return <EntityDetailSheetView {...shown} hasContent={hasContent} />;
+}
+
+function EntityDetailSheetView({
   visible,
+  hasContent,
   onClose,
   icon,
   iconTile,
@@ -58,14 +69,14 @@ export default function EntityDetailSheet({
   onDelete,
   deleteDisabled,
   takeover,
-}: EntityDetailSheetProps) {
+}: EntityDetailSheetProps & { hasContent: boolean }) {
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   return (
     <BaseBottomSheet index={visible ? 1 : -1} onClose={onClose}>
-      {visible && takeover}
-      {visible && !takeover && (
+      {hasContent && takeover}
+      {hasContent && !takeover && (
         <View style={styles.root}>
           <View style={styles.header}>
             <View style={[styles.tile, iconTile ? { backgroundColor: iconTile } : null]}>

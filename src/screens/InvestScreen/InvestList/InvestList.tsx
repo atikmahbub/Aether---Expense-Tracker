@@ -35,7 +35,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { InteractionManager, StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
 interface IInvestList {
@@ -70,7 +70,7 @@ const InvestList: FC<IInvestList> = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const onInvestEdit = useCallback(
-    async (values: any, { resetForm }: any, id: InvestId) => {
+    async (values: any, _helpers: any, id: InvestId) => {
       if (user.default || !investData) return;
       try {
         setLoading(true);
@@ -89,18 +89,22 @@ const InvestList: FC<IInvestList> = ({
               ? undefined
               : Number(values.earned),
         });
-        await getUserInvestHistory();
+        // Close first; refresh + sync after the slide-out so the list
+        // doesn't re-render under the animating sheet.
+        closeSheet();
         triggerSuccessHaptic();
         Toast.show({
           type: "success",
           text1: "Investment updated successfully!",
         });
-        syncNow();
+        InteractionManager.runAfterInteractions(async () => {
+          await getUserInvestHistory();
+          syncNow();
+        });
       } catch {
+        // Stays open on failure so the edit isn't lost.
         Toast.show({ type: "error", text1: "Something went wrong!" });
       } finally {
-        resetForm();
-        closeSheet();
         setLoading(false);
       }
     },
@@ -113,14 +117,16 @@ const InvestList: FC<IInvestList> = ({
       try {
         setDeleteLoading(true);
         await investData.deleteInvest(id as string);
-        await getUserInvestHistory();
+        closeSheet();
         Toast.show({ type: "success", text1: "Deleted successfully!" });
-        syncNow();
+        InteractionManager.runAfterInteractions(async () => {
+          await getUserInvestHistory();
+          syncNow();
+        });
       } catch {
         Toast.show({ type: "error", text1: "Something went wrong!" });
       } finally {
         setDeleteLoading(false);
-        closeSheet();
       }
     },
     [closeSheet, getUserInvestHistory, investData, syncNow],

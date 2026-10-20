@@ -151,7 +151,7 @@ const TransactionList: FC<ITransactionList> = ({
 
   const onTransactionEdit = useCallback(async (
     values: any,
-    {resetForm}: any,
+    _helpers: any,
     id: TransactionId,
   ) => {
     if (user.default || !transactionData) return;
@@ -171,7 +171,8 @@ const TransactionList: FC<ITransactionList> = ({
         categoryId: values.categoryId,
       });
 
-      resetForm();
+      // No resetForm: the sheet keeps its last content while sliding away,
+      // and Formik reinitialises when the next entry opens.
       setExpandedRowId(null);
       notifyRowOpen(false);
 

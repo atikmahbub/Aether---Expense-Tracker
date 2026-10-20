@@ -20,6 +20,24 @@ export interface Migration {
  *  - `syncStatus`  'synced' | 'pending' | 'deleted'
  *  - `lastSyncedAt` last time the row matched the server
  */
+/**
+ * Adds a column only if it isn't there yet. SQLite has no
+ * `ADD COLUMN IF NOT EXISTS`, and a bare ALTER that already ran throws
+ * "duplicate column", which would block every later launch.
+ */
+async function addColumnIfMissing(
+  db: SQLiteDatabase,
+  table: string,
+  column: string,
+  type: string,
+): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(${table})`,
+  );
+  if (columns.some((c) => c.name === column)) return;
+  await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${type};`);
+}
+
 const SYNC_COLUMNS = `
   id TEXT PRIMARY KEY NOT NULL,
   serverId TEXT,
@@ -118,9 +136,8 @@ const v1: Migration = {
 const v2: Migration = {
   version: 2,
   up: async (db) => {
+    await addColumnIfMissing(db, "loans", "settledAt", "TEXT");
     await db.execAsync(`
-      ALTER TABLE loans ADD COLUMN settledAt TEXT;
-
       CREATE TABLE IF NOT EXISTS loan_payments (
         ${SYNC_COLUMNS},
         loanId TEXT NOT NULL,
@@ -143,7 +160,7 @@ const v2: Migration = {
 const v3: Migration = {
   version: 3,
   up: async (db) => {
-    await db.execAsync(`ALTER TABLE transactions ADD COLUMN categoryName TEXT;`);
+    await addColumnIfMissing(db, "transactions", "categoryName", "TEXT");
   },
 };
 
@@ -169,9 +186,14 @@ export async function runMigrations(db: SQLiteDatabase): Promise<number> {
   );
 
   for (const migration of pending) {
-    await migration.up(db);
-    // PRAGMA does not accept bound parameters, so the version is interpolated.
-    await db.execAsync(`PRAGMA user_version = ${migration.version}`);
+    // One transaction per migration, version bump included: a crash or kill
+    // mid-migration rolls back cleanly and the next launch simply retries it,
+    // instead of leaving a half-applied schema at the old version.
+    await db.withTransactionAsync(async () => {
+      await migration.up(db);
+      // PRAGMA does not accept bound parameters, so the version is interpolated.
+      await db.execAsync(`PRAGMA user_version = ${migration.version}`);
+    });
   }
 
   return LATEST_VERSION;
