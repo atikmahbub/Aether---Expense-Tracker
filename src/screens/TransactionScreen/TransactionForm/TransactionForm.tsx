@@ -70,7 +70,7 @@ export default function TransactionForm({
 }: TransactionFormProps) {
   const sheetMode = belowFooter !== undefined;
   const { colors, isDark } = useAppTheme();
-  // Detail-sheet Cancel uses the loan sheet's soft pill (solid in light mode).
+  // Cancel uses the loan sheet's soft pill (solid in light mode).
   const sheetCancelTone = useMemo(
     () => ({
       button: { backgroundColor: isDark ? colors.softChipBg : colors.dockActiveBg },
@@ -410,8 +410,8 @@ export default function TransactionForm({
         <Pressable
           style={({ pressed }) => [
             styles.cancelButton,
-            sheetMode && styles.sheetCancel,
-            sheetMode && sheetCancelTone.button,
+            styles.sheetCancel,
+            sheetCancelTone.button,
             pressed && styles.pressed,
           ]}
           onPress={() => {
@@ -419,14 +419,14 @@ export default function TransactionForm({
             onCancel();
           }}
         >
-          <Text style={[styles.cancelButtonText, sheetMode && sheetCancelTone.text]}>Cancel</Text>
+          <Text style={[styles.cancelButtonText, sheetCancelTone.text]}>Cancel</Text>
         </Pressable>
         <Pressable
           accessibilityState={{ disabled: !canSave }}
           disabled={!canSave}
           style={({ pressed }) => [
             styles.saveButton,
-            sheetMode && styles.sheetSave,
+            styles.sheetSave,
             !canSave && styles.saveButtonDisabled,
             pressed && styles.saveButtonPressed,
           ]}
@@ -436,7 +436,7 @@ export default function TransactionForm({
           }}
         >
           <Text style={styles.saveButtonText}>
-            {loading ? "Saving…" : sheetMode ? "Save changes" : "Save Entry"}
+            {loading ? "Saving…" : sheetMode ? "Save changes" : "Add entry"}
           </Text>
         </Pressable>
       </View>

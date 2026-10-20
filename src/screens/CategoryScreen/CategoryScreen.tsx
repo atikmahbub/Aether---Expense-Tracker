@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, FAB } from 'react-native-paper';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -12,6 +12,7 @@ import { useNavigation } from 'expo-router';
 import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
 import { useScalarAlert } from '@trackingPortal/components/ScalarAlert';
 import { ScreenGradient } from '@trackingPortal/components/scalar';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 
 const CategoryScreen = () => {
   const { colors, isDark } = useAppTheme();
@@ -65,9 +66,11 @@ const CategoryScreen = () => {
     });
   };
 
-  const renderItem = ({ item }: { item: ExpenseCategoryModel | IncomeCategoryModel }) => (
+  const renderItem = (item: ExpenseCategoryModel | IncomeCategoryModel, index: number) => (
     <CategoryItem
+      key={item.id}
       item={item}
+      showDivider={index < categories.length - 1}
       onEdit={() => handleEdit(item)}
       onDelete={() => handleDelete(item)}
       hidden={hiddenCategoryIds.includes(item.id)}
@@ -98,18 +101,19 @@ const CategoryScreen = () => {
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : (
-        <FlatList
-          data={categories}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.centerContainer}>
-              <MaterialCommunityIcons name="tag-off-outline" size={64} color={colors.inactiveIcon} />
+        <ScrollView contentContainerStyle={styles.listContent}>
+          {categories.length ? (
+            // One grouped card, like the wallet / loan / invest lists.
+            <View style={styles.card}>{categories.map(renderItem)}</View>
+          ) : (
+            <View style={styles.emptyCard}>
               <Text style={styles.emptyText}>No categories yet</Text>
             </View>
-          }
-        />
+          )}
+          <Text style={styles.hint}>
+            Tap the eye to hide a category when adding entries. Swipe a custom category to delete it.
+          </Text>
+        </ScrollView>
       )}
 
       <FAB
@@ -158,12 +162,34 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    // Screen titles use the wide display face, as on Settings.
     title: {
       fontSize: 20,
-      fontWeight: '800',
       color: colors.text,
-      fontFamily: 'Outfit_400Regular',
-      letterSpacing: -0.5,
+      fontFamily: designTokens.font.display,
+      letterSpacing: -0.4,
+    },
+    card: {
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.listCardBorder,
+      borderRadius: designTokens.radius.group,
+      backgroundColor: colors.listCardBg,
+    },
+    emptyCard: {
+      padding: 18,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.dashedBorder,
+      borderRadius: designTokens.radius.group,
+    },
+    hint: {
+      marginTop: 12,
+      paddingHorizontal: 4,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 13,
+      lineHeight: 18,
     },
     segmentedControl: {
       marginHorizontal: 20,
@@ -180,9 +206,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       marginTop: 100,
     },
     emptyText: {
-      color: colors.muted,
-      marginTop: 16,
-      fontSize: 16,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.medium,
+      textAlign: 'center',
+      ...designTokens.typography.body,
     },
     fab: {
       position: 'absolute',

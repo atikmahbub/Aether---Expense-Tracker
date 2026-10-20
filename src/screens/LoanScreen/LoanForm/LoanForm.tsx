@@ -130,7 +130,8 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
 
         <View style={styles.saveButtonWrapper}>
           <LoadingButton
-            label="Save Loan Entry"
+            style={styles.saveButton}
+            label="Add loan"
             loading={loading}
             onPress={() => {
               Keyboard.dismiss();
@@ -204,29 +205,30 @@ function makeStyles(
       letterSpacing: 0.96,
       textTransform: 'uppercase',
     },
+    // Two full-width pills (1 : 1.4), matching the detail sheets.
     footer: {
       flexDirection: 'row',
-      gap: 12,
-      marginTop: 24,
+      gap: 10,
+      marginTop: 8,
       marginBottom: 16,
       alignItems: 'center',
-      justifyContent: 'flex-end',
     },
     cancelButton: {
-      paddingHorizontal: 20,
-      height: 48,
+      flex: 1,
+      height: 54,
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: 999,
-      backgroundColor: colors.softChipBg,
+      backgroundColor: isDark ? colors.softChipBg : colors.dockActiveBg,
     },
     cancelButtonText: {
-      color: colors.softChipInk,
+      color: colors.sheetText,
       fontFamily: designTokens.font.semibold,
       fontSize: 15,
     },
     saveButtonWrapper: {
-      minWidth: 140,
+      flex: 1.4,
     },
+    saveButton: { height: 54, paddingVertical: 0, justifyContent: 'center' },
   });
 }

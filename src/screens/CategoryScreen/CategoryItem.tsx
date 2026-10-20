@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text } from 'react-native-paper';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/models';
+import { designTokens } from '@trackingPortal/themes/designTokens';
 import { normalizeCategoryIcon } from '../TransactionScreen/TransactionScreen.constants';
 
 interface CategoryItemProps {
@@ -13,121 +13,126 @@ interface CategoryItemProps {
   onDelete: () => void;
   hidden: boolean;
   onToggleHidden: () => void;
+  showDivider: boolean;
 }
 
-const CategoryItem = ({ item, onEdit, onDelete, hidden, onToggleHidden }: CategoryItemProps) => {
-  const { colors, isDark } = useAppTheme();
+/** A grouped list row matching the wallet / loan / invest rows (ScalarListRow). */
+const CategoryItem = ({
+  item,
+  onEdit,
+  onDelete,
+  hidden,
+  onToggleHidden,
+  showDivider,
+}: CategoryItemProps) => {
+  const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isSystem = item.userId === null;
+  const meta = [isSystem ? 'Default' : 'Custom', hidden && 'Hidden when adding']
+    .filter(Boolean)
+    .join(' · ');
 
   const renderRightActions = () => {
     if (isSystem) return null;
-
     return (
-      <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
-        <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.error} />
-      </TouchableOpacity>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${item.name}`}
+        style={styles.deleteAction}
+        onPress={onDelete}
+      >
+        <MaterialCommunityIcons name="trash-can-outline" size={22} color={colors.onNegative} />
+      </Pressable>
     );
   };
 
   return (
     <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
-      <TouchableOpacity
-        style={[
-          styles.container,
-          !isDark && { backgroundColor: colors.sheet, borderColor: colors.sheetBorder, borderWidth: 1.5 },
-        ]}
+      <Pressable
+        accessibilityRole="button"
         onPress={onEdit}
-        activeOpacity={0.7}
+        style={({ pressed }) => [
+          styles.row,
+          showDivider && styles.divider,
+          pressed && styles.pressed,
+        ]}
       >
-        <View style={[styles.leftContent, hidden && styles.hiddenContent]}>
-          <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
-            <MaterialCommunityIcons
-              name={normalizeCategoryIcon(item.icon)}
-              size={24}
-              color={item.color}
-            />
-          </View>
-          <View>
-            <Text style={styles.name}>{item.name}</Text>
-            {(isSystem || hidden) && (
-              <Text style={styles.systemBadge}>
-                {[isSystem && 'Default', hidden && 'Hidden'].filter(Boolean).join(' · ')}
-              </Text>
-            )}
-          </View>
+        <View
+          style={[
+            styles.tile,
+            { backgroundColor: item.color || colors.brand },
+            hidden && styles.dimmed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={normalizeCategoryIcon(item.icon) as any}
+            size={20}
+            color={colors.onBrand}
+          />
         </View>
-
-        <View style={styles.rightContent}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={hidden ? `Show ${item.name} when adding entries` : `Hide ${item.name} when adding entries`}
-            hitSlop={10}
-            onPress={onToggleHidden}
-            style={styles.eyeButton}
-          >
-            <MaterialCommunityIcons
-              name={hidden ? 'eye-off-outline' : 'eye-outline'}
-              size={22}
-              color={colors.inactiveIcon}
-            />
-          </TouchableOpacity>
-          <View style={[styles.colorIndicator, { backgroundColor: item.color }, hidden && styles.hiddenContent]} />
-          {!isSystem && (
-            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.inactiveIcon} />
-          )}
+        <View style={[styles.middle, hidden && styles.dimmed]}>
+          <Text numberOfLines={1} style={styles.title}>{item.name}</Text>
+          <Text numberOfLines={1} style={styles.meta}>{meta}</Text>
         </View>
-      </TouchableOpacity>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            hidden
+              ? `Show ${item.name} when adding entries`
+              : `Hide ${item.name} when adding entries`
+          }
+          hitSlop={10}
+          onPress={onToggleHidden}
+          style={styles.eyeButton}
+        >
+          <MaterialCommunityIcons
+            name={hidden ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color={colors.textMuted}
+          />
+        </Pressable>
+        {!isSystem && (
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+        )}
+      </Pressable>
     </Swipeable>
   );
 };
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
-    container: {
+    row: {
+      minHeight: 66,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.surface,
-      padding: 16,
-      borderRadius: 20,
-      marginBottom: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
+      gap: 14,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+      backgroundColor: colors.listCardBg,
     },
-    leftContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
+    divider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.rowDivider,
     },
-    iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+    pressed: { opacity: 0.7 },
+    dimmed: { opacity: 0.45 },
+    tile: {
+      width: 44,
+      height: 44,
+      borderRadius: designTokens.radius.full,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    name: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: colors.text,
-      fontFamily: 'Outfit_400Regular',
+    middle: { flex: 1, minWidth: 0, gap: 2 },
+    title: {
+      color: colors.textPrimary,
+      fontFamily: designTokens.font.semibold,
+      ...designTokens.typography.rowTitle,
     },
-    systemBadge: {
-      fontSize: 10,
-      color: colors.muted,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-      fontWeight: '700',
-      marginTop: 2,
-    },
-    rightContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    hiddenContent: {
-      opacity: 0.45,
+    meta: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      ...designTokens.typography.caption,
     },
     eyeButton: {
       width: 36,
@@ -135,21 +140,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    colorIndicator: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-    },
     deleteAction: {
-      backgroundColor: colors.errorSoft,
-      justifyContent: 'center',
+      width: 76,
       alignItems: 'center',
-      width: 80,
-      borderRadius: 20,
-      marginBottom: 12,
-      marginLeft: 12,
-      borderWidth: 1,
-      borderColor: colors.negativeTile,
+      justifyContent: 'center',
+      backgroundColor: colors.negative,
     },
   });
 }
