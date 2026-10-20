@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Modal,
   InteractionManager,
   Text,
 Dimensions} from 'react-native';
@@ -44,6 +43,7 @@ import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {
   triggerSuccessHaptic,
 } from '@trackingPortal/utils/haptic';
+import YearMenu, {MenuAnchor} from '@trackingPortal/screens/TransactionScreen/components/YearMenu';
 import {normalizeCategoryIcon} from '@trackingPortal/screens/TransactionScreen/TransactionScreen.constants';
 import {parseDate} from '@trackingPortal/utils/date';
 import {designTokens} from '@trackingPortal/themes/designTokens';
@@ -88,6 +88,8 @@ const TransactionList: FC<ITransactionList> = ({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
+  const [yearAnchor, setYearAnchor] = useState<MenuAnchor | null>(null);
+  const yearButtonRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const {currentUser: user, currency, hiddenCategoryIds} = useStoreContext();
@@ -128,8 +130,24 @@ const TransactionList: FC<ITransactionList> = ({
   }, [filteredMonth, scrollToActiveMonth]);
 
   const openYearPicker = useCallback(() => {
-    setOpenPicker(true);
+    yearButtonRef.current?.measureInWindow((x, y, width, height) => {
+      setYearAnchor({x, y, width, height});
+      setOpenPicker(true);
+    });
   }, []);
+
+  // Current year back through the previous seven; keeps an out-of-range
+  // selection listed so the checkmark always has a row.
+  const yearOptions = useMemo(() => {
+    const current = dayjs().year();
+    const years = Array.from({length: 8}, (_, i) => current - i);
+    const selected = filteredMonth.year();
+    if (!years.includes(selected)) {
+      years.push(selected);
+      years.sort((a, b) => b - a);
+    }
+    return years;
+  }, [filteredMonth]);
 
   const onTransactionEdit = useCallback(async (
     values: any,
@@ -374,6 +392,7 @@ const TransactionList: FC<ITransactionList> = ({
         <View style={styles.timelineRow}>
           <Text style={styles.title}>Timeline</Text>
           <Pressable
+            ref={yearButtonRef}
             onPress={openYearPicker}
             style={({pressed}) => [
               styles.yearButton,
@@ -477,47 +496,17 @@ const TransactionList: FC<ITransactionList> = ({
         </View>
       </View>
       {renderDetailSheet()}
-      <Modal
+      <YearMenu
         visible={openPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpenPicker(false)}>
-        <Pressable
-          style={styles.yearPickerOverlay}
-          onPress={() => setOpenPicker(false)}>
-          <View style={styles.yearPickerContent}>
-            <Text style={styles.yearPickerTitle}>Select Year</Text>
-            <View style={{maxHeight: 240}}>
-              <ScrollView>
-                {Array.from({length: 10}, (_, i) => dayjs().year() + 2 - i).map(
-                  yr => (
-                    <Pressable
-                      key={yr}
-                      style={styles.yearOption}
-                      onPress={() => {
-                        setFilteredMonth(filteredMonth.year(yr));
-                        setOpenPicker(false);
-                      }}>
-                      <Text
-                        style={[
-                          styles.yearOptionText,
-                          filteredMonth.year() === yr &&
-                            styles.yearOptionTextActive,
-                        ]}>
-                        {formatNumber(yr, {
-                          useGrouping: false,
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        })}
-                      </Text>
-                    </Pressable>
-                  ),
-                )}
-              </ScrollView>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
+        anchor={yearAnchor}
+        years={yearOptions}
+        selectedYear={filteredMonth.year()}
+        onSelect={yr => {
+          setFilteredMonth(filteredMonth.year(yr));
+          setOpenPicker(false);
+        }}
+        onClose={() => setOpenPicker(false)}
+      />
     </View>
   );
 };
@@ -643,40 +632,6 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontFamily: designTokens.font.medium,
       textAlign: 'center',
       ...designTokens.typography.body,
-    },
-    yearPickerOverlay: {
-      flex: 1,
-      backgroundColor: colors.backdrop,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    yearPickerContent: {
-      backgroundColor: colors.surfaceRaised,
-      borderRadius: designTokens.radius.lg,
-      padding: 24,
-      width: 240,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    yearPickerTitle: {
-      color: colors.textPrimary,
-      fontSize: 16,
-      fontWeight: '700',
-      marginBottom: 16,
-      textAlign: 'center',
-    },
-    yearOption: {
-      paddingVertical: 12,
-      alignItems: 'center',
-    },
-    yearOptionText: {
-      color: colors.textSecondary,
-      fontSize: 18,
-      fontWeight: '500',
-    },
-    yearOptionTextActive: {
-      color: colors.brandText,
-      fontWeight: '700',
     },
   });
 }

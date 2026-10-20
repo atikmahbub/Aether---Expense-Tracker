@@ -91,7 +91,7 @@ const applyDefaultFont = () => {
 
 const NavigationBoundary: React.FC = () => {
   const { isAuthenticated, loading, refreshFailed, retrySession } = useAuth();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
   const segments = useSegments();
   const rootSegment = segments[0];
@@ -220,18 +220,12 @@ const NavigationBoundary: React.FC = () => {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
+        // iOS uses view-controller-based status bar appearance, so each native
+        // screen sets the style — follow the in-app theme, not the system one.
+        statusBarStyle: isDark ? "light" : "dark",
       }}
     >
-      <Stack.Screen
-        name="profile"
-        options={{
-          headerShown: true,
-          headerTitle: "Profile",
-          headerTintColor: colors.primary,
-          headerStyle: { backgroundColor: colors.background },
-          headerShadowVisible: false,
-        }}
-      />
+      <Stack.Screen name="profile" options={{ animation: "slide_from_right" }} />
     </Stack>
   );
 };

@@ -19,9 +19,12 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 
 import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
 import { AnimatedLoader } from "@trackingPortal/components";
+import { ScreenGradient } from "@trackingPortal/components/scalar";
 import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { designTokens } from "@trackingPortal/themes/designTokens";
+import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 
 const AVATAR_SIZE = 120;
@@ -33,6 +36,7 @@ const ProfileScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const router = useRouter();
   const { logout, user, loading } = useAuth();
   const { currentUser, apiGateway } = useStoreContext();
   const [deleteModalVisible, setDeleteModalVisible] = React.useState(false);
@@ -87,12 +91,23 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <ScreenGradient />
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          hitSlop={8}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={32} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Profile</Text>
+        <View style={{ width: 40 }} />
+      </View>
       <RNScrollView
-        contentContainerStyle={[styles.content, { paddingTop: 60 }]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <View style={styles.heroGlow} />
           <View style={styles.avatarWrapper}>
             <Image source={{ uri: avatarSource }} style={styles.avatar} />
           </View>
@@ -270,10 +285,33 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
+      // Same base + glow as the tab screens.
+      backgroundColor: colors.heroGradTop,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingTop: 60,
+      paddingBottom: 8,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    title: {
+      fontSize: 20,
+      color: colors.text,
+      fontFamily: designTokens.font.display,
+      letterSpacing: -0.4,
     },
     content: {
       paddingHorizontal: 20,
+      paddingTop: 16,
       paddingBottom: 40,
       gap: 32,
     },
@@ -283,14 +321,6 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       width: "100%",
       position: "relative",
       marginBottom: 8,
-    },
-    heroGlow: {
-      position: "absolute",
-      width: 260,
-      height: 260,
-      borderRadius: 130,
-      backgroundColor: colors.brandWash,
-      top: -50,
     },
     avatarWrapper: {
       width: AVATAR_SIZE + 12,
