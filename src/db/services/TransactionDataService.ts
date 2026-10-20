@@ -31,6 +31,9 @@ const pctChange = (current: number, previous: number): number => {
   return round(((current - previous) / previous) * 100);
 };
 
+const categoryNameKey = (kind: string, name: string) =>
+  `name:${kind}:${name.trim().toLowerCase()}`;
+
 /**
  * SQLite-backed read/write API for transactions — the offline-first replacement
  * for the transaction read endpoints. Screens read exclusively through this
@@ -49,6 +52,8 @@ export class TransactionDataService {
    * Builds a lookup that resolves a transaction's `categoryId` to its category,
    * keyed by both the local id and the serverId — pulled transactions reference
    * the server category id, while offline-created ones reference the local id.
+   * Also keyed by kind + name for older server rows that carry only a
+   * `categoryName`.
    */
   private async categoryLookup(): Promise<Record<string, LocalCategory>> {
     const all = await this.repos.categories.getAll();
@@ -56,6 +61,8 @@ export class TransactionDataService {
     for (const c of all) {
       lookup[c.id] = c;
       if (c.serverId) lookup[c.serverId] = c;
+      const nameKey = categoryNameKey(c.kind, c.name);
+      if (!lookup[nameKey]) lookup[nameKey] = c;
     }
     return lookup;
   }
@@ -64,7 +71,11 @@ export class TransactionDataService {
     row: LocalTransaction,
     lookup: Record<string, LocalCategory>,
   ): UITransaction {
-    const category = row.categoryId ? lookup[row.categoryId] : undefined;
+    const category =
+      (row.categoryId ? lookup[row.categoryId] : undefined) ??
+      (row.categoryName
+        ? lookup[categoryNameKey(row.type, row.categoryName)]
+        : undefined);
     return {
       id: row.id,
       type: row.type,
@@ -73,8 +84,8 @@ export class TransactionDataService {
       date: row.date ?? "",
       categoryId: category?.id ?? row.categoryId ?? null,
       category: {
-        name: category?.name ?? "Other",
-        icon: category?.icon ?? "receipt",
+        name: category?.name ?? row.categoryName ?? "Other",
+        icon: category?.icon ?? "dots-horizontal",
         color: category?.color ?? "#9AA0A6",
       },
     };

@@ -14,6 +14,7 @@ export interface LocalTransaction {
   description: string | null;
   date: string | null;
   categoryId: string | null;
+  categoryName: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   syncStatus: string;
@@ -33,6 +34,7 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
     "description",
     "date",
     "categoryId",
+    "categoryName",
   ];
 
   protected toModel(row: Row): LocalTransaction {
@@ -45,6 +47,7 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
       description: row.description ?? null,
       date: row.date ?? null,
       categoryId: row.categoryId ?? null,
+      categoryName: row.categoryName ?? null,
       createdAt: row.createdAt ?? null,
       updatedAt: row.updatedAt ?? null,
       syncStatus: row.syncStatus,
@@ -62,7 +65,13 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
         amount: model.amount,
         description: model.description ?? null,
         date: model.date ?? null,
-        categoryId: model.categoryId != null ? String(model.categoryId) : null,
+        categoryId:
+          model.categoryId != null
+            ? String(model.categoryId)
+            : model.category?.id != null
+              ? String(model.category.id)
+              : null,
+        categoryName: model.categoryName ?? model.category?.name ?? null,
       },
     };
   }

@@ -135,7 +135,19 @@ const v2: Migration = {
   },
 };
 
-export const MIGRATIONS: Migration[] = [v1, v2];
+/**
+ * Server category name on transactions. Older server rows carry only a
+ * `categoryName` (no `categoryId`), so the name is kept as a fallback for
+ * resolving the row's category locally.
+ */
+const v3: Migration = {
+  version: 3,
+  up: async (db) => {
+    await db.execAsync(`ALTER TABLE transactions ADD COLUMN categoryName TEXT;`);
+  },
+};
+
+export const MIGRATIONS: Migration[] = [v1, v2, v3];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(
   (max, m) => Math.max(max, m.version),
