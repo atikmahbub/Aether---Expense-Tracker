@@ -33,3 +33,11 @@ export const AddInvestSchema = Yup.object().shape({
     .required('Amount is required')
     .positive('Amount must be positive'),
 });
+
+/**
+ * True when an investment has a current value to compare against. An empty
+ * "earned" field was historically saved as 0 (Number("")), so 0 means "not
+ * entered yet", not a total loss; counting it showed a bogus −100% return.
+ */
+export const hasReturnValue = (invest: { earned: number | null; amount: number }) =>
+  invest.earned != null && invest.earned > 0 && invest.amount > 0;

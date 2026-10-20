@@ -19,6 +19,7 @@ import InvestForm from "@trackingPortal/screens/InvestScreen/InvestForm";
 import {
   AddInvestSchema,
   EAddInvestFormFields,
+  hasReturnValue,
 } from "@trackingPortal/screens/InvestScreen";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import {
@@ -82,7 +83,11 @@ const InvestList: FC<IInvestList> = ({
           status: values.status
             ? EInvestStatus.Completed
             : EInvestStatus.Active,
-          earned: Number(values.earned),
+          // Empty field = not entered; saving Number("") stored a bogus 0.
+          earned:
+            String(values.earned ?? "").trim() === ""
+              ? undefined
+              : Number(values.earned),
         });
         await getUserInvestHistory();
         triggerSuccessHaptic();
@@ -153,7 +158,7 @@ const InvestList: FC<IInvestList> = ({
           }),
           [EAddInvestFormFields.NAME]: item.name,
           [EAddInvestFormFields.EARNED]:
-            item.earned == null
+            !item.earned
               ? ""
               : formatNumber(item.earned, {
                   useGrouping: false,
@@ -197,7 +202,7 @@ const InvestList: FC<IInvestList> = ({
     });
   const selectedCompleted = selected?.status === EInvestStatus.Completed;
   const selectedGain =
-    selected && selected.earned != null ? selected.earned - selected.amount : null;
+    selected && hasReturnValue(selected) ? (selected.earned ?? 0) - selected.amount : null;
 
   const active = status === EInvestStatus.Active;
 
@@ -223,9 +228,9 @@ const InvestList: FC<IInvestList> = ({
           {invests.map((invest, index) => {
             const completed = invest.status === EInvestStatus.Completed;
             const returnLabel =
-              invest.earned != null && invest.amount > 0
+              hasReturnValue(invest)
                 ? formatNumber(
-                    ((invest.earned - invest.amount) / invest.amount) * 100,
+                    (((invest.earned ?? 0) - invest.amount) / invest.amount) * 100,
                     { maximumFractionDigits: 1, minimumFractionDigits: 1, suffix: "%" },
                   ).replace("-", "−")
                 : undefined;

@@ -3,6 +3,7 @@ import { InvestModel } from "@trackingPortal/api/models";
 import { CurvyHeroPanel, CustomAppBar, HeroFigure, HeroStatCard } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
+import { hasReturnValue } from "@trackingPortal/screens/InvestScreen/InvestScreen.constants";
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -16,7 +17,7 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
   const isActive = status === EInvestStatus.Active;
   const totalAmount = investList.reduce((sum, item) => sum + item.amount, 0);
   const completedReturns = investList
-    .filter((item) => item.earned != null && item.amount > 0)
+    .filter(hasReturnValue)
     .map((item) => (((item.earned ?? 0) - item.amount) / item.amount) * 100);
   const averageReturn = completedReturns.length
     ? completedReturns.reduce((sum, value) => sum + value, 0) /
@@ -35,7 +36,8 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
     return `${count} · ${names.join(", ")}${suffix}`;
   }, [investList]);
 
-  const returnGlyph = averageReturn < 0 ? "▼ " : averageReturn > 0 ? "▲ " : "";
+  // Same arrow glyphs as the loan summary (↗ / ↙), not emoji-like triangles.
+  const returnGlyph = averageReturn < 0 ? "↙ " : averageReturn > 0 ? "↗ " : "";
 
   return (
     <CurvyHeroPanel>
@@ -54,11 +56,14 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
           stats={[
             {
               label: `${returnGlyph}Average return`,
-              value: formatNumber(averageReturn, {
-                maximumFractionDigits: 1,
-                minimumFractionDigits: 1,
-                suffix: "%",
-              }).replace("-", "−"),
+              // No current values entered yet: show a dash, not a fake 0.0%.
+              value: completedReturns.length
+                ? formatNumber(averageReturn, {
+                    maximumFractionDigits: 1,
+                    minimumFractionDigits: 1,
+                    suffix: "%",
+                  }).replace("-", "−")
+                : "—",
               tone:
                 averageReturn < 0
                   ? "negative"
