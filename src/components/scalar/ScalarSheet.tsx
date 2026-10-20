@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
@@ -19,11 +20,14 @@ export default function ScalarSheet({
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  // 3-button navigation lifts the dock above its bar (see CustomTabBar).
+  const navBarLift = insets.bottom >= 40 ? insets.bottom : 0;
   return (
     <View
       style={[
         styles.sheet,
-        { backgroundColor: colors.sheetGlass },
+        { backgroundColor: colors.sheetGlass, paddingBottom: DOCK_CLEARANCE + navBarLift },
         style,
       ]}
     >

@@ -5,7 +5,7 @@ import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import * as Haptics from "expo-haptics";
 import { impactHaptic, selectionHaptic } from "@trackingPortal/utils/haptic";
 import React, { useCallback, useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import Animated, { Easing, FadeIn, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
 import DockIcon, { DockIconName } from "@trackingPortal/components/scalar/DockIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +32,13 @@ export default function CustomTabBar({
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const isSettings = state.routes[state.index]?.name === "settings";
+  // 3-button navigation (~48pt) is a solid bar the dock must clear. With the
+  // gesture pill, iOS tucks the dock 16pt into the inset; Android's pill sits
+  // higher in its inset, so it only tucks 4pt to keep the pill off the dock.
+  const dockBottom =
+    insets.bottom >= 40
+      ? insets.bottom + 8
+      : Math.max(insets.bottom - (Platform.OS === "android" ? 4 : 16), 8);
 
   const handleTabPress = useCallback(
     (routeName: string) => {
@@ -87,7 +94,7 @@ export default function CustomTabBar({
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.container, { paddingBottom: Math.max(insets.bottom - 16, 8) }]}
+      style={[styles.container, { paddingBottom: dockBottom }]}
     >
       {/* Content fades out above the dock, and a backing hides it beside
           and below — nothing scrolls visibly around the frosted dock. */}
