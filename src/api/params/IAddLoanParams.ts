@@ -8,4 +8,5 @@ export interface IAddLoanParams {
   deadLine: UnixTimeStampString;
   loanType: LoanType;
   note: string | null;
+  settledAt?: UnixTimeStampString | null;
 }

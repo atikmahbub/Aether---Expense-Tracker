@@ -14,10 +14,24 @@ interface IInvestForm {
   onSubmit: () => void;
   onCancel: () => void;
   loading: boolean;
+  /**
+   * Detail-sheet mode: rendered below a full-width Cancel / Save changes
+   * footer (used for the sheet's delete link).
+   */
+  belowFooter?: React.ReactNode;
 }
 
-const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}) => {
-  const { colors } = useAppTheme();
+const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading, belowFooter}) => {
+  const sheetMode = belowFooter !== undefined;
+  const { colors, isDark } = useAppTheme();
+  // Detail-sheet Cancel uses the loan sheet's soft pill (solid in light mode).
+  const sheetCancelTone = useMemo(
+    () => ({
+      button: { backgroundColor: isDark ? colors.softChipBg : colors.dockActiveBg },
+      text: { color: colors.sheetText },
+    }),
+    [colors, isDark],
+  );
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {values, setFieldValue} = useFormikContext<any>();
   const [startPickerVisible, setStartPickerVisible] = useState(false);
@@ -153,21 +167,22 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
         </Fragment>
       )}
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, sheetMode && styles.sheetFooter]}>
         <TouchableOpacity
-          style={styles.cancelButton}
+          style={[styles.cancelButton, sheetMode && styles.sheetCancel, sheetMode && sheetCancelTone.button]}
           onPress={() => {
             Keyboard.dismiss();
             onCancel();
           }}
           activeOpacity={0.7}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={[styles.cancelButtonText, sheetMode && sheetCancelTone.text]}>Cancel</Text>
         </TouchableOpacity>
 
-        <View style={styles.saveButtonWrapper}>
+        <View style={[styles.saveButtonWrapper, sheetMode && styles.sheetSave]}>
           <LoadingButton
-            label={update ? "Update Investment" : "Save Investment"}
+            style={sheetMode ? styles.sheetSaveButton : undefined}
+            label={sheetMode ? "Save changes" : update ? "Update Investment" : "Save Investment"}
             loading={loading}
             onPress={() => {
               Keyboard.dismiss();
@@ -176,6 +191,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading}
           />
         </View>
       </View>
+      {belowFooter}
     </View>
   );
 };
@@ -226,5 +242,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     saveButtonWrapper: {
       minWidth: 140,
     },
+    // Detail sheet: two full-width pills, matching the loan sheet footer.
+    sheetFooter: { marginTop: 0, marginBottom: 0, gap: 10, justifyContent: 'flex-start' },
+    sheetCancel: { flex: 1, height: 54 },
+    sheetSave: { flex: 1.4, minWidth: 0 },
+    sheetSaveButton: { height: 54, paddingVertical: 0, justifyContent: 'center' },
   });
 }

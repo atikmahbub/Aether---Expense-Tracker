@@ -101,6 +101,8 @@ export class SyncEngine {
         return this.repos.categories;
       case "loan":
         return this.repos.loans;
+      case "loanPayment":
+        return this.repos.loanPayments;
       case "investment":
         return this.repos.investments;
       case "monthlyLimit":
@@ -118,6 +120,8 @@ export class SyncEngine {
         return this.pushCategory(item);
       case "loan":
         return this.pushLoan(item);
+      case "loanPayment":
+        return this.pushLoanPayment(item);
       case "investment":
         return this.pushInvest(item);
       case "monthlyLimit":
@@ -245,6 +249,7 @@ export class SyncEngine {
         note: local.note,
         deadLine: local.deadLine as any,
         loanType: local.loanType as any,
+        settledAt: (local.settledAt ?? null) as any,
       });
       await repo.setServerId(item.localId, String((result as any).id), {
         createdAt: (result as any).created ?? null,
@@ -262,6 +267,61 @@ export class SyncEngine {
       note: local.note,
       deadLine: local.deadLine as any,
       loanType: local.loanType as any,
+      // Always sent: null reopens, so a local reopen reaches the server too.
+      settledAt: (local.settledAt ?? null) as any,
+    });
+    await repo.markSynced(item.localId);
+  }
+
+  private async pushLoanPayment(item: OutboxItem): Promise<void> {
+    const repo = this.repos.loanPayments;
+    const local = await repo.getById(item.localId);
+    if (!local) return; // purged with its loan
+
+    if (item.op === "delete") {
+      const serverId = await repo.serverIdForLocalId(item.localId);
+      if (serverId) {
+        await this.apiGateway.loanPaymentService.deleteLoanPayment(
+          serverId as any,
+          local.userId as any,
+        );
+      }
+      await repo.purge(item.localId);
+      return;
+    }
+
+    if (item.op === "create") {
+      // A payment logged offline points at the local loan id. That loan's own
+      // create is earlier in the FIFO outbox; if it hasn't landed yet, fail
+      // this item so it retries after the loan has a server id.
+      const loanRow = await this.repos.loans.getById(local.loanId);
+      const loanServerId = loanRow
+        ? await this.repos.loans.serverIdForLocalId(local.loanId)
+        : local.loanId;
+      if (!loanServerId) throw new Error("Loan not synced yet");
+
+      const result = await this.apiGateway.loanPaymentService.addLoanPayment({
+        userId: local.userId as any,
+        loanId: loanServerId as any,
+        amount: local.amount,
+        date: local.date as any,
+        note: local.note,
+      });
+      await repo.setServerId(item.localId, String((result as any).id), {
+        createdAt: (result as any).created ?? null,
+        updatedAt: (result as any).updated ?? null,
+      });
+      return;
+    }
+
+    const serverId = await repo.serverIdForLocalId(item.localId);
+    if (!serverId) return;
+    await this.apiGateway.loanPaymentService.updateLoanPayment({
+      id: serverId as any,
+      userId: local.userId as any,
+      amount: local.amount,
+      date: local.date as any,
+      note: local.note,
     });
     await repo.markSynced(item.localId);
   }
@@ -365,6 +425,7 @@ export class SyncEngine {
       { label: 'Syncing expense categories', fn: () => this.pullCategories(userId, 'expense') },
       { label: 'Syncing income categories', fn: () => this.pullCategories(userId, 'income') },
       { label: 'Syncing loans', fn: () => this.pullLoans(userId) },
+      { label: 'Syncing loan payments', fn: () => this.pullLoanPayments(userId) },
       { label: 'Syncing investments', fn: () => this.pullInvestments(userId) },
       { label: 'Syncing monthly limits', fn: () => this.pullMonthlyLimits(userId, months) },
     ];
@@ -478,6 +539,23 @@ export class SyncEngine {
     await this.repos.loans.backfillUserId(userId);
     await this.reconcileDeletes(
       this.repos.loans,
+      list.map((m: any) => String(m.id)),
+      "userId = ?",
+      [userId],
+    );
+    return list.length;
+  }
+
+  private async pullLoanPayments(userId: string): Promise<number> {
+    const list = await this.apiGateway.loanPaymentService.getLoanPaymentsByUserId(
+      userId as any,
+    );
+    for (const model of list) {
+      await this.repos.loanPayments.upsertFromServer({ ...model, userId });
+    }
+    await this.repos.loanPayments.backfillUserId(userId);
+    await this.reconcileDeletes(
+      this.repos.loanPayments,
       list.map((m: any) => String(m.id)),
       "userId = ?",
       [userId],

@@ -11,9 +11,11 @@ interface CategoryItemProps {
   item: ExpenseCategoryModel | IncomeCategoryModel;
   onEdit: () => void;
   onDelete: () => void;
+  hidden: boolean;
+  onToggleHidden: () => void;
 }
 
-const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
+const CategoryItem = ({ item, onEdit, onDelete, hidden, onToggleHidden }: CategoryItemProps) => {
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isSystem = item.userId === null;
@@ -38,7 +40,7 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
         onPress={onEdit}
         activeOpacity={0.7}
       >
-        <View style={styles.leftContent}>
+        <View style={[styles.leftContent, hidden && styles.hiddenContent]}>
           <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
             <MaterialCommunityIcons
               name={normalizeCategoryIcon(item.icon)}
@@ -48,12 +50,29 @@ const CategoryItem = ({ item, onEdit, onDelete }: CategoryItemProps) => {
           </View>
           <View>
             <Text style={styles.name}>{item.name}</Text>
-            {isSystem && <Text style={styles.systemBadge}>Default</Text>}
+            {(isSystem || hidden) && (
+              <Text style={styles.systemBadge}>
+                {[isSystem && 'Default', hidden && 'Hidden'].filter(Boolean).join(' · ')}
+              </Text>
+            )}
           </View>
         </View>
 
         <View style={styles.rightContent}>
-          <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? `Show ${item.name} when adding entries` : `Hide ${item.name} when adding entries`}
+            hitSlop={10}
+            onPress={onToggleHidden}
+            style={styles.eyeButton}
+          >
+            <MaterialCommunityIcons
+              name={hidden ? 'eye-off-outline' : 'eye-outline'}
+              size={22}
+              color={colors.inactiveIcon}
+            />
+          </TouchableOpacity>
+          <View style={[styles.colorIndicator, { backgroundColor: item.color }, hidden && styles.hiddenContent]} />
           {!isSystem && (
             <MaterialCommunityIcons name="chevron-right" size={20} color={colors.inactiveIcon} />
           )}
@@ -106,6 +125,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+    },
+    hiddenContent: {
+      opacity: 0.45,
+    },
+    eyeButton: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     colorIndicator: {
       width: 12,

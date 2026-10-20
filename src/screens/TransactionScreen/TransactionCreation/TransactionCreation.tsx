@@ -12,6 +12,7 @@ import { ExpenseCategoryModel, TransactionModel } from '@trackingPortal/api/mode
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import { BaseBottomSheet } from '@trackingPortal/components';
 import { useOffline } from '@trackingPortal/contexts/OfflineProvider';
+import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
 import { TransactionDataService } from '@trackingPortal/db/services/TransactionDataService';
 import {
@@ -77,9 +78,14 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
     setTransactionType(initialType);
   }, [initialType]);
 
+  const { hiddenCategoryIds } = useStoreContext();
+  // Hidden categories (eye toggle on the Categories screen) stay out of the
+  // picker for new entries; existing entries keep theirs.
   const activeCategories = useMemo(() =>
-    transactionType === 'Expense' ? categories : incomeCategories,
-  [transactionType, categories, incomeCategories]);
+    (transactionType === 'Expense' ? categories : incomeCategories).filter(
+      c => !hiddenCategoryIds.includes(c.id),
+    ),
+  [transactionType, categories, incomeCategories, hiddenCategoryIds]);
 
   const activeLoading = transactionType === 'Expense' ? categoriesLoading : incomeCategoriesLoading;
 

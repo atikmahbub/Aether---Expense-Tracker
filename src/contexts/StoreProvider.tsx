@@ -21,7 +21,7 @@ import {
 } from "@trackingPortal/screens/TransactionScreen/TransactionScreen.constants";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import { getCountryData } from "country-currency-utils";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 const IPINFO_TOKEN = process.env.EXPO_PUBLIC_IPINFO_TOKEN;
 const PRIORITY_ORDER = ["Groceries", "Food", "Kids", "Health"];
@@ -37,6 +37,9 @@ type StoreContextType = {
   refreshCategories: (options?: { force?: boolean }) => Promise<void>;
   incomeCategories: ExpenseCategoryModel[];
   incomeCategoryLoading: boolean;
+  /** Categories the user hid from the add-entry picker (this device only). */
+  hiddenCategoryIds: string[];
+  toggleCategoryHidden: (categoryId: string) => Promise<void>;
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -70,6 +73,32 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [incomeCategories, setIncomeCategories] = useState<ExpenseCategoryModel[]>([]);
   const [incomeCategoryLoading, setIncomeCategoryLoading] = useState(false);
   const [isCategoryHydrated, setIsCategoryHydrated] = useState(false);
+  const [hiddenCategoryIds, setHiddenCategoryIds] = useState<string[]>([]);
+  const hiddenKey = `hiddenCategoryIds:${currentUser.userId}`;
+
+  // Hidden categories are a local display preference, kept per user in the
+  // settings table; nothing about the category itself changes.
+  useEffect(() => {
+    if (!dbReady || !repositories || !currentUser.userId) {
+      setHiddenCategoryIds([]);
+      return;
+    }
+    repositories.settings
+      .get(hiddenKey)
+      .then((raw) => setHiddenCategoryIds(raw ? JSON.parse(raw) : []))
+      .catch(() => setHiddenCategoryIds([]));
+  }, [dbReady, repositories, hiddenKey, currentUser.userId]);
+
+  const toggleCategoryHidden = useCallback(
+    async (categoryId: string) => {
+      const next = hiddenCategoryIds.includes(categoryId)
+        ? hiddenCategoryIds.filter((id) => id !== categoryId)
+        : [...hiddenCategoryIds, categoryId];
+      setHiddenCategoryIds(next);
+      await repositories?.settings.set(hiddenKey, JSON.stringify(next));
+    },
+    [hiddenCategoryIds, hiddenKey, repositories],
+  );
 
   useEffect(() => {
     apiGateway.ajaxUtils.setTokenProvider(getValidToken);
@@ -278,6 +307,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         refreshCategories,
         incomeCategories,
         incomeCategoryLoading,
+        hiddenCategoryIds,
+        toggleCategoryHidden,
       }}
     >
       {children}

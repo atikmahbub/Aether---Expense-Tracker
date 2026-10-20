@@ -48,6 +48,11 @@ interface TransactionFormProps {
   onCancel: () => void;
   loading: boolean;
   showShortcutKeypad?: boolean;
+  /**
+   * Detail-sheet mode: rendered below a full-width Cancel / Save changes
+   * footer (used for the sheet's delete link).
+   */
+  belowFooter?: React.ReactNode;
 }
 
 export default function TransactionForm({
@@ -61,8 +66,18 @@ export default function TransactionForm({
   onCancel,
   loading,
   showShortcutKeypad = false,
+  belowFooter,
 }: TransactionFormProps) {
-  const { colors } = useAppTheme();
+  const sheetMode = belowFooter !== undefined;
+  const { colors, isDark } = useAppTheme();
+  // Detail-sheet Cancel uses the loan sheet's soft pill (solid in light mode).
+  const sheetCancelTone = useMemo(
+    () => ({
+      button: { backgroundColor: isDark ? colors.softChipBg : colors.dockActiveBg },
+      text: { color: colors.sheetText },
+    }),
+    [colors, isDark],
+  );
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {
     values,
@@ -395,6 +410,8 @@ export default function TransactionForm({
         <Pressable
           style={({ pressed }) => [
             styles.cancelButton,
+            sheetMode && styles.sheetCancel,
+            sheetMode && sheetCancelTone.button,
             pressed && styles.pressed,
           ]}
           onPress={() => {
@@ -402,13 +419,14 @@ export default function TransactionForm({
             onCancel();
           }}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={[styles.cancelButtonText, sheetMode && sheetCancelTone.text]}>Cancel</Text>
         </Pressable>
         <Pressable
           accessibilityState={{ disabled: !canSave }}
           disabled={!canSave}
           style={({ pressed }) => [
             styles.saveButton,
+            sheetMode && styles.sheetSave,
             !canSave && styles.saveButtonDisabled,
             pressed && styles.saveButtonPressed,
           ]}
@@ -418,10 +436,11 @@ export default function TransactionForm({
           }}
         >
           <Text style={styles.saveButtonText}>
-            {loading ? "Saving…" : "Save Entry"}
+            {loading ? "Saving…" : sheetMode ? "Save changes" : "Save Entry"}
           </Text>
         </Pressable>
       </View>
+      {belowFooter}
 
       {showShortcutKeypad && !purposeFocused && (
         <View style={styles.keypad}>
@@ -656,6 +675,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       borderRadius: designTokens.radius.full,
       backgroundColor: colors.primaryButtonBg,
     },
+    // Detail sheet: Cancel and Save share the row 1 : 1.4, like the loan sheet.
+    sheetCancel: { flex: 1, paddingHorizontal: 0 },
+    sheetSave: { flex: 1.4 },
     saveButtonDisabled: { opacity: 0.4 },
     saveButtonPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
     saveButtonText: {

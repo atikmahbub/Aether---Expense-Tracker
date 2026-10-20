@@ -1,203 +1,164 @@
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LoanType } from "@trackingPortal/api/enums";
 import { LoanModel } from "@trackingPortal/api/models";
-import {
-  LoanId,
-  makeUnixTimestampString,
-  makeUnixTimestampToNumber,
-} from "@trackingPortal/api/primitives";
+import { makeUnixTimestampToNumber } from "@trackingPortal/api/primitives";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
 import { ScalarSheet, SheetHeader } from "@trackingPortal/components/scalar";
-import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
-import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
-import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
-import LoanForm from "@trackingPortal/screens/LoanScreen/LoanForm";
-import {
-  AddLoanSchema,
-  EAddLoanFields,
-} from "@trackingPortal/screens/LoanScreen/LoanScreen.constants";
+import type { LoanPaymentView } from "@trackingPortal/db/services/LoanDataService";
+import LoanDetailSheet from "@trackingPortal/screens/LoanScreen/LoanDetailSheet";
 import { designTokens } from "@trackingPortal/themes/designTokens";
-import {
-  triggerSuccessHaptic,
-} from "@trackingPortal/utils/haptic";
-import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
+import { formatCurrency } from "@trackingPortal/utils/utils";
 import dayjs from "dayjs";
-import { Formik } from "formik";
-import React, { FC, useCallback, useMemo, useState } from "react";
+import React, { FC, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Toast from "react-native-toast-message";
 
 interface ILoanList {
   notifyRowOpen: (value: boolean) => void;
   loans: LoanModel[];
-  getUserLoan: () => void;
+  /** Payments keyed by local loan id. */
+  paymentsByLoan: Record<string, LoanPaymentView[]>;
+  getUserLoan: () => Promise<void> | void;
 }
 
-const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
+/** What is still owed on a loan, never below zero. */
+export const remainingFor = (loan: LoanModel, payments: LoanPaymentView[] = []) =>
+  Math.max(
+    Math.round((loan.amount - payments.reduce((sum, p) => sum + p.amount, 0)) * 100) / 100,
+    0,
+  );
+
+const NO_PAYMENTS: LoanPaymentView[] = [];
+
+const LoanList: FC<ILoanList> = ({
+  notifyRowOpen,
+  loans,
+  paymentsByLoan,
+  getUserLoan,
+}) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  const { currentUser: user, currency } = useStoreContext();
-  const { loanData } = useDatabase();
-  const { syncNow } = useOffline();
-  const showAlert = useScalarAlert();
-  const [loading, setLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  const { currency } = useStoreContext();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  const onLoanEdit = useCallback(
-    async (values: any, { resetForm }: any, id: LoanId) => {
-      if (user.default || !loanData) return;
-      try {
-        setLoading(true);
-        await loanData.updateLoan(id as string, {
-          amount: Number(values.amount),
-          deadLine: makeUnixTimestampString(Number(new Date(values.deadLine))),
-          note: values.note,
-          name: values.name,
-          loanType: values[EAddLoanFields.LOAN_TYPE],
-        });
-        await getUserLoan();
-        triggerSuccessHaptic();
-        Toast.show({ type: "success", text1: "Loan updated successfully!" });
-        syncNow();
-      } catch {
-        Toast.show({ type: "error", text1: "Something went wrong!" });
-      } finally {
-        resetForm();
-        setExpandedRowId(null);
-        setLoading(false);
-      }
-    },
-    [getUserLoan, loanData, syncNow, user.default],
-  );
+  const openLoans = useMemo(() => loans.filter((l) => !l.settledAt), [loans]);
+  const settledLoans = useMemo(() => loans.filter((l) => l.settledAt), [loans]);
+  // Looked up from the live list so the sheet reflects every write.
+  const selectedLoan = loans.find((l) => l.id === selectedId) ?? null;
 
-  const handleDeleteLoan = useCallback(
-    async (rowId: string) => {
-      if (!loanData) return;
-      try {
-        setDeleteLoading(true);
-        await loanData.deleteLoan(rowId);
-        await getUserLoan();
-        Toast.show({ type: "success", text1: "Deleted successfully!" });
-        syncNow();
-      } catch {
-        Toast.show({ type: "error", text1: "Something went wrong!" });
-      } finally {
-        setDeleteLoading(false);
-        setExpandedRowId(null);
-      }
-    },
-    [getUserLoan, loanData, syncNow],
-  );
+  const select = (id: string | null) => {
+    setSelectedId(id);
+    notifyRowOpen(Boolean(id));
+  };
 
-  const confirmDeleteLoan = useCallback(
-    (loan: LoanModel) => {
-      showAlert({
-        title: "Delete loan?",
-        message: `Are you sure you want to delete the loan with ${loan.name}? This action cannot be undone.`,
-        buttons: [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => handleDeleteLoan(loan.id),
-          },
-        ],
-      });
-    },
-    [handleDeleteLoan, showAlert],
-  );
+  const fmt = (value: number) =>
+    formatCurrency(value, currency, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
 
-  const renderEditor = useCallback(
-    (item: LoanModel) => (
-      <Formik
-        enableReinitialize
-        initialValues={{
-          id: item.id,
-          [EAddLoanFields.DEADLINE]: new Date(Number(item.deadLine) * 1000),
-          [EAddLoanFields.NOTE]: item.note || "",
-          [EAddLoanFields.AMOUNT]: formatNumber(item.amount, {
-            useGrouping: false,
-            maximumFractionDigits: 2,
-          }),
-          [EAddLoanFields.NAME]: item.name,
-          [EAddLoanFields.LOAN_TYPE]: item.loanType,
-        }}
-        onSubmit={(values, helpers) =>
-          onLoanEdit(values, helpers, item.id as LoanId)
-        }
-        validationSchema={AddLoanSchema}
-      >
-        {({ handleSubmit }) => (
-          <View style={styles.editor}>
-            <LoanForm
-              onSubmit={handleSubmit}
-              onCancel={() => setExpandedRowId(null)}
-              loading={loading}
+  const renderLoan = (loan: LoanModel, index: number, list: LoanModel[]) => {
+    const given = loan.loanType === LoanType.GIVEN;
+    const settled = Boolean(loan.settledAt);
+    const payments = paymentsByLoan[loan.id] ?? NO_PAYMENTS;
+    const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const remaining = remainingFor(loan, payments);
+    const last = index === list.length - 1;
+    const overdue =
+      !settled &&
+      Boolean(loan.deadLine) &&
+      dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).isBefore(dayjs(), "day");
+    const meta = settled
+      ? `${given ? "Given" : "Borrowed"} · settled ${dayjs(
+          makeUnixTimestampToNumber(Number(loan.settledAt)),
+        ).format("D MMM YYYY")}`
+      : `${given ? "Given" : "Borrowed"}${
+          paid > 0 ? ` · ${fmt(paid)} of ${fmt(loan.amount)} paid` : ""
+        } · due ${dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).format("D MMM YYYY")}`;
+    const showProgress = !settled && paid > 0;
+
+    return (
+      <View key={loan.id} style={showProgress && !last && styles.rowDivider}>
+        <ScalarListRow
+          grouped
+          title={loan.name}
+          meta={meta}
+          // Open loans show what is still owed; settled ones show the original.
+          amount={`${given ? "+" : "−"}${fmt(settled ? loan.amount : remaining)}`}
+          positive={given && !settled}
+          negative={!given && !settled}
+          icon={settled ? "check" : given ? "arrow-top-right" : "arrow-bottom-left"}
+          categoryColor={
+            settled ? colors.softChipBg : given ? colors.positiveTile : colors.negativeTile
+          }
+          iconGlyphColor={
+            settled ? colors.textMuted : given ? colors.positive : colors.negative
+          }
+          status={settled ? "Settled" : overdue ? "Overdue" : paid > 0 ? "Left" : "Open"}
+          // With a progress bar the divider moves below it (rowDivider).
+          showDivider={!last && !showProgress}
+          onPress={() => select(loan.id)}
+        />
+        {showProgress && (
+          <View
+            style={styles.progressTrack}
+            accessibilityLabel={`${Math.round((paid / loan.amount) * 100)}% repaid`}
+          >
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.min((paid / loan.amount) * 100, 100)}%`,
+                  backgroundColor: given ? colors.positive : colors.negative,
+                },
+              ]}
             />
-            <Pressable
-              disabled={deleteLoading}
-              onPress={() => confirmDeleteLoan(item)}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteText}>
-                {deleteLoading ? "Deleting…" : "Delete loan"}
-              </Text>
-            </Pressable>
           </View>
         )}
-      </Formik>
-    ),
-    [confirmDeleteLoan, deleteLoading, loading, onLoanEdit, styles],
-  );
+      </View>
+    );
+  };
 
   return (
     <ScalarSheet>
       <SheetHeader title="Loan history" />
-      <View style={styles.card}>
-        {loans.length ? (
-          loans.map((loan, index) => {
-            const given = loan.loanType === LoanType.GIVEN;
-            const open = expandedRowId === loan.id;
-            return (
-              <View key={loan.id}>
-                <ScalarListRow
-                  title={loan.name}
-                  meta={`${given ? "Given" : "Borrowed"} · due ${dayjs(
-                    makeUnixTimestampToNumber(Number(loan.deadLine)),
-                  ).format("D MMM YYYY")}`}
-                  amount={`${given ? "+" : "−"}${formatCurrency(
-                    loan.amount,
-                    currency,
-                    { minimumFractionDigits: 0, maximumFractionDigits: 0 },
-                  )}`}
-                  positive={given}
-                  negative={!given}
-                  icon={given ? "arrow-top-right" : "arrow-bottom-left"}
-                  categoryColor={given ? colors.positiveTile : colors.negativeTile}
-                  iconGlyphColor={given ? colors.positive : colors.negative}
-                  status={
-                    loan.deadLine &&
-                    dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).isBefore(dayjs(), "day")
-                      ? "Overdue"
-                      : "Open"
-                  }
-                  showDivider={index < loans.length - 1 || open}
-                  onPress={() => {
-                    const next = open ? null : loan.id;
-                    setExpandedRowId(next);
-                    notifyRowOpen(Boolean(next));
-                  }}
-                />
-                {open && renderEditor(loan)}
-              </View>
-            );
-          })
-        ) : (
-          <Text style={styles.empty}>No loan entries yet</Text>
-        )}
-      </View>
+      {openLoans.length ? (
+        <View style={styles.card}>{openLoans.map(renderLoan)}</View>
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.empty}>
+            {loans.length ? "All loans are settled" : "No loan entries yet"}
+          </Text>
+        </View>
+      )}
+      {settledLoans.length > 0 && (
+        <View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: historyOpen }}
+            onPress={() => setHistoryOpen((v) => !v)}
+            style={styles.historyHeader}
+          >
+            <Text style={styles.historyTitle}>Settled ({settledLoans.length})</Text>
+            <MaterialCommunityIcons
+              name={historyOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.textMuted}
+            />
+          </Pressable>
+          {historyOpen && (
+            <View style={styles.card}>{settledLoans.map(renderLoan)}</View>
+          )}
+        </View>
+      )}
+      <LoanDetailSheet
+        loan={selectedLoan}
+        payments={selectedLoan ? paymentsByLoan[selectedLoan.id] ?? NO_PAYMENTS : NO_PAYMENTS}
+        onClose={() => select(null)}
+        onChanged={getUserLoan}
+      />
     </ScalarSheet>
   );
 };
@@ -206,29 +167,55 @@ export default React.memo(LoanList);
 
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
+    // Same grouped card and empty state as the wallet timeline rows.
     card: {
-      backgroundColor: "transparent",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.groupBorder,
+      borderRadius: designTokens.radius.group,
+      backgroundColor: colors.groupBg,
     },
-    editor: { gap: 12, paddingVertical: 16, backgroundColor: "transparent" },
-    deleteButton: {
-      height: 48,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.full,
+    emptyCard: {
+      padding: 18,
       borderWidth: 1.5,
-      borderColor: colors.negative,
+      borderStyle: "dashed",
+      borderColor: colors.dashedBorder,
+      borderRadius: designTokens.radius.group,
     },
-    deleteText: {
-      color: colors.negative,
-      fontFamily: designTokens.font.bold,
-      fontSize: 15,
-      fontWeight: "700",
+    rowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.rowDivider,
+    },
+    progressTrack: {
+      height: 4,
+      // Aligned under the title: row padding 14 + tile 44 + gap 14.
+      marginLeft: 72,
+      marginRight: 14,
+      marginBottom: 12,
+      overflow: "hidden",
+      borderRadius: 999,
+      backgroundColor: colors.chartEmpty,
+    },
+    progressFill: { height: 4, borderRadius: 999 },
+    historyHeader: {
+      minHeight: 44,
+      marginTop: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    historyTitle: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 13,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
     },
     empty: {
-      padding: 20,
-      textAlign: "center",
-      color: colors.textSecondary,
+      color: colors.textMuted,
       fontFamily: designTokens.font.medium,
+      textAlign: "center",
+      ...designTokens.typography.body,
     },
   });
 }

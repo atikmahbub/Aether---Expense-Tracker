@@ -4,6 +4,7 @@ import { Text, FAB } from 'react-native-paper';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useCategories, CategoryType } from '@trackingPortal/hooks/useCategories';
+import { useStoreContext } from '@trackingPortal/contexts/StoreProvider';
 import CategoryItem from '@trackingPortal/screens/CategoryScreen/CategoryItem';
 import CategoryModal from '@trackingPortal/screens/CategoryScreen/CategoryModal';
 import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/models';
@@ -19,6 +20,7 @@ const CategoryScreen = () => {
   const navigation = useNavigation();
   const [selectedType, setSelectedType] = useState<CategoryType>('expense');
   const { categories, loading, createCategory, updateCategory, deleteCategory } = useCategories(selectedType);
+  const { hiddenCategoryIds, toggleCategoryHidden } = useStoreContext();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategoryModel | IncomeCategoryModel | null>(null);
@@ -32,7 +34,7 @@ const CategoryScreen = () => {
     if (category.userId === null) {
       showAlert({
         title: 'System Category',
-        message: 'This is a system default category and cannot be edited.',
+        message: 'This is a system default category and cannot be edited. Tap the eye icon to hide it when adding entries.',
       });
       return;
     }
@@ -44,7 +46,7 @@ const CategoryScreen = () => {
     if (item.userId === null) {
       showAlert({
         title: 'System Category',
-        message: 'Default categories cannot be deleted.',
+        message: 'Default categories cannot be deleted. Tap the eye icon to hide it when adding entries.',
       });
       return;
     }
@@ -68,6 +70,8 @@ const CategoryScreen = () => {
       item={item}
       onEdit={() => handleEdit(item)}
       onDelete={() => handleDelete(item)}
+      hidden={hiddenCategoryIds.includes(item.id)}
+      onToggleHidden={() => toggleCategoryHidden(item.id)}
     />
   );
 

@@ -3,6 +3,7 @@ import {
   IUserService,
   IMonthlyLimitService,
   ILoanService,
+  ILoanPaymentService,
   IInvestService,
   ICategoryService,
 } from "@trackingPortal/api/interfaces";
@@ -16,6 +17,7 @@ export interface IApiGateWay {
   transactionService: ITransactionService;
   monthlyLimitService: IMonthlyLimitService;
   loanServices: ILoanService;
+  loanPaymentService: ILoanPaymentService;
   investService: IInvestService;
   categoryService: ICategoryService;
 }

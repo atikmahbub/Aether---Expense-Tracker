@@ -3,6 +3,7 @@ import { Outbox } from "@trackingPortal/db/sync/Outbox";
 import { TransactionRepository } from "@trackingPortal/db/repositories/TransactionRepository";
 import { CategoryRepository } from "@trackingPortal/db/repositories/CategoryRepository";
 import { LoanRepository } from "@trackingPortal/db/repositories/LoanRepository";
+import { LoanPaymentRepository } from "@trackingPortal/db/repositories/LoanPaymentRepository";
 import { InvestRepository } from "@trackingPortal/db/repositories/InvestRepository";
 import { MonthlyLimitRepository } from "@trackingPortal/db/repositories/MonthlyLimitRepository";
 import { UserRepository } from "@trackingPortal/db/repositories/UserRepository";
@@ -11,6 +12,7 @@ import { SettingsRepository } from "@trackingPortal/db/repositories/SettingsRepo
 export * from "@trackingPortal/db/repositories/TransactionRepository";
 export * from "@trackingPortal/db/repositories/CategoryRepository";
 export * from "@trackingPortal/db/repositories/LoanRepository";
+export * from "@trackingPortal/db/repositories/LoanPaymentRepository";
 export * from "@trackingPortal/db/repositories/InvestRepository";
 export * from "@trackingPortal/db/repositories/MonthlyLimitRepository";
 export * from "@trackingPortal/db/repositories/UserRepository";
@@ -20,6 +22,7 @@ export interface Repositories {
   transactions: TransactionRepository;
   categories: CategoryRepository;
   loans: LoanRepository;
+  loanPayments: LoanPaymentRepository;
   investments: InvestRepository;
   monthlyLimits: MonthlyLimitRepository;
   users: UserRepository;
@@ -32,6 +35,7 @@ export function createRepositories(db: SQLiteDatabase, outbox: Outbox): Reposito
     transactions: new TransactionRepository(db, outbox),
     categories: new CategoryRepository(db, outbox),
     loans: new LoanRepository(db, outbox),
+    loanPayments: new LoanPaymentRepository(db, outbox),
     investments: new InvestRepository(db, outbox),
     monthlyLimits: new MonthlyLimitRepository(db, outbox),
     users: new UserRepository(db, outbox),

@@ -10,6 +10,7 @@ export type EntityName =
   | "transaction"
   | "category"
   | "loan"
+  | "loanPayment"
   | "investment"
   | "monthlyLimit"
   | "user";

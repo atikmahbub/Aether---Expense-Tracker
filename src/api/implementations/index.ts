@@ -3,5 +3,6 @@ export * from "@trackingPortal/api/implementations/TransactionService";
 export * from "@trackingPortal/api/implementations/ApiGateway";
 export * from "@trackingPortal/api/implementations/MonthlyLimitService";
 export * from "@trackingPortal/api/implementations/LoanService";
+export * from "@trackingPortal/api/implementations/LoanPaymentService";
 export * from "@trackingPortal/api/implementations/InvestService";
 export * from "@trackingPortal/api/implementations/CategoryService";

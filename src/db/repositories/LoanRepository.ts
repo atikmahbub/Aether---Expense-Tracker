@@ -14,6 +14,7 @@ export interface LocalLoan {
   note: string | null;
   deadLine: string | null;
   loanType: number | null;
+  settledAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   syncStatus: string;
@@ -22,7 +23,7 @@ export interface LocalLoan {
 export class LoanRepository extends BaseRepository<LocalLoan> {
   protected readonly table = "loans";
   protected readonly entity: EntityName = "loan";
-  protected readonly entityColumns = ["name", "amount", "note", "deadLine", "loanType"];
+  protected readonly entityColumns = ["name", "amount", "note", "deadLine", "loanType", "settledAt"];
 
   protected toModel(row: Row): LocalLoan {
     return {
@@ -34,6 +35,7 @@ export class LoanRepository extends BaseRepository<LocalLoan> {
       note: row.note ?? null,
       deadLine: row.deadLine ?? null,
       loanType: row.loanType ?? null,
+      settledAt: row.settledAt ?? null,
       createdAt: row.createdAt ?? null,
       updatedAt: row.updatedAt ?? null,
       syncStatus: row.syncStatus,
@@ -52,6 +54,7 @@ export class LoanRepository extends BaseRepository<LocalLoan> {
         note: model.note ?? null,
         deadLine: model.deadLine ?? null,
         loanType: model.loanType ?? null,
+        settledAt: model.settledAt ?? null,
       },
     };
   }

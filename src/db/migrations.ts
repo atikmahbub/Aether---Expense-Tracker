@@ -114,7 +114,28 @@ const v1: Migration = {
   },
 };
 
-export const MIGRATIONS: Migration[] = [v1];
+/** Loan repayments: a settled marker on loans plus the payments logged against them. */
+const v2: Migration = {
+  version: 2,
+  up: async (db) => {
+    await db.execAsync(`
+      ALTER TABLE loans ADD COLUMN settledAt TEXT;
+
+      CREATE TABLE IF NOT EXISTS loan_payments (
+        ${SYNC_COLUMNS},
+        loanId TEXT NOT NULL,
+        amount REAL NOT NULL,
+        date TEXT,
+        note TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_loan_payments_server ON loan_payments (serverId);
+      CREATE INDEX IF NOT EXISTS idx_loan_payments_loan ON loan_payments (loanId);
+    `);
+  },
+};
+
+export const MIGRATIONS: Migration[] = [v1, v2];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(
   (max, m) => Math.max(max, m.version),

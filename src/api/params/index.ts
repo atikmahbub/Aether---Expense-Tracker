@@ -8,6 +8,8 @@ export * from '@trackingPortal/api/params/IUpdateTransactionParams';
 export * from '@trackingPortal/api/params/IUpdateMonthlyLimitParams';
 export * from '@trackingPortal/api/params/IAddLoanParams';
 export * from '@trackingPortal/api/params/IUpdateLoanParams';
+export * from '@trackingPortal/api/params/IAddLoanPaymentParams';
+export * from '@trackingPortal/api/params/IUpdateLoanPaymentParams';
 export * from '@trackingPortal/api/params/IAddInvestParams';
 export * from '@trackingPortal/api/params/IUpdateInvestParams';
 export * from '@trackingPortal/api/params/IGetInvestParams';

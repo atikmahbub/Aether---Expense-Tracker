@@ -4,7 +4,8 @@ import { AnimatedLoader } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import LoanCreation from "@trackingPortal/screens/LoanScreen/LoanCreation";
-import LoanList from "@trackingPortal/screens/LoanScreen/LoanList";
+import LoanList, { remainingFor } from "@trackingPortal/screens/LoanScreen/LoanList";
+import type { LoanPaymentView } from "@trackingPortal/db/services/LoanDataService";
 import LoanSummary from "@trackingPortal/screens/LoanScreen/LoanSummary";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
@@ -20,6 +21,7 @@ export default function LoanScreen() {
   const [openCreationModal, setOpenCreationModal] = useState<boolean>(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState<boolean>(false);
   const [loans, setLoans] = useState<LoanModel[]>([]);
+  const [payments, setPayments] = useState<LoanPaymentView[]>([]);
   const { currentUser: user } = useStoreContext();
   const { loanData } = useDatabase();
   const [loading, setLoading] = useState<boolean>(false);
@@ -93,8 +95,12 @@ export default function LoanScreen() {
     try {
       setLoading(true);
       // Offline-first: read from SQLite. The sync engine keeps it fresh.
-      const localLoans = await loanData.getLoans(user.userId);
+      const [localLoans, localPayments] = await Promise.all([
+        loanData.getLoans(user.userId),
+        loanData.getPayments(user.userId),
+      ]);
       setLoans(localLoans);
+      setPayments(localPayments);
     } catch (error) {
       console.log("error", error);
       Toast.show({
@@ -106,19 +112,28 @@ export default function LoanScreen() {
     }
   };
 
-  const totalGiven = useMemo(() => loans?.reduce((acc, crr): number => {
-    if (crr.loanType === LoanType.GIVEN) {
-      acc += crr.amount;
+  const paymentsByLoan = useMemo(() => {
+    const map: Record<string, LoanPaymentView[]> = {};
+    for (const payment of payments) {
+      (map[payment.loanId] ??= []).push(payment);
     }
-    return acc;
-  }, 0), [loans]);
+    return map;
+  }, [payments]);
 
-  const totalBorrowed = useMemo(() => loans?.reduce((acc, crr): number => {
-    if (crr.loanType === LoanType.TAKEN) {
-      acc += crr.amount;
-    }
-    return acc;
-  }, 0), [loans]);
+  // Net position counts only what is still outstanding on open loans.
+  const outstanding = useCallback(
+    (type: LoanType) =>
+      loans.reduce(
+        (acc, loan) =>
+          loan.loanType === type && !loan.settledAt
+            ? acc + remainingFor(loan, paymentsByLoan[loan.id])
+            : acc,
+        0,
+      ),
+    [loans, paymentsByLoan],
+  );
+  const totalGiven = useMemo(() => outstanding(LoanType.GIVEN), [outstanding]);
+  const totalBorrowed = useMemo(() => outstanding(LoanType.TAKEN), [outstanding]);
 
   const handleRefresh = async () => {
     if (!isOnline) {
@@ -143,9 +158,10 @@ export default function LoanScreen() {
     <LoanList
       notifyRowOpen={() => {}}
       loans={loans}
+      paymentsByLoan={paymentsByLoan}
       getUserLoan={getUserLoans}
     />
-  ), [loans, getUserLoans]);
+  ), [loans, paymentsByLoan, getUserLoans]);
 
   if (loading && loans.length === 0) {
     return <AnimatedLoader />;

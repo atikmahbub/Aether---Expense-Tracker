@@ -7,7 +7,10 @@ import {
 } from "@trackingPortal/api/primitives";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
 import { PillChip, ScalarSheet, SheetHeader } from "@trackingPortal/components/scalar";
-import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
+import EntityDetailSheet, {
+  DetailDeleteLink,
+} from "@trackingPortal/components/scalar/EntityDetailSheet";
+import { useSheetConfirm } from "@trackingPortal/components/scalar/SheetConfirm";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
@@ -31,7 +34,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 
 interface IInvestList {
@@ -55,7 +58,13 @@ const InvestList: FC<IInvestList> = ({
   const { currentUser: user, currency } = useStoreContext();
   const { investData } = useDatabase();
   const { syncNow } = useOffline();
-  const showAlert = useScalarAlert();
+  const { confirm, panel: confirmPanel, cancel: cancelConfirm } = useSheetConfirm();
+
+  const closeSheet = useCallback(() => {
+    cancelConfirm();
+    setExpandedRowId(null);
+    notifyRowOpen(false);
+  }, [cancelConfirm, notifyRowOpen]);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -86,11 +95,11 @@ const InvestList: FC<IInvestList> = ({
         Toast.show({ type: "error", text1: "Something went wrong!" });
       } finally {
         resetForm();
-        setExpandedRowId(null);
+        closeSheet();
         setLoading(false);
       }
     },
-    [getUserInvestHistory, investData, syncNow, user.default],
+    [closeSheet, getUserInvestHistory, investData, syncNow, user.default],
   );
 
   const handleDelete = useCallback(
@@ -106,28 +115,23 @@ const InvestList: FC<IInvestList> = ({
         Toast.show({ type: "error", text1: "Something went wrong!" });
       } finally {
         setDeleteLoading(false);
-        setExpandedRowId(null);
+        closeSheet();
       }
     },
-    [getUserInvestHistory, investData, syncNow],
+    [closeSheet, getUserInvestHistory, investData, syncNow],
   );
 
   const confirmDelete = useCallback(
     (investment: InvestModel) => {
-      showAlert({
+      confirm({
         title: "Delete investment?",
         message: `Are you sure you want to delete ${investment.name}? This action cannot be undone.`,
-        buttons: [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => handleDelete(investment.id as InvestId),
-          },
-        ],
+        confirmLabel: "Delete",
+        destructive: true,
+        onConfirm: () => handleDelete(investment.id as InvestId),
       });
     },
-    [handleDelete, showAlert],
+    [handleDelete, confirm],
   );
 
   const renderEditor = useCallback(
@@ -168,24 +172,32 @@ const InvestList: FC<IInvestList> = ({
             <InvestForm
               update
               onSubmit={handleSubmit}
-              onCancel={() => setExpandedRowId(null)}
+              onCancel={closeSheet}
               loading={loading}
+              belowFooter={
+                <DetailDeleteLink
+                  label={deleteLoading ? "Deleting…" : "Delete investment"}
+                  disabled={deleteLoading}
+                  onPress={() => confirmDelete(item)}
+                />
+              }
             />
-            <Pressable
-              disabled={deleteLoading}
-              onPress={() => confirmDelete(item)}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteText}>
-                {deleteLoading ? "Deleting…" : "Delete investment"}
-              </Text>
-            </Pressable>
           </View>
         )}
       </Formik>
     ),
-    [confirmDelete, deleteLoading, loading, onInvestEdit, styles],
+    [closeSheet, confirmDelete, deleteLoading, loading, onInvestEdit, styles],
   );
+
+  const selected = invests.find((i) => i.id === expandedRowId);
+  const money = (value: number) =>
+    formatCurrency(value, currency, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  const selectedCompleted = selected?.status === EInvestStatus.Completed;
+  const selectedGain =
+    selected && selected.earned != null ? selected.earned - selected.amount : null;
 
   const active = status === EInvestStatus.Active;
 
@@ -206,11 +218,10 @@ const InvestList: FC<IInvestList> = ({
           onPress={() => setStatus(EInvestStatus.Completed)}
         />
       </View>
-      <View style={styles.card}>
-        {invests.length ? (
-          invests.map((invest, index) => {
+      {invests.length ? (
+        <View style={styles.card}>
+          {invests.map((invest, index) => {
             const completed = invest.status === EInvestStatus.Completed;
-            const open = expandedRowId === invest.id;
             const returnLabel =
               invest.earned != null && invest.amount > 0
                 ? formatNumber(
@@ -221,6 +232,7 @@ const InvestList: FC<IInvestList> = ({
             return (
               <View key={invest.id}>
                 <ScalarListRow
+                  grouped
                   title={invest.name}
                   status={returnLabel}
                   meta={`${completed ? "Completed" : "Active"} · since ${dayjs(
@@ -233,29 +245,67 @@ const InvestList: FC<IInvestList> = ({
                   icon={completed ? "check-bold" : "rhombus"}
                   categoryColor={completed ? colors.positiveTile : colors.goldTile}
                   iconGlyphColor={completed ? colors.positive : colors.assetGold}
-                  showDivider={index < invests.length - 1 || open}
+                  showDivider={index < invests.length - 1}
                   onPress={() => {
-                    const next = open ? null : invest.id;
-                    setExpandedRowId(next);
-                    notifyRowOpen(Boolean(next));
+                    setExpandedRowId(invest.id);
+                    notifyRowOpen(true);
                   }}
                 />
-                {open && renderEditor(invest)}
               </View>
             );
-          })
-        ) : (
+          })}
+        </View>
+      ) : (
+        <View style={styles.emptyCard}>
           <Text style={styles.empty}>
             No {active ? "active" : "completed"} investments
           </Text>
-        )}
-      </View>
+        </View>
+      )}
       {active && invests.length === 1 && (
         <View style={styles.assetHint}>
           <Text style={styles.assetHintTitle}>One asset tracked</Text>
           <Text style={styles.assetHintText}>Add a second to compare returns over time.</Text>
         </View>
       )}
+      <EntityDetailSheet
+        visible={Boolean(selected)}
+        onClose={closeSheet}
+        icon={selectedCompleted ? "check-bold" : "rhombus"}
+        iconTile={selectedCompleted ? colors.positiveTile : colors.goldTile}
+        iconColor={selectedCompleted ? colors.positive : colors.assetGold}
+        title={selected?.name ?? ""}
+        meta={
+          selected
+            ? `${selectedCompleted ? "Completed" : "Active"} · since ${dayjs(
+                makeUnixTimestampToNumber(Number(selected.startDate)),
+              ).format("D MMM YYYY")}`
+            : ""
+        }
+        figureLabel="Invested"
+        figure={money(selected?.amount ?? 0)}
+        badge={{ label: selectedCompleted ? "Completed" : "Active" }}
+        cardFooter={
+          selectedGain != null && selected ? (
+            <View style={styles.cardFoot}>
+              <Text style={styles.caption}>Now {money(selected.earned ?? 0)}</Text>
+              <Text style={[styles.caption, selectedGain < 0 && styles.captionNegative]}>
+                {`${selectedGain < 0 ? "−" : "+"}${money(Math.abs(selectedGain))}`}
+                {selected.amount > 0
+                  ? ` · ${formatNumber((Math.abs(selectedGain) / selected.amount) * 100, {
+                      maximumFractionDigits: 1,
+                      minimumFractionDigits: 1,
+                      suffix: "%",
+                    })}`
+                  : ""}
+              </Text>
+            </View>
+          ) : undefined
+        }
+        takeover={confirmPanel}
+      >
+        {selected && renderEditor(selected)}
+      </EntityDetailSheet>
     </ScalarSheet>
   );
 };
@@ -265,29 +315,34 @@ export default React.memo(InvestList);
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     filters: { flexDirection: "row", gap: 6, paddingTop: 4, paddingBottom: 6 },
+    // Same grouped card and empty state as the wallet timeline rows.
     card: {
-      backgroundColor: "transparent",
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.groupBorder,
+      borderRadius: designTokens.radius.group,
+      backgroundColor: colors.groupBg,
     },
-    editor: { gap: 12, paddingVertical: 16, backgroundColor: "transparent" },
-    deleteButton: {
-      height: 48,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.full,
+    emptyCard: {
+      padding: 18,
       borderWidth: 1.5,
-      borderColor: colors.negative,
+      borderStyle: "dashed",
+      borderColor: colors.dashedBorder,
+      borderRadius: designTokens.radius.group,
     },
-    deleteText: {
-      color: colors.negative,
-      fontFamily: designTokens.font.bold,
-      fontSize: 15,
-      fontWeight: "700",
+    editor: { gap: 12, backgroundColor: "transparent" },
+    cardFoot: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+    caption: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 13,
     },
+    captionNegative: { color: colors.negative },
     empty: {
-      padding: 20,
-      textAlign: "center",
-      color: colors.textSecondary,
+      color: colors.textMuted,
       fontFamily: designTokens.font.medium,
+      textAlign: "center",
+      ...designTokens.typography.body,
     },
     assetHint: {
       marginTop: 8,

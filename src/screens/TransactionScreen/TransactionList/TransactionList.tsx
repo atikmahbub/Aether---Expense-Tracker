@@ -20,7 +20,10 @@ import dayjs, {Dayjs} from 'dayjs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import ScalarListRow from '@trackingPortal/components/ScalarListRow';
-import {useScalarAlert} from '@trackingPortal/components/ScalarAlert';
+import EntityDetailSheet, {
+  DetailDeleteLink,
+} from '@trackingPortal/components/scalar/EntityDetailSheet';
+import {useSheetConfirm} from '@trackingPortal/components/scalar/SheetConfirm';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import {Formik} from 'formik';
 import {
@@ -87,10 +90,10 @@ const TransactionList: FC<ITransactionList> = ({
   const [openPicker, setOpenPicker] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  const {currentUser: user, currency} = useStoreContext();
+  const {currentUser: user, currency, hiddenCategoryIds} = useStoreContext();
   const {transactionData} = useDatabase();
   const {syncNow} = useOffline();
-  const showAlert = useScalarAlert();
+  const {confirm, panel: confirmPanel, cancel: cancelConfirm} = useSheetConfirm();
   const [loading, setLoading] = useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const categoryLookup = useMemo(() => {
@@ -152,6 +155,7 @@ const TransactionList: FC<ITransactionList> = ({
 
       resetForm();
       setExpandedRowId(null);
+      notifyRowOpen(false);
 
       InteractionManager.runAfterInteractions(async () => {
         await getUserExpenses();
@@ -180,6 +184,7 @@ const TransactionList: FC<ITransactionList> = ({
     transactionData,
     categoryLookup,
     getUserExpenses,
+    notifyRowOpen,
     onCategoryUsed,
     refreshAnalytics,
     refreshSummary,
@@ -196,6 +201,7 @@ const TransactionList: FC<ITransactionList> = ({
       await transactionData.deleteTransaction(rowId as string);
 
       setExpandedRowId(null);
+      notifyRowOpen(false);
 
       InteractionManager.runAfterInteractions(async () => {
         await getUserExpenses();
@@ -219,6 +225,7 @@ const TransactionList: FC<ITransactionList> = ({
   }, [
     transactionData,
     getUserExpenses,
+    notifyRowOpen,
     refreshAnalytics,
     refreshSummary,
     syncNow,
@@ -226,29 +233,60 @@ const TransactionList: FC<ITransactionList> = ({
 
   const confirmDeleteTransaction = useCallback((transaction: TransactionModel) => {
     const purpose = transaction.description?.trim();
-    showAlert({
+    confirm({
       title: 'Delete transaction?',
       message: purpose
         ? `Are you sure you want to delete “${purpose}”? This action cannot be undone.`
         : 'Are you sure you want to delete this transaction? This action cannot be undone.',
-      buttons: [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => handleDeleteTransaction(transaction.id),
-        },
-      ],
+      confirmLabel: 'Delete',
+      destructive: true,
+      onConfirm: () => handleDeleteTransaction(transaction.id),
     });
-  }, [handleDeleteTransaction, showAlert]);
+  }, [handleDeleteTransaction, confirm]);
 
-  const renderCollapsibleContent = useCallback(
-    (item: any) => {
-      const selectedItem = transactions.find(t => t.id === item.id);
-      if (!selectedItem) return null;
-      const currentRowId = selectedItem.id as any as TransactionId;
+  const closeSheet = useCallback(() => {
+    cancelConfirm();
+    setExpandedRowId(null);
+    notifyRowOpen(false);
+  }, [cancelConfirm, notifyRowOpen]);
+
+  const renderDetailSheet = useCallback(
+    () => {
+      const selectedItem = expandedRowId
+        ? transactions.find(t => t.id === expandedRowId)
+        : undefined;
+      const currentRowId = selectedItem?.id as any as TransactionId;
+      const category = selectedItem?.category?.name || 'Uncategorized';
+      const income = selectedItem?.type === 'income';
+      const selectedCategoryId =
+        (selectedItem as any)?.categoryId ||
+        categories.find(c => c.name === selectedItem?.category?.name)?.id;
+      // Hidden categories drop out of the picker, except the entry's own.
+      const editCategories = categories.filter(
+        c => !hiddenCategoryIds.includes(c.id) || c.id === selectedCategoryId,
+      );
 
       return (
+        <EntityDetailSheet
+          visible={Boolean(selectedItem)}
+          onClose={closeSheet}
+          icon={normalizeCategoryIcon(selectedItem?.category?.icon) as any}
+          iconTile={selectedItem?.category?.color}
+          iconColor={selectedItem?.category?.color ? '#FFFFFF' : undefined}
+          title={selectedItem?.description || category}
+          meta={
+            selectedItem
+              ? `${category} · ${dayjs(parseDate(selectedItem.date)).format('D MMM YYYY, h:mm a')}`
+              : ''
+          }
+          figureLabel={income ? 'Income' : 'Expense'}
+          figure={`${income ? '+' : '−'}${formatCurrency(
+            Math.abs(selectedItem?.amount ?? 0),
+            currency,
+            {minimumFractionDigits: 0, maximumFractionDigits: 2},
+          )}`}
+          takeover={confirmPanel}>
+        {selectedItem && (
         <Formik
           enableReinitialize
           initialValues={{
@@ -268,34 +306,36 @@ const TransactionList: FC<ITransactionList> = ({
           {({handleSubmit}) => (
             <View style={styles.collapsibleContent}>
               <TransactionForm
-                categories={categories}
+                categories={editCategories}
                 categoriesLoading={categoriesLoading}
                 categoryError={categoryError}
                 refreshCategories={refreshCategories}
                 recentCategoryIds={recentCategoryIds}
                 onSubmit={handleSubmit}
-                onCancel={() => setExpandedRowId(null)}
+                onCancel={closeSheet}
                 loading={loading}
+                belowFooter={
+                  <DetailDeleteLink
+                    label={deleteLoading ? 'Deleting…' : 'Delete transaction'}
+                    disabled={deleteLoading}
+                    onPress={() => confirmDeleteTransaction(selectedItem)}
+                  />
+                }
               />
-              <Pressable
-                disabled={deleteLoading}
-                onPress={() => confirmDeleteTransaction(selectedItem)}
-                style={({pressed}) => [
-                  styles.deleteButton,
-                  pressed && styles.deleteButtonPressed,
-                ]}>
-                <Text style={styles.deleteButtonText}>
-                  {deleteLoading ? 'Deleting…' : 'Delete transaction'}
-                </Text>
-              </Pressable>
             </View>
           )}
         </Formik>
+        )}
+        </EntityDetailSheet>
       );
     },
     [
       transactions,
-      setExpandedRowId,
+      expandedRowId,
+      hiddenCategoryIds,
+      closeSheet,
+      confirmPanel,
+      currency,
       categories,
       categoriesLoading,
       categoryError,
@@ -402,7 +442,6 @@ const TransactionList: FC<ITransactionList> = ({
                 {group.items.map((item, index) => {
                   const category = item.category?.name || 'Uncategorized';
                   const positive = item.type === 'income';
-                  const open = expandedRowId === item.id;
                   return (
                     <View key={item.id}>
                       <ScalarListRow
@@ -418,14 +457,12 @@ const TransactionList: FC<ITransactionList> = ({
                         icon={normalizeCategoryIcon(item.category?.icon) as any}
                         categoryName={category}
                         categoryColor={item.category?.color}
-                        showDivider={index < group.items.length - 1 || open}
+                        showDivider={index < group.items.length - 1}
                         onPress={() => {
-                          const next = open ? null : item.id;
-                          setExpandedRowId(next);
-                          notifyRowOpen(Boolean(next));
+                          setExpandedRowId(item.id);
+                          notifyRowOpen(true);
                         }}
                       />
-                      {open && renderCollapsibleContent(item)}
                     </View>
                   );
                 })}
@@ -439,6 +476,7 @@ const TransactionList: FC<ITransactionList> = ({
           )}
         </View>
       </View>
+      {renderDetailSheet()}
       <Modal
         visible={openPicker}
         transparent
@@ -591,26 +629,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     },
     collapsibleContent: {
       gap: 12,
-      padding: 16,
       backgroundColor: 'transparent',
-    },
-    deleteButton: {
-      height: 48,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 16,
-      borderRadius: designTokens.radius.full,
-      borderWidth: 1.5,
-      borderColor: colors.negative,
-    },
-    deleteButtonPressed: {
-      opacity: 0.75,
-    },
-    deleteButtonText: {
-      color: colors.negative,
-      fontFamily: designTokens.font.bold,
-      fontSize: 15,
-      fontWeight: '700',
     },
     emptyCard: {
       padding: 18,

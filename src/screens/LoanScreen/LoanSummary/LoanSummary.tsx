@@ -32,21 +32,21 @@ const LoanSummary: React.FC<ISummary> = ({
           amount={formatCurrency(Math.abs(netPosition), currency, moneyOptions)}
           footer={
             netPosition === 0
-              ? "Given and borrowed are balanced"
+              ? "Nothing outstanding either way"
               : netPosition > 0
-                ? "More given than borrowed"
-                : "More borrowed than given"
+                ? "More is owed to you than you owe"
+                : "You owe more than is owed to you"
           }
         />
         <HeroStatCard
           stats={[
             {
-              label: "↗ Total given",
+              label: "↗ Owed to you",
               value: `+${formatCurrency(totalGiven, currency, moneyOptions)}`,
               tone: "positive",
             },
             {
-              label: "↙ Total borrowed",
+              label: "↙ You owe",
               value: `−${formatCurrency(totalBorrowed, currency, moneyOptions)}`,
               tone: "negative",
             },

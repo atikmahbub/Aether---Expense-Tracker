@@ -8,4 +8,6 @@ export interface IUpdateLoanParams {
   deadLine?: UnixTimeStampString;
   note?: string | null;
   loanType?: LoanType;
+  /** Absent = unchanged on the server; null = reopen. */
+  settledAt?: UnixTimeStampString | null;
 }

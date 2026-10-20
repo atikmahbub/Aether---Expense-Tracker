@@ -16,6 +16,9 @@ export class NewLoan {
 }
 
 export class LoanModel extends NewLoan {
+  /** Set once the loan is fully repaid or forgiven; null/undefined = open. */
+  public settledAt?: UnixTimeStampString | null;
+
   constructor(
     public id: LoanId,
     public userId: UserId,
