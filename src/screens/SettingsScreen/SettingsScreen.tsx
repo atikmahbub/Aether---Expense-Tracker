@@ -291,8 +291,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       overflow: "hidden",
       borderRadius: designTokens.radius.group,
       borderWidth: 1,
-      borderColor: colors.groupBorder,
-      backgroundColor: colors.groupBg,
+      borderColor: colors.listCardBorder,
+      backgroundColor: colors.listCardBg,
     },
     row: {
       minHeight: 56,
@@ -339,8 +339,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       paddingHorizontal: 14,
       borderRadius: designTokens.radius.group,
       borderWidth: 1,
-      borderColor: colors.groupBorder,
-      backgroundColor: colors.groupBg,
+      borderColor: colors.listCardBorder,
+      backgroundColor: colors.listCardBg,
     },
     signOutTile: {
       width: 34,

@@ -104,7 +104,8 @@ export const lightColors = {
   statBadgeInk: "#1E2E47",
   sheet: "#F5F7FA",
   // The list sheet on tab screens: glass over the fixed glow behind it.
-  sheetGlass: "rgba(255,255,255,0.42)",
+  // Solid white so list content reads on a clean surface in light mode.
+  sheetGlass: "#FFFFFF",
   // Frosted surfaces (GlassSurface): tint over the blur, and the bright rim.
   dockBacking: "#F8F9FB",
   glassFill: "rgba(255,255,255,0.42)",
@@ -135,8 +136,12 @@ export const lightColors = {
   goldTile: "#F4ECD6",
   groupBg: "rgba(255,255,255,0.42)",
   groupBorder: "rgba(255,255,255,0.9)",
-  groupIconBg: "rgba(255,255,255,0.45)",
-  groupIconBorder: "rgba(255,255,255,0.95)",
+  // Row cards on the list sheet (wallet, loans, investments).
+  listCardBg: "#FFFFFF",
+  listCardBorder: "rgba(45,66,99,0.10)",
+  // Settings row tiles, on the white list cards.
+  groupIconBg: "#EEF1F6",
+  groupIconBorder: "transparent",
   groupIconInk: "#2D4263",
   dashedBorder: "#D3DAE6",
   chartIn: "#2D4263",

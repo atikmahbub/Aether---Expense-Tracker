@@ -37,10 +37,15 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Label sits above the field: Paper's floating label notches the
+          outline with a translucent fill, so the border showed through it. */}
+      {typeof label === 'string' && label.length > 0 && (
+        <Text style={styles.label}>{label}</Text>
+      )}
       <TextInput
         ref={inputRef}
         mode={mode}
-        label={label}
+        label={typeof label === 'string' ? undefined : label}
         value={field.value}
         onChangeText={field.onChange(name)}
         onBlur={field.onBlur(name)}
@@ -74,6 +79,14 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
   return StyleSheet.create({
     container: {
       marginBottom: 16,
+    },
+    label: {
+      marginBottom: 8,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 12,
+      letterSpacing: 0.96,
+      textTransform: 'uppercase',
     },
     input: {
       fontSize: 16,

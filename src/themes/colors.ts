@@ -142,6 +142,9 @@ export const colors = {
   goldTile: "#3A3320",
   groupBg: "#151922",
   groupBorder: "#2A3040",
+  // Row cards on the list sheet (wallet, loans, investments).
+  listCardBg: "#151922",
+  listCardBorder: "#2A3040",
   groupIconBg: "#1D222E",
   groupIconBorder: "transparent",
   groupIconInk: "#ECDFC4",

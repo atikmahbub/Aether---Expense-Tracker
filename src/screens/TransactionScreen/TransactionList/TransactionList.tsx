@@ -623,9 +623,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
     rowsCard: {
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: colors.groupBorder,
+      borderColor: colors.listCardBorder,
       borderRadius: designTokens.radius.group,
-      backgroundColor: colors.groupBg,
+      backgroundColor: colors.listCardBg,
     },
     collapsibleContent: {
       gap: 12,
