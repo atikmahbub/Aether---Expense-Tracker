@@ -65,6 +65,7 @@ export class LoanDataService {
       amount?: number;
       note?: string | null;
       deadLine?: string;
+      loanType?: number;
     },
   ): Promise<void> {
     const columns: Record<string, any> = {};
@@ -72,6 +73,7 @@ export class LoanDataService {
     if (patch.amount !== undefined) columns.amount = patch.amount;
     if (patch.note !== undefined) columns.note = patch.note;
     if (patch.deadLine !== undefined) columns.deadLine = patch.deadLine;
+    if (patch.loanType !== undefined) columns.loanType = patch.loanType;
     await this.repos.loans.updateLocal(localId, columns);
   }
 

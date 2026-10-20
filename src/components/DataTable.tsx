@@ -47,6 +47,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { impactHaptic } from "@trackingPortal/utils/haptic";
 
 const Row = React.memo(
   ({
@@ -96,13 +97,13 @@ const Row = React.memo(
     };
 
     const handlePress = () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      impactHaptic(Haptics.ImpactFeedbackStyle.Light);
       onEditToggle(item.id);
     };
 
     return (
       <Animated.View
-        entering={FadeInDown.delay(index < 12 ? index * 60 : 0).duration(400).springify()}
+        entering={FadeInDown.delay(index < 8 ? index * 35 : 0).duration(280)}
         style={[styles.rowContainer, animatedStyle]}
       >
         <Swipeable

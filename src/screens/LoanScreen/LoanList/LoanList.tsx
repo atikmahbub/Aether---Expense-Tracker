@@ -55,6 +55,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
           deadLine: makeUnixTimestampString(Number(new Date(values.deadLine))),
           note: values.note,
           name: values.name,
+          loanType: values[EAddLoanFields.LOAN_TYPE],
         });
         await getUserLoan();
         triggerSuccessHaptic();
@@ -121,6 +122,7 @@ const LoanList: FC<ILoanList> = ({ notifyRowOpen, loans, getUserLoan }) => {
             maximumFractionDigits: 2,
           }),
           [EAddLoanFields.NAME]: item.name,
+          [EAddLoanFields.LOAN_TYPE]: item.loanType,
         }}
         onSubmit={(values, helpers) =>
           onLoanEdit(values, helpers, item.id as LoanId)

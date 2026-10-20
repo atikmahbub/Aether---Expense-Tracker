@@ -19,6 +19,10 @@ export async function initDatabase(): Promise<SQLiteDatabase> {
   initPromise = (async () => {
     const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
     await db.execAsync("PRAGMA journal_mode = WAL;");
+    // Standard pairing with WAL: no fsync per commit, still crash-safe. Each
+    // synced row is its own commit, so on Android this makes the first-launch
+    // download many times faster.
+    await db.execAsync("PRAGMA synchronous = NORMAL;");
     await db.execAsync("PRAGMA foreign_keys = ON;");
 
     const version = await runMigrations(db);

@@ -106,6 +106,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshCategories = async (options?: { force?: boolean }) => {
     if (currentUser.default || !currentUser.userId) return;
     if (isCategoryHydrated && !options?.force) return;
+    // A forced refresh follows a category edit, which may be an income one —
+    // refresh that list too or the entry form keeps showing the stale icon.
+    if (options?.force) void fetchIncomeCategories(currentUser.userId).catch(() => {});
 
     const repo = repositories?.categories;
     setCategoryLoading(true);

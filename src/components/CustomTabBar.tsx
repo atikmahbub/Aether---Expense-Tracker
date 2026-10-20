@@ -3,6 +3,7 @@ import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import * as Haptics from "expo-haptics";
+import { impactHaptic, selectionHaptic } from "@trackingPortal/utils/haptic";
 import React, { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { Easing, FadeIn, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
@@ -34,14 +35,14 @@ export default function CustomTabBar({
 
   const handleTabPress = useCallback(
     (routeName: string) => {
-      Haptics.selectionAsync();
+      selectionHaptic();
       navigation.navigate(routeName);
     },
     [navigation],
   );
 
   const handlePlusPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactHaptic(Haptics.ImpactFeedbackStyle.Medium);
     eventEmitter.emit(EVENTS.OPEN_CREATION_MODAL);
   }, []);
 

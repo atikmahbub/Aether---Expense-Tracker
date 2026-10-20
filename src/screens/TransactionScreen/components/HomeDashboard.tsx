@@ -135,7 +135,7 @@ export default function HomeDashboard({
               >
                 <SplitBar
                   ratio={ratio}
-                  limitLabel={`Limit ${money(limit, currency)}`}
+                  limitLabel={`Limit ${money(limit, currency)} ›`}
                   leftLabel={isOver ? "Over" : "Left"}
                   leftAmount={money(difference, currency)}
                 />

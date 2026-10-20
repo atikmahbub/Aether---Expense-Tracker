@@ -1,4 +1,4 @@
-import * as Haptics from "expo-haptics";
+import { selectionHaptic } from "@trackingPortal/utils/haptic";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -35,7 +35,7 @@ const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
         label={capitalize(option)}
         active={option === selectedOption}
         onPress={() => {
-          if (option !== selectedOption) Haptics.selectionAsync();
+          if (option !== selectedOption) selectionHaptic();
           onOptionPress(option);
         }}
       />

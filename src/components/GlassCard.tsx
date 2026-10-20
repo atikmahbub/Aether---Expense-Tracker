@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import Svg, { Rect, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { impactHaptic } from "@trackingPortal/utils/haptic";
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import CardWaves from '@trackingPortal/components/CardWaves';
 
@@ -52,7 +53,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
 
   const handleMainPress = () => {
     if (onPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      impactHaptic(Haptics.ImpactFeedbackStyle.Light);
       onPress();
     }
   };

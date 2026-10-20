@@ -23,7 +23,7 @@ export default function ScalarSheet({
     <View
       style={[
         styles.sheet,
-        { backgroundColor: colors.sheetGlass, borderColor: colors.sheetBorder },
+        { backgroundColor: colors.sheetGlass },
         style,
       ]}
     >
@@ -39,7 +39,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: designTokens.radius.sheet,
     borderTopRightRadius: designTokens.radius.sheet,
     borderCurve: "continuous",
-    borderTopWidth: 1,
     paddingTop: 20,
     paddingHorizontal: 22,
     paddingBottom: DOCK_CLEARANCE,

@@ -216,7 +216,12 @@ const NavigationBoundary: React.FC = () => {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
       <Stack.Screen
         name="profile"
         options={{

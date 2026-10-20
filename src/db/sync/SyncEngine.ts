@@ -261,6 +261,7 @@ export class SyncEngine {
       amount: local.amount,
       note: local.note,
       deadLine: local.deadLine as any,
+      loanType: local.loanType as any,
     });
     await repo.markSynced(item.localId);
   }

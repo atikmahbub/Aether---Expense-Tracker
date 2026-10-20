@@ -192,6 +192,11 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       borderTopLeftRadius: designTokens.radius.sheet,
       borderTopRightRadius: designTokens.radius.sheet,
       borderCurve: 'continuous',
+      // Hairline rim along the top and rounded corners so the sheet reads as a
+      // separate paper over the near-identical dark background.
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: colors.glassRim,
       maxHeight: SCREEN_HEIGHT * 0.94,
       paddingTop: 6,
     },
