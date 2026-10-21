@@ -31,6 +31,30 @@ const EXAMPLES = [
   { description: "Netflix", type: "Expense", day: 12, icon: "television-classic" },
 ] as const;
 
+/** The short "how it works" note under the list. */
+const HELP = [
+  {
+    icon: "calendar-check-outline",
+    text: "Each repeat is added on its day, the next time you open Scalar — even if you were offline.",
+  },
+  {
+    icon: "repeat",
+    text: "They appear in your timeline like any other entry, with a small repeat icon, and count in your monthly totals.",
+  },
+  {
+    icon: "pencil-outline",
+    text: "Change the amount, category or note anytime; it applies from the next entry.",
+  },
+  {
+    icon: "pause-circle-outline",
+    text: "Pause to skip a stretch, or delete to stop. Past entries always stay in your history.",
+  },
+  {
+    icon: "calendar-refresh-outline",
+    text: "To move the day, delete the repeat and set up a new one.",
+  },
+] as const;
+
 /** The next date falling on `day` of a month, today included. */
 const nextOnDay = (day: number) => {
   const today = dayjs().startOf("day");
@@ -143,7 +167,9 @@ export default function RecurringScreen() {
         <ScalarListRow
           grouped
           title={rule.description || category?.name || "Recurring"}
-          meta={`${FREQUENCY_LABEL[rule.frequency]} · ${when}`}
+          meta={[category?.name, FREQUENCY_LABEL[rule.frequency], when]
+            .filter(Boolean)
+            .join(" · ")}
           amount={`${isIncome ? "+" : "−"}${fmt(rule.amount)}`}
           positive={isIncome}
           icon={normalizeCategoryIcon(category?.icon ?? undefined) as any}
@@ -277,6 +303,21 @@ export default function RecurringScreen() {
               {endedOpen && <View style={styles.card}>{ended.map(renderRule)}</View>}
             </View>
           )}
+
+          <View style={styles.help}>
+            <Text style={styles.helpTitle}>How repeats work</Text>
+            {HELP.map((line) => (
+              <View key={line.icon} style={styles.helpRow}>
+                <MaterialCommunityIcons
+                  name={line.icon}
+                  size={16}
+                  color={colors.textMuted}
+                  style={styles.helpIcon}
+                />
+                <Text style={styles.helpText}>{line.text}</Text>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       )}
 
@@ -352,6 +393,29 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       backgroundColor: colors.listCardBg,
     },
     paused: { opacity: 0.45 },
+    // Quiet by design: no card fill, so the rules above stay the focus.
+    help: {
+      marginTop: 18,
+      paddingTop: 18,
+      paddingHorizontal: 4,
+      gap: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.rowDivider,
+    },
+    helpTitle: {
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 14,
+    },
+    helpRow: { flexDirection: "row", gap: 12 },
+    helpIcon: { marginTop: 2 },
+    helpText: {
+      flex: 1,
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 13,
+      lineHeight: 19,
+    },
     divider: { borderBottomWidth: 1, borderBottomColor: colors.rowDivider },
     endedHeader: {
       minHeight: 44,
