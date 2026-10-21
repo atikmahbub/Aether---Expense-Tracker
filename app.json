@@ -84,6 +84,7 @@
       "auth0Domain": "dev-pm0712stgt281lme.us.auth0.com",
       "auth0ClientId": "ZKFTcNI7NKpHeAv11HY5qQjCIpkddOH9",
       "auth0Audience": "https://api.tracking-wallet.com",
+      "displayVersion": "4.2.0",
       "router": {},
       "eas": {
         "projectId": "f6321d98-7753-456b-b4c8-61857344a854"
