@@ -15,6 +15,9 @@ export interface LocalTransaction {
   date: string | null;
   categoryId: string | null;
   categoryName: string | null;
+  /** Local id of the recurring rule that generated this entry, if any. */
+  recurringRuleId: string | null;
+  occurrenceDate: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   syncStatus: string;
@@ -35,6 +38,8 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
     "date",
     "categoryId",
     "categoryName",
+    "recurringRuleId",
+    "occurrenceDate",
   ];
 
   protected toModel(row: Row): LocalTransaction {
@@ -48,6 +53,8 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
       date: row.date ?? null,
       categoryId: row.categoryId ?? null,
       categoryName: row.categoryName ?? null,
+      recurringRuleId: row.recurringRuleId ?? null,
+      occurrenceDate: row.occurrenceDate ?? null,
       createdAt: row.createdAt ?? null,
       updatedAt: row.updatedAt ?? null,
       syncStatus: row.syncStatus,
@@ -72,6 +79,11 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
               ? String(model.category.id)
               : null,
         categoryName: model.categoryName ?? model.category?.name ?? null,
+        // A pulled entry names its rule by server id; readers match either id.
+        recurringRuleId:
+          model.recurringRuleId != null ? String(model.recurringRuleId) : null,
+        occurrenceDate:
+          model.occurrenceDate != null ? String(model.occurrenceDate) : null,
       },
     };
   }

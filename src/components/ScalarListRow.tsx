@@ -28,6 +28,8 @@ interface ScalarListRowProps {
   grouped?: boolean;
   /** Small line under the amount (loan status, return %). */
   status?: string;
+  /** Small repeat glyph before the meta line (entries added by a repeat). */
+  recurring?: boolean;
 }
 
 export default function ScalarListRow({
@@ -44,6 +46,7 @@ export default function ScalarListRow({
   showDivider = true,
   grouped = false,
   status,
+  recurring = false,
 }: ScalarListRowProps) {
   const { colors, isDark } = useAppTheme();
   const palette = isDark ? categoryTokens.dark : categoryTokens.light;
@@ -72,9 +75,19 @@ export default function ScalarListRow({
         <Text numberOfLines={1} style={styles.title}>
           {title}
         </Text>
-        <Text numberOfLines={1} style={styles.meta}>
-          {meta}
-        </Text>
+        <View style={styles.metaRow}>
+          {recurring && (
+            <MaterialCommunityIcons
+              accessibilityLabel="Recurring"
+              name="repeat"
+              size={12}
+              color={colors.textMuted}
+            />
+          )}
+          <Text numberOfLines={1} style={[styles.meta, styles.metaText]}>
+            {meta}
+          </Text>
+        </View>
       </View>
       <View style={styles.right}>
         <ScalarAmountText
@@ -129,6 +142,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontFamily: designTokens.font.semibold,
       ...designTokens.typography.rowTitle,
     },
+    metaRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+    metaText: { flexShrink: 1 },
     meta: {
       color: colors.textMuted,
       fontFamily: designTokens.font.regular,

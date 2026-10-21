@@ -164,7 +164,38 @@ const v3: Migration = {
   },
 };
 
-export const MIGRATIONS: Migration[] = [v1, v2, v3];
+/**
+ * Recurring transactions: the rules, plus a link from each generated
+ * transaction back to its rule and the occurrence it was made for.
+ * `lastRunDate` is the rule's cursor — the latest occurrence already turned
+ * into a transaction — so a run never creates the same occurrence twice.
+ */
+const v4: Migration = {
+  version: 4,
+  up: async (db) => {
+    await addColumnIfMissing(db, "transactions", "recurringRuleId", "TEXT");
+    await addColumnIfMissing(db, "transactions", "occurrenceDate", "TEXT");
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS recurring_rules (
+        ${SYNC_COLUMNS},
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT,
+        categoryId TEXT,
+        frequency TEXT NOT NULL,
+        startDate TEXT NOT NULL,
+        endDate TEXT,
+        pausedAt TEXT,
+        lastRunDate TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_recurring_rules_server ON recurring_rules (serverId);
+      CREATE INDEX IF NOT EXISTS idx_transactions_rule ON transactions (recurringRuleId);
+    `);
+  },
+};
+
+export const MIGRATIONS: Migration[] = [v1, v2, v3, v4];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(
   (max, m) => Math.max(max, m.version),

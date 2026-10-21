@@ -19,6 +19,10 @@ import { PillChip, ScalarSheet } from "@trackingPortal/components/scalar";
 import { useRecentCategories } from "@trackingPortal/screens/TransactionScreen/hooks/useRecentCategories";
 import { useTransactionInsights } from "@trackingPortal/screens/TransactionScreen/hooks/useTransactionInsights";
 import TransactionCreation from "@trackingPortal/screens/TransactionScreen/TransactionCreation";
+import {
+  CreationPrefill,
+  takePendingPrefill,
+} from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation";
 import { EMonthlyLimitFields } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
@@ -60,6 +64,7 @@ export default function TransactionScreen() {
   const activeUserId = user.userId;
 
   const [openCreationForm, setOpenCreationModal] = useState(false);
+  const [creationPrefill, setCreationPrefill] = useState<CreationPrefill | null>(null);
   const [limitModalVisible, setLimitModalVisible] = useState(false);
   const [savingLimit, setSavingLimit] = useState(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState(false);
@@ -223,9 +228,19 @@ export default function TransactionScreen() {
   useEffect(() => {
     const listener = () => {
       if (isFocused) {
+        setCreationPrefill(takePendingPrefill());
         setOpenCreationModal(true);
       }
     };
+
+    // A request made from another route (Recurring examples) waits for focus.
+    if (isFocused) {
+      const pending = takePendingPrefill();
+      if (pending) {
+        setCreationPrefill(pending);
+        setOpenCreationModal(true);
+      }
+    }
 
     eventEmitter.on(EVENTS.OPEN_CREATION_MODAL, listener);
 
@@ -530,7 +545,11 @@ export default function TransactionScreen() {
       {(openCreationForm || isCreationPreloaded) && (
         <TransactionCreation
           openCreationModal={openCreationForm}
-          setOpenCreationModal={setOpenCreationModal}
+          setOpenCreationModal={(open) => {
+            setOpenCreationModal(open);
+            if (!open) setCreationPrefill(null);
+          }}
+          prefill={creationPrefill}
           initialType={typeFilter === "expense" ? "Expense" : "Income"}
           setTransactions={setTransactions}
           getUserExpenses={getTransactions}

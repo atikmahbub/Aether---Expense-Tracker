@@ -8,3 +8,4 @@ export * from '@trackingPortal/api/models/Category';
 export * from '@trackingPortal/api/models/TransactionAnalytics';
 export * from '@trackingPortal/api/models/Transaction';
 export * from '@trackingPortal/api/models/TransactionSummaryModel';
+export * from '@trackingPortal/api/models/RecurringRuleModel';

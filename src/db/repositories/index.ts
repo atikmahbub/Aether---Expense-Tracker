@@ -4,6 +4,7 @@ import { TransactionRepository } from "@trackingPortal/db/repositories/Transacti
 import { CategoryRepository } from "@trackingPortal/db/repositories/CategoryRepository";
 import { LoanRepository } from "@trackingPortal/db/repositories/LoanRepository";
 import { LoanPaymentRepository } from "@trackingPortal/db/repositories/LoanPaymentRepository";
+import { RecurringRuleRepository } from "@trackingPortal/db/repositories/RecurringRuleRepository";
 import { InvestRepository } from "@trackingPortal/db/repositories/InvestRepository";
 import { MonthlyLimitRepository } from "@trackingPortal/db/repositories/MonthlyLimitRepository";
 import { UserRepository } from "@trackingPortal/db/repositories/UserRepository";
@@ -13,6 +14,7 @@ export * from "@trackingPortal/db/repositories/TransactionRepository";
 export * from "@trackingPortal/db/repositories/CategoryRepository";
 export * from "@trackingPortal/db/repositories/LoanRepository";
 export * from "@trackingPortal/db/repositories/LoanPaymentRepository";
+export * from "@trackingPortal/db/repositories/RecurringRuleRepository";
 export * from "@trackingPortal/db/repositories/InvestRepository";
 export * from "@trackingPortal/db/repositories/MonthlyLimitRepository";
 export * from "@trackingPortal/db/repositories/UserRepository";
@@ -23,6 +25,7 @@ export interface Repositories {
   categories: CategoryRepository;
   loans: LoanRepository;
   loanPayments: LoanPaymentRepository;
+  recurringRules: RecurringRuleRepository;
   investments: InvestRepository;
   monthlyLimits: MonthlyLimitRepository;
   users: UserRepository;
@@ -36,6 +39,7 @@ export function createRepositories(db: SQLiteDatabase, outbox: Outbox): Reposito
     categories: new CategoryRepository(db, outbox),
     loans: new LoanRepository(db, outbox),
     loanPayments: new LoanPaymentRepository(db, outbox),
+    recurringRules: new RecurringRuleRepository(db, outbox),
     investments: new InvestRepository(db, outbox),
     monthlyLimits: new MonthlyLimitRepository(db, outbox),
     users: new UserRepository(db, outbox),

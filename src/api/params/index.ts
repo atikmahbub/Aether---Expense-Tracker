@@ -15,3 +15,5 @@ export * from '@trackingPortal/api/params/IUpdateInvestParams';
 export * from '@trackingPortal/api/params/IGetInvestParams';
 export * from '@trackingPortal/api/params/IGetTransactionAnalyticsParams';
 export * from '@trackingPortal/api/params/ICategoryParams';
+export * from '@trackingPortal/api/params/IAddRecurringRuleParams';
+export * from '@trackingPortal/api/params/IUpdateRecurringRuleParams';

@@ -11,6 +11,7 @@ export type EntityName =
   | "category"
   | "loan"
   | "loanPayment"
+  | "recurringRule"
   | "investment"
   | "monthlyLimit"
   | "user";

@@ -2,6 +2,7 @@ import { TransactionService } from "./TransactionService";
 import { InvestService } from "./InvestService";
 import { LoanService } from "./LoanService";
 import { LoanPaymentService } from "./LoanPaymentService";
+import { RecurringRuleService } from "./RecurringRuleService";
 import { MonthlyLimitService } from "./MonthlyLimitService";
 import { UserService } from "./UserService";
 import { CategoryService } from "./CategoryService";
@@ -20,6 +21,7 @@ export class ApiGateway implements IApiGateWay {
   public monthlyLimitService: MonthlyLimitService;
   public loanServices: LoanService;
   public loanPaymentService: LoanPaymentService;
+  public recurringRuleService: RecurringRuleService;
   public investService: InvestService;
   public categoryService: CategoryService;
 
@@ -37,6 +39,7 @@ export class ApiGateway implements IApiGateWay {
     );
     this.loanServices = new LoanService(this.config, this.ajaxUtils);
     this.loanPaymentService = new LoanPaymentService(this.config, this.ajaxUtils);
+    this.recurringRuleService = new RecurringRuleService(this.config, this.ajaxUtils);
     this.investService = new InvestService(this.config, this.ajaxUtils);
     this.categoryService = new CategoryService(this.config, this.ajaxUtils);
   }

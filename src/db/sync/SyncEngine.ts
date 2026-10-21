@@ -103,6 +103,8 @@ export class SyncEngine {
         return this.repos.loans;
       case "loanPayment":
         return this.repos.loanPayments;
+      case "recurringRule":
+        return this.repos.recurringRules;
       case "investment":
         return this.repos.investments;
       case "monthlyLimit":
@@ -122,6 +124,8 @@ export class SyncEngine {
         return this.pushLoan(item);
       case "loanPayment":
         return this.pushLoanPayment(item);
+      case "recurringRule":
+        return this.pushRecurringRule(item);
       case "investment":
         return this.pushInvest(item);
       case "monthlyLimit":
@@ -155,6 +159,18 @@ export class SyncEngine {
       : null;
 
     if (item.op === "create") {
+      // A generated entry names its rule. The rule's create is earlier in the
+      // FIFO outbox; until it has a server id, fail so this retries after it.
+      // The server makes (rule, occurrence) unique, so a second device pushing
+      // the same occurrence gets the existing row back instead of a duplicate.
+      let ruleServerId: string | null = null;
+      if (local.recurringRuleId) {
+        const ruleRow = await this.repos.recurringRules.getById(local.recurringRuleId);
+        ruleServerId = ruleRow
+          ? await this.repos.recurringRules.serverIdForLocalId(local.recurringRuleId)
+          : local.recurringRuleId;
+        if (!ruleServerId) throw new Error("Recurring rule not synced yet");
+      }
       const result = await this.apiGateway.transactionService.addTransaction({
         userId: local.userId as any,
         amount: local.amount,
@@ -162,6 +178,8 @@ export class SyncEngine {
         date: local.date as any,
         categoryId: categoryServerId as any,
         type: local.type,
+        recurringRuleId: ruleServerId,
+        occurrenceDate: ruleServerId ? (local.occurrenceDate as any) : null,
       });
       await repo.setServerId(item.localId, String((result as any).id), {
         createdAt: (result as any).created ?? null,
@@ -326,6 +344,51 @@ export class SyncEngine {
     await repo.markSynced(item.localId);
   }
 
+  private async pushRecurringRule(item: OutboxItem): Promise<void> {
+    const repo = this.repos.recurringRules;
+    const local = await repo.getById(item.localId);
+    if (!local) return;
+    const svc = this.apiGateway.recurringRuleService;
+
+    if (item.op === "delete") {
+      const serverId = await repo.serverIdForLocalId(item.localId);
+      if (serverId) await svc.deleteRecurringRule(serverId as any, local.userId as any);
+      await repo.purge(item.localId);
+      return;
+    }
+
+    // Resolve a possibly-local categoryId to its server id before sending.
+    const categoryServerId = local.categoryId
+      ? (await this.repos.categories.serverIdForLocalId(local.categoryId)) ??
+        local.categoryId
+      : null;
+    const fields = {
+      userId: local.userId as any,
+      amount: local.amount,
+      description: local.description,
+      categoryId: categoryServerId,
+      frequency: local.frequency,
+      startDate: local.startDate as any,
+      endDate: (local.endDate ?? null) as any,
+      pausedAt: (local.pausedAt ?? null) as any,
+      lastRunDate: (local.lastRunDate ?? null) as any,
+    };
+
+    if (item.op === "create") {
+      const result = await svc.addRecurringRule({ ...fields, type: local.type });
+      await repo.setServerId(item.localId, String((result as any).id), {
+        createdAt: (result as any).created ?? null,
+        updatedAt: (result as any).updated ?? null,
+      });
+      return;
+    }
+
+    const serverId = await repo.serverIdForLocalId(item.localId);
+    if (!serverId) return;
+    await svc.updateRecurringRule({ id: serverId as any, ...fields });
+    await repo.markSynced(item.localId);
+  }
+
   private async pushInvest(item: OutboxItem): Promise<void> {
     const repo = this.repos.investments;
     const local = await repo.getById(item.localId);
@@ -426,6 +489,7 @@ export class SyncEngine {
       { label: 'Syncing income categories', fn: () => this.pullCategories(userId, 'income') },
       { label: 'Syncing loans', fn: () => this.pullLoans(userId) },
       { label: 'Syncing loan payments', fn: () => this.pullLoanPayments(userId) },
+      { label: 'Syncing recurring', fn: () => this.pullRecurringRules(userId) },
       { label: 'Syncing investments', fn: () => this.pullInvestments(userId) },
       { label: 'Syncing monthly limits', fn: () => this.pullMonthlyLimits(userId, months) },
     ];
@@ -556,6 +620,23 @@ export class SyncEngine {
     await this.repos.loanPayments.backfillUserId(userId);
     await this.reconcileDeletes(
       this.repos.loanPayments,
+      list.map((m: any) => String(m.id)),
+      "userId = ?",
+      [userId],
+    );
+    return list.length;
+  }
+
+  private async pullRecurringRules(userId: string): Promise<number> {
+    const list = await this.apiGateway.recurringRuleService.getRecurringRulesByUserId(
+      userId as any,
+    );
+    for (const model of list) {
+      await this.repos.recurringRules.upsertFromServer({ ...model, userId });
+    }
+    await this.repos.recurringRules.backfillUserId(userId);
+    await this.reconcileDeletes(
+      this.repos.recurringRules,
       list.map((m: any) => String(m.id)),
       "userId = ?",
       [userId],

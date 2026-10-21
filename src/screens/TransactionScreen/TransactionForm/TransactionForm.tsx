@@ -27,6 +27,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import ScalarCalendar from "@trackingPortal/components/ScalarCalendar";
+import RepeatPicker, {
+  RepeatChoice,
+} from "@trackingPortal/screens/TransactionScreen/components/RepeatPicker";
+import type { RecurringFrequency } from "@trackingPortal/api/models/RecurringRuleModel";
+import {
+  describeFrequency,
+  FREQUENCY_LABEL,
+} from "@trackingPortal/db/services/RecurringDataService";
 import { withHaptic } from "@trackingPortal/utils/haptic";
 import { ImpactFeedbackStyle } from "expo-haptics";
 
@@ -53,6 +61,8 @@ interface TransactionFormProps {
    * footer (used for the sheet's delete link).
    */
   belowFooter?: React.ReactNode;
+  /** Shows the Repeat row (new entries only). */
+  allowRepeat?: boolean;
 }
 
 export default function TransactionForm({
@@ -67,6 +77,7 @@ export default function TransactionForm({
   loading,
   showShortcutKeypad = false,
   belowFooter,
+  allowRepeat = false,
 }: TransactionFormProps) {
   const sheetMode = belowFooter !== undefined;
   const { colors, isDark } = useAppTheme();
@@ -87,6 +98,7 @@ export default function TransactionForm({
     setFieldValue,
   } = useFormikContext<any>();
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [repeatVisible, setRepeatVisible] = useState(false);
   const [purposeFocused, setPurposeFocused] = useState(false);
   const [amountFocused, setAmountFocused] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
@@ -98,6 +110,10 @@ export default function TransactionForm({
   const dateValue = values[EAddTransactionFields.DATE];
   const categoryValue = values[EAddTransactionFields.CATEGORY_ID];
   const amountValue = String(values[EAddTransactionFields.AMOUNT] || "");
+  const repeatValue: RepeatChoice =
+    (allowRepeat && values[EAddTransactionFields.REPEAT]) || "never";
+  const repeatEnd: Date | null = values[EAddTransactionFields.REPEAT_END] ?? null;
+  const repeating = repeatValue !== "never";
 
   // Every keypad tap gives the amount a short scale pulse so the digit that
   // just landed is visible without looking away from the thumb.
@@ -343,7 +359,13 @@ export default function TransactionForm({
       </View>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.capsLabel}>DATE</Text>
+        <Text numberOfLines={1} style={styles.capsLabel}>
+          {repeating
+            ? `STARTS · ${describeFrequency(repeatValue, currentDate)}${
+                repeatEnd ? ` · UNTIL ${dayjs(repeatEnd).format("D MMM YYYY")}` : ""
+              }`.toUpperCase()
+            : "DATE"}
+        </Text>
         <View style={styles.dateRow}>
           <Pressable
             onPress={() =>
@@ -358,9 +380,10 @@ export default function TransactionForm({
             <MaterialCommunityIcons
               name="calendar-today"
               size={17}
-              color={isToday ? colors.brandText : colors.textSecondary}
+              color={isToday ? colors.chipActiveInk : colors.textSecondary}
             />
             <Text
+              numberOfLines={1}
               style={[
                 styles.dateButtonText,
                 isToday && styles.dateButtonTextActive,
@@ -369,31 +392,77 @@ export default function TransactionForm({
               Today · {dayjs().format("D MMM")}
             </Text>
           </Pressable>
+          {/* Icon only until a date is picked; then it carries that date. */}
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              isToday ? "Pick a date" : `Date ${dayjs(currentDate).format("D MMMM")}`
+            }
             onPress={openDatePicker}
             style={({ pressed }) => [
               styles.dateButton,
+              styles.compactButton,
               !isToday && styles.dateButtonActive,
               pressed && styles.pressed,
             ]}
           >
             <MaterialCommunityIcons
               name="calendar-month"
-              size={17}
-              color={!isToday ? colors.brandText : colors.textSecondary}
+              size={18}
+              color={!isToday ? colors.chipActiveInk : colors.textSecondary}
             />
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.dateButtonText,
-                !isToday && styles.dateButtonTextActive,
+            {!isToday && (
+              <Text numberOfLines={1} style={[styles.dateButtonText, styles.dateButtonTextActive]}>
+                {dayjs(currentDate).format("D MMM")}
+              </Text>
+            )}
+          </Pressable>
+          {allowRepeat && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={repeating ? "Repeat settings" : "Repeat"}
+              accessibilityState={{ selected: repeating }}
+              onPress={() => {
+                Keyboard.dismiss();
+                setRepeatVisible(true);
+              }}
+              style={({ pressed }) => [
+                styles.dateButton,
+                repeating && styles.dateButtonActive,
+                pressed && styles.pressed,
               ]}
             >
-              {isToday ? "Pick a date" : dayjs(currentDate).format("D MMM")}
-            </Text>
-          </Pressable>
+              <MaterialCommunityIcons
+                name="repeat"
+                size={17}
+                color={repeating ? colors.chipActiveInk : colors.textSecondary}
+              />
+              <Text
+                numberOfLines={1}
+                style={[styles.dateButtonText, repeating && styles.dateButtonTextActive]}
+              >
+                {repeating ? FREQUENCY_LABEL[repeatValue as RecurringFrequency] : "Repeat"}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </View>
+
+      {allowRepeat && (
+        <RepeatPicker
+          visible={repeatVisible}
+          startDate={currentDate}
+          frequency={repeatValue}
+          endDate={repeatEnd}
+          onDone={(frequency, endDate, startDate) => {
+            setFieldValue(EAddTransactionFields.DATE, startDate);
+            setFieldValue(EAddTransactionFields.REPEAT, frequency);
+            setFieldValue(EAddTransactionFields.REPEAT_END, endDate);
+            setRepeatVisible(false);
+          }}
+          onCancel={() => setRepeatVisible(false)}
+        />
+      )}
 
       <ScalarCalendar
         visible={pickerVisible}
@@ -625,6 +694,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       includeFontPadding: false,
     },
     dateRow: { flexDirection: "row", gap: 10 },
+    // Icon pill: square until it carries a picked date, then hugs it.
+    compactButton: { flex: 0, minWidth: 56, paddingHorizontal: 16 },
     dateButton: {
       flex: 1,
       height: 48,

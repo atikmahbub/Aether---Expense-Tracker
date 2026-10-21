@@ -6,3 +6,4 @@ export * from "@trackingPortal/api/implementations/LoanService";
 export * from "@trackingPortal/api/implementations/LoanPaymentService";
 export * from "@trackingPortal/api/implementations/InvestService";
 export * from "@trackingPortal/api/implementations/CategoryService";
+export * from "@trackingPortal/api/implementations/RecurringRuleService";

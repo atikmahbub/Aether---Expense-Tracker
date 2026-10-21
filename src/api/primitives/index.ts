@@ -8,3 +8,4 @@ export * from '@trackingPortal/api/primitives/MonthlyLimitId';
 export * from '@trackingPortal/api/primitives/LoanId';
 export * from '@trackingPortal/api/primitives/LoanPaymentId';
 export * from '@trackingPortal/api/primitives/InvestId';
+export * from '@trackingPortal/api/primitives/RecurringRuleId';

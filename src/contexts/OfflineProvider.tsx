@@ -8,6 +8,8 @@ import { useDatabase } from '@trackingPortal/db/DatabaseProvider';
 import { useAuth } from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import { eventEmitter, EVENTS } from '@trackingPortal/utils/events';
 import type { SyncProgress } from '@trackingPortal/db/sync/SyncEngine';
+import { router } from 'expo-router';
+import Toast from 'react-native-toast-message';
 
 const INITIAL_SYNC_PREFIX = 'initial_sync_done_';
 
@@ -31,7 +33,7 @@ const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
 export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isOnline, isInternetReachable } = useNetwork();
   const { apiGateway, currentUser } = useStoreContext();
-  const { syncEngine, outbox, repositories, ready: dbReady } = useDatabase();
+  const { syncEngine, outbox, repositories, recurringData, ready: dbReady } = useDatabase();
   const { getValidToken } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
@@ -108,6 +110,44 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await updatePendingCount();
     await syncNow();
   }, [outbox, updatePendingCount, syncNow]);
+
+  /**
+   * Adds recurring entries that fell due since the last run. Runs on launch,
+   * on returning to the foreground and after the first-launch pull, online or
+   * not; one quiet toast covers however many entries were added.
+   */
+  const runRecurring = useCallback(async () => {
+    if (!recurringData || !userId) return;
+    try {
+      const added = await recurringData.runDue(userId);
+      if (!added) return;
+      eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
+      Toast.show({
+        type: 'success',
+        text1: `Added ${added} recurring ${added === 1 ? 'entry' : 'entries'}`,
+        text2: 'Tap to view',
+        onPress: () => {
+          Toast.hide();
+          router.push('/recurring');
+        },
+      });
+      await updatePendingCount();
+      syncNow();
+    } catch (error) {
+      console.log('recurring run error', error);
+    }
+  }, [recurringData, userId, updatePendingCount, syncNow]);
+
+  useEffect(() => {
+    if (dbReady) runRecurring();
+  }, [dbReady, runRecurring]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') runRecurring();
+    });
+    return () => subscription.remove();
+  }, [runRecurring]);
 
   // Initial count update once the DB is ready.
   useEffect(() => {
@@ -191,6 +231,8 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
         eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
       } catch {}
       void updatePendingCount().catch(() => {});
+      // Rules pulled just now may have entries due on this device.
+      void runRecurring();
     })();
 
     return () => {
@@ -207,6 +249,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     getValidToken,
     syncNow,
     updatePendingCount,
+    runRecurring,
   ]);
 
   // Auto-sync when connectivity comes back. Keyed on the offline→online

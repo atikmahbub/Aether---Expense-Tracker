@@ -25,7 +25,35 @@ import TransactionForm from '@trackingPortal/screens/TransactionScreen/Transacti
 import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
 import Toast from 'react-native-toast-message';
 import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScreen/components/TransactionSegmentedControl';
+import type {RepeatChoice} from '@trackingPortal/screens/TransactionScreen/components/RepeatPicker';
+
 import { designTokens } from '@trackingPortal/themes/designTokens';
+import { eventEmitter, EVENTS } from '@trackingPortal/utils/events';
+
+/** Values the Recurring screen's examples open the form with. */
+export interface CreationPrefill {
+  type: 'Expense' | 'Income';
+  description: string;
+  repeat: RepeatChoice;
+  date: Date;
+}
+
+let pendingPrefill: CreationPrefill | null = null;
+
+/**
+ * Asks the Transactions screen to open the add form with these values. Held
+ * until that screen is focused, since the caller is usually another route.
+ */
+export function requestCreation(prefill: CreationPrefill) {
+  pendingPrefill = prefill;
+  eventEmitter.emit(EVENTS.OPEN_CREATION_MODAL);
+}
+
+export function takePendingPrefill(): CreationPrefill | null {
+  const prefill = pendingPrefill;
+  pendingPrefill = null;
+  return prefill;
+}
 
 interface ITransactionCreation {
   openCreationModal: boolean;
@@ -45,6 +73,7 @@ interface ITransactionCreation {
   lastUsedCategoryId: string | null;
   onCategoryUsed?: (categoryId: string) => void;
   refreshSummary?: () => Promise<void> | void;
+  prefill?: CreationPrefill | null;
 }
 
 const TransactionCreation: React.FC<ITransactionCreation> = ({
@@ -65,8 +94,9 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   lastUsedCategoryId,
   onCategoryUsed,
   refreshSummary,
+  prefill,
 }) => {
-  const { transactionData } = useDatabase();
+  const { transactionData, recurringData } = useDatabase();
   const { user } = useAuth();
   const { syncNow } = useOffline();
   const [loading, setLoading] = useState<boolean>(false);
@@ -75,8 +105,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   );
 
   React.useEffect(() => {
-    setTransactionType(initialType);
-  }, [initialType]);
+    setTransactionType(prefill?.type ?? initialType);
+  }, [initialType, prefill]);
 
   const { hiddenCategoryIds } = useStoreContext();
   // Hidden categories (eye toggle on the Categories screen) stay out of the
@@ -118,18 +148,43 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         const date = TransactionDataService.toTimestamp(dayjs(values.date).toDate());
         const type = transactionType.toLowerCase() as 'expense' | 'income';
 
-        // Offline-first: write to SQLite immediately (works online or offline).
-        const created = await transactionData.createTransaction({
-          userId: user.sub as string,
-          amount,
-          description,
-          date,
-          categoryId: values.categoryId,
-          type,
-        });
+        const repeat = values.repeat ?? 'never';
+        let toastText = `${transactionType} added successfully`;
+        if (repeat !== 'never' && recurringData) {
+          // A repeating entry is a rule; the run below adds any occurrence
+          // already due (today's included) as an ordinary transaction.
+          await recurringData.createRule({
+            userId: user.sub as string,
+            type,
+            amount,
+            description,
+            categoryId: values.categoryId,
+            frequency: repeat,
+            startDate: date,
+            endDate: values.repeatEnd
+              ? TransactionDataService.toTimestamp(
+                  dayjs(values.repeatEnd).endOf('day').toDate(),
+                )
+              : null,
+          });
+          const added = await recurringData.runDue(user.sub as string);
+          toastText = added
+            ? `${transactionType} added · repeats ${repeat}`
+            : `Repeat set · first on ${dayjs(values.date).format('D MMM')}`;
+        } else {
+          // Offline-first: write to SQLite immediately (works online or offline).
+          const created = await transactionData.createTransaction({
+            userId: user.sub as string,
+            amount,
+            description,
+            date,
+            categoryId: values.categoryId,
+            type,
+          });
+          setTransactions(prev => [created, ...prev]);
+        }
 
         triggerSuccessHaptic();
-        setTransactions(prev => [created, ...prev]);
 
         resetForm({
           values: {
@@ -137,6 +192,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
             [EAddTransactionFields.DESCRIPTION]: '',
             [EAddTransactionFields.AMOUNT]: '',
             [EAddTransactionFields.CATEGORY_ID]: values.categoryId,
+            [EAddTransactionFields.REPEAT]: 'never',
+            [EAddTransactionFields.REPEAT_END]: null,
           },
         });
 
@@ -151,7 +208,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
 
           Toast.show({
             type: 'success',
-            text1: `${transactionType} added successfully`,
+            text1: toastText,
           });
 
           await getExceedExpenseNotification();
@@ -171,6 +228,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
     },
     [
       transactionData,
+      recurringData,
       user?.sub,
       activeCategories,
       getExceedExpenseNotification,
@@ -188,11 +246,15 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   return (
     <BaseBottomSheet index={openCreationModal ? 1 : -1} onClose={handleClose}>
       <Formik
+        // A prefill (from the Recurring screen) remounts the form with it.
+        key={prefill ? `${prefill.description}-${prefill.date.getTime()}` : 'blank'}
         initialValues={{
-          [EAddTransactionFields.DATE]: new Date(),
-          [EAddTransactionFields.DESCRIPTION]: '',
+          [EAddTransactionFields.DATE]: prefill?.date ?? new Date(),
+          [EAddTransactionFields.DESCRIPTION]: prefill?.description ?? '',
           [EAddTransactionFields.AMOUNT]: '',
           [EAddTransactionFields.CATEGORY_ID]: defaultCategoryId,
+          [EAddTransactionFields.REPEAT]: prefill?.repeat ?? 'never',
+          [EAddTransactionFields.REPEAT_END]: null,
         }}
         onSubmit={handleAddTransaction}
         validationSchema={CreateTransactionSchema}
@@ -218,6 +280,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
               onCancel={handleClose}
               loading={loading}
               showShortcutKeypad
+              allowRepeat
             />
           </View>
         )}

@@ -21,6 +21,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScalarListRow from '@trackingPortal/components/ScalarListRow';
 import EntityDetailSheet, {
   DetailDeleteLink,
+  useDetailCaptionStyle,
 } from '@trackingPortal/components/scalar/EntityDetailSheet';
 import {useSheetConfirm} from '@trackingPortal/components/scalar/SheetConfirm';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
@@ -37,7 +38,15 @@ import {
 import {useStoreContext} from '@trackingPortal/contexts/StoreProvider';
 import {useOffline} from '@trackingPortal/contexts/OfflineProvider';
 import {useDatabase} from '@trackingPortal/db/DatabaseProvider';
-import {TransactionDataService} from '@trackingPortal/db/services/TransactionDataService';
+import {
+  TransactionDataService,
+  UITransaction,
+} from '@trackingPortal/db/services/TransactionDataService';
+import {
+  FREQUENCY_LABEL,
+  RecurringRuleView,
+} from '@trackingPortal/db/services/RecurringDataService';
+import {useRouter} from 'expo-router';
 import Toast from 'react-native-toast-message';
 import {formatCurrency, formatNumber} from '@trackingPortal/utils/utils';
 import {
@@ -93,7 +102,11 @@ const TransactionList: FC<ITransactionList> = ({
   const scrollRef = useRef<ScrollView>(null);
 
   const {currentUser: user, currency, hiddenCategoryIds} = useStoreContext();
-  const {transactionData} = useDatabase();
+  const {transactionData, recurringData} = useDatabase();
+  const router = useRouter();
+  const captionStyle = useDetailCaptionStyle();
+  // The repeat behind the open entry, for its "From recurring" line.
+  const [entryRule, setEntryRule] = useState<RecurringRuleView | null>(null);
   const {syncNow} = useOffline();
   const {confirm, panel: confirmPanel, cancel: cancelConfirm} = useSheetConfirm();
   const [loading, setLoading] = useState<boolean>(false);
@@ -263,6 +276,28 @@ const TransactionList: FC<ITransactionList> = ({
     });
   }, [handleDeleteTransaction, confirm]);
 
+  useEffect(() => {
+    const ruleId = (
+      transactions.find(t => t.id === expandedRowId) as UITransaction | undefined
+    )?.recurringRuleId;
+    if (!ruleId || !recurringData || !user.userId) {
+      setEntryRule(null);
+      return;
+    }
+    let cancelled = false;
+    recurringData.getRules(user.userId).then(rules => {
+      if (!cancelled) {
+        // Pulled entries name the rule by its server id.
+        setEntryRule(
+          rules.find(r => r.id === ruleId || r.serverId === ruleId) ?? null,
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [expandedRowId, transactions, recurringData, user.userId]);
+
   const closeSheet = useCallback(() => {
     cancelConfirm();
     setExpandedRowId(null);
@@ -304,6 +339,31 @@ const TransactionList: FC<ITransactionList> = ({
             currency,
             {minimumFractionDigits: 0, maximumFractionDigits: 2},
           )}`}
+          cardFooter={
+            (selectedItem as UITransaction | undefined)?.recurringRuleId ? (
+              <View style={styles.recurringFooter}>
+                {entryRule ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    hitSlop={6}
+                    onPress={() => {
+                      closeSheet();
+                      router.push(`/recurring?rule=${entryRule.id}`);
+                    }}>
+                    <Text style={captionStyle}>
+                      From recurring:{' '}
+                      <Text style={styles.recurringLink}>
+                        {`${entryRule.description || category} · ${FREQUENCY_LABEL[entryRule.frequency]}`}
+                      </Text>
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text style={captionStyle}>Added by a repeat</Text>
+                )}
+                <Text style={captionStyle}>Changes here apply to this entry only.</Text>
+              </View>
+            ) : undefined
+          }
           takeover={confirmPanel}>
         {selectedItem && (
         <Formik
@@ -351,6 +411,9 @@ const TransactionList: FC<ITransactionList> = ({
     [
       transactions,
       expandedRowId,
+      entryRule,
+      captionStyle,
+      router,
       hiddenCategoryIds,
       closeSheet,
       confirmPanel,
@@ -392,20 +455,37 @@ const TransactionList: FC<ITransactionList> = ({
       <View style={styles.listCard}>
         <View style={styles.timelineRow}>
           <Text style={styles.title}>Timeline</Text>
-          <Pressable
-            ref={yearButtonRef}
-            onPress={openYearPicker}
-            style={({pressed}) => [
-              styles.yearButton,
-              pressed && styles.controlPressed,
-            ]}>
-            <Text style={styles.yearButtonText}>{filteredMonth.format('YYYY')}</Text>
-            <MaterialCommunityIcons
-              name="chevron-down"
-              size={16}
-              color={colors.textSecondary}
-            />
-          </Pressable>
+          <View style={styles.timelineActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Recurring"
+              hitSlop={6}
+              onPress={() => router.push('/recurring')}
+              style={({pressed}) => [
+                styles.yearButton,
+                pressed && styles.controlPressed,
+              ]}>
+              <MaterialCommunityIcons
+                name="repeat"
+                size={16}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+            <Pressable
+              ref={yearButtonRef}
+              onPress={openYearPicker}
+              style={({pressed}) => [
+                styles.yearButton,
+                pressed && styles.controlPressed,
+              ]}>
+              <Text style={styles.yearButtonText}>{filteredMonth.format('YYYY')}</Text>
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={16}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+          </View>
         </View>
         <ScrollView
           ref={scrollRef}
@@ -478,6 +558,7 @@ const TransactionList: FC<ITransactionList> = ({
                         categoryName={category}
                         categoryColor={item.category?.color}
                         showDivider={index < group.items.length - 1}
+                        recurring={Boolean((item as UITransaction).recurringRuleId)}
                         onPress={() => {
                           setExpandedRowId(item.id);
                           notifyRowOpen(true);
@@ -564,6 +645,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>['colors']) {
       fontFamily: designTokens.font.semibold,
       fontSize: 18,
       lineHeight: 24,
+    },
+    timelineActions: {flexDirection: 'row', alignItems: 'center', gap: 8},
+    recurringFooter: {gap: 2},
+    recurringLink: {
+      color: colors.sheetText,
+      fontFamily: designTokens.font.medium,
     },
     yearButton: {
       height: 34,

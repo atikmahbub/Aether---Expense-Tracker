@@ -13,7 +13,11 @@ import type { LocalTransaction } from "@trackingPortal/db/repositories/Transacti
 import type { SyncEngine } from "@trackingPortal/db/sync/SyncEngine";
 
 /** A transaction as the screens consume it, plus the local `categoryId`. */
-export type UITransaction = TransactionModel & { categoryId: string | null };
+export type UITransaction = TransactionModel & {
+  categoryId: string | null;
+  /** Local id of the recurring rule that added this entry, if any. */
+  recurringRuleId?: string | null;
+};
 
 export interface CreateTransactionInput {
   userId: string;
@@ -83,6 +87,7 @@ export class TransactionDataService {
       description: row.description ?? "",
       date: row.date ?? "",
       categoryId: category?.id ?? row.categoryId ?? null,
+      recurringRuleId: row.recurringRuleId,
       category: {
         name: category?.name ?? row.categoryName ?? "Other",
         icon: category?.icon ?? "dots-horizontal",

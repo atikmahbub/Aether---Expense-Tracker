@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import {Platform, Pressable, StyleSheet, Text, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useAppTheme} from '@trackingPortal/contexts/ThemeContext';
 import {designTokens} from '@trackingPortal/themes/designTokens';
@@ -81,10 +81,19 @@ const make = (variant: Variant) => {
   const ToastRenderer = ({
     text1,
     text2,
+    onPress,
   }: {
     text1?: string;
     text2?: string;
-  }) => <ToastCard variant={variant} text1={text1} text2={text2} />;
+    onPress?: () => void;
+  }) =>
+    onPress ? (
+      <Pressable accessibilityRole="button" onPress={onPress}>
+        <ToastCard variant={variant} text1={text1} text2={text2} />
+      </Pressable>
+    ) : (
+      <ToastCard variant={variant} text1={text1} text2={text2} />
+    );
   ToastRenderer.displayName = `ScalarToast(${variant})`;
   return ToastRenderer;
 };

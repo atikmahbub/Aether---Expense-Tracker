@@ -114,6 +114,14 @@ export default function SettingsScreen() {
           styles={styles}
           colors={colors}
         />
+        <View style={styles.divider} />
+        <SettingsRow
+          icon="repeat"
+          label="Recurring"
+          onPress={() => router.push("/recurring")}
+          styles={styles}
+          colors={colors}
+        />
       </View>
 
       <Text style={styles.sectionLabel}>ABOUT</Text>

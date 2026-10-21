@@ -7,6 +7,8 @@ export enum EAddTransactionFields {
   DATE = 'date',
   TRANSACTION_LIST = 'transaction_list',
   CATEGORY_ID = 'categoryId',
+  REPEAT = 'repeat',
+  REPEAT_END = 'repeatEnd',
 }
 
 export enum EMonthlyLimitFields {
