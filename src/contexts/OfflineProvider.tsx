@@ -1,4 +1,5 @@
 import { AppState } from 'react-native';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNetwork } from './NetworkProvider';
 import { offlineService } from '@trackingPortal/api/utils/OfflineService';
@@ -35,6 +36,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { apiGateway, currentUser } = useStoreContext();
   const { syncEngine, outbox, repositories, recurringData, ready: dbReady } = useDatabase();
   const { getValidToken } = useAuth();
+  const { t } = useTranslation();
   const [pendingCount, setPendingCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
   const [syncInProgress, setSyncInProgress] = useState(false);
@@ -124,8 +126,11 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
       eventEmitter.emit(EVENTS.OFFLINE_SYNC_COMPLETED);
       Toast.show({
         type: 'success',
-        text1: `Added ${added} recurring ${added === 1 ? 'entry' : 'entries'}`,
-        text2: 'Tap to view',
+        text1:
+          added === 1
+            ? t('sync.addedOne')
+            : t('sync.addedMany', { n: added }),
+        text2: t('sync.tapToView'),
         onPress: () => {
           Toast.hide();
           router.push('/recurring');
@@ -136,7 +141,7 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (error) {
       console.log('recurring run error', error);
     }
-  }, [recurringData, userId, updatePendingCount, syncNow]);
+  }, [recurringData, userId, updatePendingCount, syncNow, t]);
 
   useEffect(() => {
     if (dbReady) runRecurring();

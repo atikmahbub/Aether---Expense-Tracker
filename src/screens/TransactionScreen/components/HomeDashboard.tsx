@@ -10,6 +10,7 @@ import {
   SplitBar,
 } from "@trackingPortal/components";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { CurrencyPreference } from "@trackingPortal/constants/currency";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
@@ -56,6 +57,7 @@ export default function HomeDashboard({
 }: HomeDashboardProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, formatDate } = useTranslation();
   const [chartExpanded, setChartExpanded] = useState(false);
   const expenseTotal = summary?.totalExpense ?? 0;
   const incomeTotal = summary?.totalIncome ?? 0;
@@ -98,7 +100,7 @@ export default function HomeDashboard({
     transactions
       .filter((transaction) => transaction.type === type)
       .forEach((transaction) => {
-        const name = transaction.category?.name || "Uncategorized";
+        const name = transaction.category?.name || t("wallet.uncategorized");
         const current = totals.get(name);
         totals.set(name, {
           name,
@@ -107,7 +109,7 @@ export default function HomeDashboard({
         });
       });
     return Array.from(totals.values()).sort((a, b) => b.total - a.total);
-  }, [transactions, type]);
+  }, [transactions, type, t]);
 
   const categoryMax = Math.max(
     ...categoryBreakdown.map((category) => category.total),
@@ -122,21 +124,24 @@ export default function HomeDashboard({
           {ledgerControl}
           <HeroFigure
             size={40}
-            label={`${type === "expense" ? "Spent" : "Earned"} in ${month.format("MMMM")}`}
+            label={t(type === "expense" ? "wallet.spentIn" : "wallet.earnedIn", {
+              month: formatDate(month, "MMMM"),
+            })}
             amount={loading ? "…" : money(activeTotal, currency)}
           />
           {type === "expense" &&
             (limit > 0 ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={isOver ? "Raise limit" : "Adjust limit"}
+                accessibilityLabel={t(isOver ? "wallet.raiseLimit" : "wallet.adjustLimit")}
                 onPress={onAdjustLimit}
                 style={({ pressed }) => pressed && styles.pressed}
               >
                 <SplitBar
                   ratio={ratio}
-                  limitLabel={`Limit ${money(limit, currency)} ›`}
-                  leftLabel={isOver ? "Over" : "Left"}
+                  limitLabel={t("wallet.limit", { amount: money(limit, currency) })}
+                  leftLabel={t(isOver ? "wallet.over" : "wallet.left")}
+                  spentLabel={t("wallet.spent")}
                   leftAmount={money(difference, currency)}
                 />
               </Pressable>
@@ -146,17 +151,17 @@ export default function HomeDashboard({
                 onPress={onAdjustLimit}
                 style={({ pressed }) => [styles.setLimit, pressed && styles.pressed]}
               >
-                <Text style={styles.setLimitText}>No monthly limit</Text>
-                <Text style={styles.setLimitAction}>Set limit ›</Text>
+                <Text style={styles.setLimitText}>{t("wallet.noLimit")}</Text>
+                <Text style={styles.setLimitAction}>{t("wallet.setLimitAction")}</Text>
               </Pressable>
             ))}
           <HeroStatCard
             size={26}
             stats={[
-              { label: "Daily average", value: money(activeTotal / days, currency) },
+              { label: t("wallet.dailyAverage"), value: money(activeTotal / days, currency) },
               type === "expense"
-                ? { label: "Earned", value: money(incomeTotal, currency), badge: "+ in" }
-                : { label: "Spent", value: money(expenseTotal, currency) },
+                ? { label: t("wallet.earned"), value: money(incomeTotal, currency), badge: t("wallet.earnedBadge") }
+                : { label: t("wallet.spent"), value: money(expenseTotal, currency) },
             ]}
           />
         </View>
@@ -187,11 +192,11 @@ export default function HomeDashboard({
         onPress={() => setChartExpanded((current) => !current)}
         style={styles.chartHeader}
       >
-        <Text style={styles.sheetTitle}>Cash flow</Text>
+        <Text style={styles.sheetTitle}>{t("wallet.cashFlow")}</Text>
         <View style={styles.legend}>
-          <Legend color={colors.chartIn} label="In" styles={styles} />
-          <Legend color={colors.chartOut} label="Out" styles={styles} />
-          <Text style={styles.byWeek}>By week</Text>
+          <Legend color={colors.chartIn} label={t("wallet.in")} styles={styles} />
+          <Legend color={colors.chartOut} label={t("wallet.out")} styles={styles} />
+          <Text style={styles.byWeek}>{t("wallet.byWeek")}</Text>
           <MaterialCommunityIcons
             name={chartExpanded ? "chevron-up" : "chevron-down"}
             size={16}
@@ -248,7 +253,7 @@ export default function HomeDashboard({
                   ]}
                 />
               </View>
-              <Text style={styles.xLabel}>w{index + 1}</Text>
+              <Text style={styles.xLabel}>{t("wallet.weekShort", { n: index + 1 })}</Text>
             </View>
           );
         })}
@@ -256,7 +261,7 @@ export default function HomeDashboard({
       {chartExpanded && (
         <View style={styles.breakdown}>
           <Text style={styles.breakdownTitle}>
-            {type === "expense" ? "Expense" : "Income"} by category
+            {t(type === "expense" ? "wallet.expenseByCategory" : "wallet.incomeByCategory")}
           </Text>
           {categoryBreakdown.map((category) => (
             <View key={category.name} style={styles.breakdownRow}>
@@ -283,7 +288,11 @@ export default function HomeDashboard({
           ))}
           {!categoryBreakdown.length && (
             <Text style={styles.breakdownEmpty}>
-              No {type} category data this month
+              {t(
+                type === "expense"
+                  ? "wallet.noExpenseCategoryData"
+                  : "wallet.noIncomeCategoryData",
+              )}
             </Text>
           )}
         </View>

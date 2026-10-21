@@ -1,4 +1,5 @@
 import { EInvestStatus } from "@trackingPortal/api/enums";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { InvestModel } from "@trackingPortal/api/models";
 import {
   InvestId,
@@ -26,7 +27,6 @@ import {
   triggerSuccessHaptic,
 } from "@trackingPortal/utils/haptic";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
-import dayjs from "dayjs";
 import { Formik } from "formik";
 import React, {
   FC,
@@ -59,6 +59,7 @@ const InvestList: FC<IInvestList> = ({
   const { currentUser: user, currency } = useStoreContext();
   const { investData } = useDatabase();
   const { syncNow } = useOffline();
+  const { t, formatDate } = useTranslation();
   const { confirm, panel: confirmPanel, cancel: cancelConfirm } = useSheetConfirm();
 
   const closeSheet = useCallback(() => {
@@ -95,7 +96,7 @@ const InvestList: FC<IInvestList> = ({
         triggerSuccessHaptic();
         Toast.show({
           type: "success",
-          text1: "Investment updated successfully!",
+          text1: t("invest.updated"),
         });
         InteractionManager.runAfterInteractions(async () => {
           await getUserInvestHistory();
@@ -103,12 +104,12 @@ const InvestList: FC<IInvestList> = ({
         });
       } catch {
         // Stays open on failure so the edit isn't lost.
-        Toast.show({ type: "error", text1: "Something went wrong!" });
+        Toast.show({ type: "error", text1: t("common.somethingWrongBang") });
       } finally {
         setLoading(false);
       }
     },
-    [closeSheet, getUserInvestHistory, investData, syncNow, user.default],
+    [t, closeSheet, getUserInvestHistory, investData, syncNow, user.default],
   );
 
   const handleDelete = useCallback(
@@ -118,31 +119,31 @@ const InvestList: FC<IInvestList> = ({
         setDeleteLoading(true);
         await investData.deleteInvest(id as string);
         closeSheet();
-        Toast.show({ type: "success", text1: "Deleted successfully!" });
+        Toast.show({ type: "success", text1: t("common.deleted") });
         InteractionManager.runAfterInteractions(async () => {
           await getUserInvestHistory();
           syncNow();
         });
       } catch {
-        Toast.show({ type: "error", text1: "Something went wrong!" });
+        Toast.show({ type: "error", text1: t("common.somethingWrongBang") });
       } finally {
         setDeleteLoading(false);
       }
     },
-    [closeSheet, getUserInvestHistory, investData, syncNow],
+    [t, closeSheet, getUserInvestHistory, investData, syncNow],
   );
 
   const confirmDelete = useCallback(
     (investment: InvestModel) => {
       confirm({
-        title: "Delete investment?",
-        message: `Are you sure you want to delete ${investment.name}? This action cannot be undone.`,
-        confirmLabel: "Delete",
+        title: t("invest.deleteTitle"),
+        message: t("invest.deleteMessage", { name: investment.name }),
+        confirmLabel: t("common.delete"),
         destructive: true,
         onConfirm: () => handleDelete(investment.id as InvestId),
       });
     },
-    [handleDelete, confirm],
+    [t, handleDelete, confirm],
   );
 
   const renderEditor = useCallback(
@@ -187,7 +188,7 @@ const InvestList: FC<IInvestList> = ({
               loading={loading}
               belowFooter={
                 <DetailDeleteLink
-                  label={deleteLoading ? "Deleting…" : "Delete investment"}
+                  label={t(deleteLoading ? "wallet.deleting" : "invest.delete")}
                   disabled={deleteLoading}
                   onPress={() => confirmDelete(item)}
                 />
@@ -197,7 +198,7 @@ const InvestList: FC<IInvestList> = ({
         )}
       </Formik>
     ),
-    [closeSheet, confirmDelete, deleteLoading, loading, onInvestEdit, styles],
+    [t, closeSheet, confirmDelete, deleteLoading, loading, onInvestEdit, styles],
   );
 
   const selected = invests.find((i) => i.id === expandedRowId);
@@ -214,17 +215,17 @@ const InvestList: FC<IInvestList> = ({
 
   return (
     <ScalarSheet>
-      <SheetHeader title="Investment history" />
+      <SheetHeader title={t("invest.history")} />
       <View style={styles.filters}>
         <PillChip
           variant="sheet"
-          label="Active"
+          label={t("invest.active")}
           active={active}
           onPress={() => setStatus(EInvestStatus.Active)}
         />
         <PillChip
           variant="sheet"
-          label="Completed"
+          label={t("invest.completed")}
           active={!active}
           onPress={() => setStatus(EInvestStatus.Completed)}
         />
@@ -246,9 +247,13 @@ const InvestList: FC<IInvestList> = ({
                   grouped
                   title={invest.name}
                   status={returnLabel}
-                  meta={`${completed ? "Completed" : "Active"} · since ${dayjs(
-                    makeUnixTimestampToNumber(Number(invest.startDate)),
-                  ).format("D MMM YYYY")}`}
+                  meta={t("invest.since", {
+                    status: t(completed ? "invest.completed" : "invest.active"),
+                    date: formatDate(
+                      makeUnixTimestampToNumber(Number(invest.startDate)),
+                      "D MMM YYYY",
+                    ),
+                  })}
                   amount={formatCurrency(invest.amount, currency, {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
@@ -269,14 +274,14 @@ const InvestList: FC<IInvestList> = ({
       ) : (
         <View style={styles.emptyCard}>
           <Text style={styles.empty}>
-            No {active ? "active" : "completed"} investments
+            {t(active ? "invest.noActive" : "invest.noCompleted")}
           </Text>
         </View>
       )}
       {active && invests.length === 1 && (
         <View style={styles.assetHint}>
-          <Text style={styles.assetHintTitle}>One asset tracked</Text>
-          <Text style={styles.assetHintText}>Add a second to compare returns over time.</Text>
+          <Text style={styles.assetHintTitle}>{t("invest.oneTracked")}</Text>
+          <Text style={styles.assetHintText}>{t("invest.addSecond")}</Text>
         </View>
       )}
       <EntityDetailSheet
@@ -288,18 +293,24 @@ const InvestList: FC<IInvestList> = ({
         title={selected?.name ?? ""}
         meta={
           selected
-            ? `${selectedCompleted ? "Completed" : "Active"} · since ${dayjs(
-                makeUnixTimestampToNumber(Number(selected.startDate)),
-              ).format("D MMM YYYY")}`
+            ? t("invest.since", {
+                status: t(selectedCompleted ? "invest.completed" : "invest.active"),
+                date: formatDate(
+                  makeUnixTimestampToNumber(Number(selected.startDate)),
+                  "D MMM YYYY",
+                ),
+              })
             : ""
         }
-        figureLabel="Invested"
+        figureLabel={t("invest.invested")}
         figure={money(selected?.amount ?? 0)}
-        badge={{ label: selectedCompleted ? "Completed" : "Active" }}
+        badge={{ label: t(selectedCompleted ? "invest.completed" : "invest.active") }}
         cardFooter={
           selectedGain != null && selected ? (
             <View style={styles.cardFoot}>
-              <Text style={styles.caption}>Now {money(selected.earned ?? 0)}</Text>
+              <Text style={styles.caption}>
+                {t("invest.now", { amount: money(selected.earned ?? 0) })}
+              </Text>
               <Text style={[styles.caption, selectedGain < 0 && styles.captionNegative]}>
                 {`${selectedGain < 0 ? "−" : "+"}${money(Math.abs(selectedGain))}`}
                 {selected.amount > 0

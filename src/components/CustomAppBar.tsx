@@ -1,7 +1,7 @@
 import {useAuth} from '@trackingPortal/auth/Auth0ProviderWithHistory';
 import {getGreeting} from '@trackingPortal/utils/utils';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
-import dayjs from 'dayjs';
+import {useTranslation} from '@trackingPortal/contexts/LanguageContext';
 import React, {useMemo} from 'react';
 import {View, StyleSheet, Text, TouchableOpacity, Platform} from 'react-native';
 import {Avatar} from 'react-native-paper';
@@ -26,7 +26,8 @@ const CustomAppBar: React.FC<CustomAppBarProps> = ({title, subtitle}) => {
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
-  const greeting = React.useMemo(() => getGreeting(), []);
+  const {t, formatDate} = useTranslation();
+  const greeting = React.useMemo(() => t(`greeting.${getGreeting()}`), [t]);
   const userName = React.useMemo(
     () => (user?.name as string)?.split(' ')[0] ?? '',
     [user],
@@ -38,7 +39,10 @@ const CustomAppBar: React.FC<CustomAppBarProps> = ({title, subtitle}) => {
     }
     return 'A';
   }, [userName]);
-  const todayLabel = React.useMemo(() => dayjs().format('dddd, MMM D'), []);
+  const todayLabel = React.useMemo(
+    () => formatDate(new Date(), 'dddd, MMM D'),
+    [formatDate],
+  );
 
   const handleProfilePress = React.useCallback(() => {
     triggerSuccessHaptic();

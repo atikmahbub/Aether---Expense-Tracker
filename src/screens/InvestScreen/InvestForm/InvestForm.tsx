@@ -1,11 +1,11 @@
 import {View, Pressable, StyleSheet, Text, TouchableOpacity, Keyboard} from 'react-native';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import React, {Fragment, useCallback, useMemo, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {EAddInvestFormFields} from '@trackingPortal/screens/InvestScreen';
 import {TextInput} from 'react-native-paper';
 import {FormikCheckboxField, FormikTextInput, LoadingButton} from '@trackingPortal/components';
 import ScalarCalendar from '@trackingPortal/components/ScalarCalendar';
-import dayjs from 'dayjs';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { designTokens } from '@trackingPortal/themes/designTokens';
 
@@ -24,6 +24,7 @@ interface IInvestForm {
 const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading, belowFooter}) => {
   const sheetMode = belowFooter !== undefined;
   const { colors, isDark } = useAppTheme();
+  const { t, formatDate } = useTranslation();
   // Cancel uses the loan sheet's soft pill (solid in light mode).
   const sheetCancelTone = useMemo(
     () => ({
@@ -68,14 +69,14 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
   return (
     <View style={styles.formRoot}>
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>NAME</Text>
+        <Text style={styles.sectionLabel}>{t('invest.nameCaps')}</Text>
         <FormikTextInput
           name={EAddInvestFormFields.NAME}
-          placeholder="e.g. S&P 500 Index"
+          placeholder={t('invest.namePlaceholder')}
         />
       </View>
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>AMOUNT</Text>
+        <Text style={styles.sectionLabel}>{t('invest.amountCaps')}</Text>
         <FormikTextInput
           name={EAddInvestFormFields.AMOUNT}
           placeholder="$ 0.00"
@@ -83,11 +84,11 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
         />
       </View>
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>START DATE</Text>
+        <Text style={styles.sectionLabel}>{t('invest.startDateCaps')}</Text>
         <View style={styles.inputWrapper}>
           <TextInput
             mode="flat"
-            value={dayjs(startDate).format('DD MMM YYYY')}
+            value={formatDate(startDate, 'DD MMM YYYY')}
             editable={false}
             pointerEvents="none"
             right={<TextInput.Icon icon="calendar-month-outline" color="#5a6069" />}
@@ -102,10 +103,10 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
       </View>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>NOTE</Text>
+        <Text style={styles.sectionLabel}>{t('invest.noteCaps')}</Text>
         <FormikTextInput
           name={EAddInvestFormFields.NOTE}
-          placeholder="Additional details..."
+          placeholder={t('invest.notePlaceholder')}
           multiline
           numberOfLines={4}
         />
@@ -114,7 +115,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
       <ScalarCalendar
         visible={startPickerVisible}
         date={startDate}
-        title="Investment start date"
+        title={t('invest.startDateTitle')}
         onConfirm={selectedDate => {
           setFieldValue(EAddInvestFormFields.START_DATE, selectedDate);
           setStartPickerVisible(false);
@@ -125,11 +126,11 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
       {update && (
         <Fragment>
           <View style={styles.fieldSection}>
-            <Text style={styles.sectionLabel}>END DATE</Text>
+            <Text style={styles.sectionLabel}>{t('invest.endDateCaps')}</Text>
             <View style={styles.inputWrapper}>
               <TextInput
                 mode="flat"
-                value={dayjs(endDate).format('DD MMM YYYY')}
+                value={formatDate(endDate, 'DD MMM YYYY')}
                 editable={false}
                 pointerEvents="none"
                 right={<TextInput.Icon icon="calendar-month-outline" color="#5a6069" />}
@@ -145,7 +146,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
           <ScalarCalendar
             visible={endPickerVisible}
             date={endDate}
-            title="Investment end date"
+            title={t('invest.endDateTitle')}
             onConfirm={selectedDate => {
               setFieldValue(EAddInvestFormFields.END_DATE, selectedDate);
               setEndPickerVisible(false);
@@ -153,7 +154,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
             onCancel={() => setEndPickerVisible(false)}
           />
           <View style={styles.fieldSection}>
-            <Text style={styles.sectionLabel}>RETURN (including capital)</Text>
+            <Text style={styles.sectionLabel}>{t('invest.returnCaps')}</Text>
             <FormikTextInput
               name={EAddInvestFormFields.EARNED}
               placeholder="$ 0.00"
@@ -161,7 +162,7 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
             />
           </View>
           <FormikCheckboxField
-            label="Mark as COMPLETED"
+            label={t('invest.markCompleted')}
             name={EAddInvestFormFields.STATUS}
           />
         </Fragment>
@@ -176,13 +177,13 @@ const InvestForm: React.FC<IInvestForm> = ({update, onSubmit, onCancel, loading,
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.cancelButtonText, sheetCancelTone.text]}>Cancel</Text>
+          <Text style={[styles.cancelButtonText, sheetCancelTone.text]}>{t('common.cancel')}</Text>
         </TouchableOpacity>
 
         <View style={[styles.saveButtonWrapper, styles.sheetSave]}>
           <LoadingButton
             style={styles.sheetSaveButton}
-            label={sheetMode || update ? "Save changes" : "Add investment"}
+            label={t(sheetMode || update ? "common.saveChanges" : "invest.add")}
             loading={loading}
             onPress={() => {
               Keyboard.dismiss();

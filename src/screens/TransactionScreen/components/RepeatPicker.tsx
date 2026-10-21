@@ -7,6 +7,7 @@ import {
   ordinal,
 } from "@trackingPortal/db/services/RecurringDataService";
 import { designTokens } from "@trackingPortal/themes/designTokens";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import dayjs from "dayjs";
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
@@ -38,6 +39,7 @@ export default function RepeatPicker({
 }: RepeatPickerProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, formatDate } = useTranslation();
   const [choice, setChoice] = useState<RepeatChoice>(frequency);
   const [ends, setEnds] = useState<Date | null>(endDate);
   const [starts, setStarts] = useState<Date>(startDate);
@@ -52,10 +54,22 @@ export default function RepeatPicker({
 
   const start = dayjs(starts);
   const options: { value: RepeatChoice; label: string; detail?: string }[] = [
-    { value: "never", label: "Never" },
-    { value: "weekly", label: "Weekly", detail: `Every ${start.format("dddd")}` },
-    { value: "monthly", label: "Monthly", detail: `On the ${ordinal(start.date())}` },
-    { value: "yearly", label: "Yearly", detail: `Every ${start.format("D MMM")}` },
+    { value: "never", label: t("repeat.never") },
+    {
+      value: "weekly",
+      label: t("repeat.weekly"),
+      detail: t("repeat.every", { when: formatDate(start, "dddd") }),
+    },
+    {
+      value: "monthly",
+      label: t("repeat.monthly"),
+      detail: t("repeat.onThe", { nth: ordinal(start.date()), n: start.date() }),
+    },
+    {
+      value: "yearly",
+      label: t("repeat.yearly"),
+      detail: t("repeat.every", { when: formatDate(start, "D MMM") }),
+    },
   ];
   const repeating = choice !== "never";
 
@@ -66,9 +80,9 @@ export default function RepeatPicker({
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.titleRow}>
-            <Text style={styles.title}>Repeat</Text>
+            <Text style={styles.title}>{t("form.repeat")}</Text>
             <Pressable
-              accessibilityLabel="Close"
+              accessibilityLabel={t("repeat.close")}
               onPress={onCancel}
               style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
             >
@@ -105,16 +119,16 @@ export default function RepeatPicker({
             })}
           </View>
           {choice === "monthly" && clampsInShortMonths("monthly", starts) && (
-            <Text style={styles.hint}>On the last day in shorter months.</Text>
+            <Text style={styles.hint}>{t("repeat.shortMonths")}</Text>
           )}
 
           {repeating && (
             <>
               {/* Every option is counted from this date: pick the 1st for "On the 1st". */}
-              <Text style={styles.capsLabel}>STARTS</Text>
+              <Text style={styles.capsLabel}>{t("repeat.starts")}</Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Starts ${start.format("D MMMM YYYY")}`}
+                accessibilityLabel={t("repeat.startsA11y", { date: formatDate(start, "D MMMM YYYY") })}
                 onPress={() => setCalendarFor("start")}
                 style={({ pressed }) => [
                   styles.endsButton,
@@ -129,15 +143,17 @@ export default function RepeatPicker({
                 />
                 <Text numberOfLines={1} style={styles.endsText}>
                   {start.isSame(dayjs(), "day")
-                    ? `Today · ${start.format("D MMM YYYY")}`
-                    : start.format("ddd, D MMM YYYY")}
+                    ? t("form.today", { date: formatDate(start, "D MMM YYYY") })
+                    : formatDate(start, "ddd, D MMM YYYY")}
                 </Text>
               </Pressable>
               {start.isAfter(dayjs(), "day") && (
-                <Text style={styles.hint}>First entry on {start.format("D MMM")}.</Text>
+                <Text style={styles.hint}>
+                  {t("repeat.firstEntry", { date: formatDate(start, "D MMM") })}
+                </Text>
               )}
 
-              <Text style={styles.capsLabel}>ENDS</Text>
+              <Text style={styles.capsLabel}>{t("repeat.ends")}</Text>
               <View style={styles.endsRow}>
                 <Pressable
                   onPress={() => setEnds(null)}
@@ -147,7 +163,9 @@ export default function RepeatPicker({
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.endsText, !ends && styles.endsTextActive]}>Never</Text>
+                  <Text style={[styles.endsText, !ends && styles.endsTextActive]}>
+                    {t("repeat.never")}
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setCalendarFor("end")}
@@ -161,7 +179,9 @@ export default function RepeatPicker({
                     numberOfLines={1}
                     style={[styles.endsText, ends && styles.endsTextActive]}
                   >
-                    {ends ? `Until ${dayjs(ends).format("D MMM YYYY")}` : "On date"}
+                    {ends
+                      ? t("repeat.until", { date: formatDate(ends, "D MMM YYYY") })
+                      : t("repeat.onDate")}
                   </Text>
                 </Pressable>
               </View>
@@ -173,7 +193,7 @@ export default function RepeatPicker({
             onPress={() => onDone(choice, repeating ? ends : null, starts)}
             style={({ pressed }) => [styles.done, pressed && styles.pressed]}
           >
-            <Text style={styles.doneText}>Done</Text>
+            <Text style={styles.doneText}>{t("repeat.done")}</Text>
           </Pressable>
         </View>
       </View>
@@ -183,7 +203,7 @@ export default function RepeatPicker({
         date={
           calendarFor === "start" ? starts : ends ?? start.add(1, "year").toDate()
         }
-        title={calendarFor === "start" ? "Repeat starts" : "Repeat ends"}
+        title={t(calendarFor === "start" ? "repeat.startsTitle" : "repeat.endsTitle")}
         onConfirm={(picked) => {
           if (calendarFor === "start") {
             setStarts(picked);

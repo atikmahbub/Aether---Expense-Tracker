@@ -3,6 +3,7 @@ import {TextInput, TextInputProps} from 'react-native-paper';
 import {useField} from 'formik';
 import {View, Text, StyleSheet} from 'react-native';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { designTokens } from '@trackingPortal/themes/designTokens';
 
 interface FormikTextInputProps extends TextInputProps {
@@ -22,6 +23,7 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
   ...props
 }) => {
   const { colors } = useAppTheme();
+  const { translateText } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [field, meta] = useField(name);
   const inputRef = React.useRef<any>(null);
@@ -69,7 +71,7 @@ const FormikTextInput: React.FC<FormikTextInputProps> = ({
         {...props}
       />
       {meta.touched && meta.error && (
-        <Text style={styles.errorText}>{meta.error}</Text>
+        <Text style={styles.errorText}>{translateText(meta.error)}</Text>
       )}
     </View>
   );

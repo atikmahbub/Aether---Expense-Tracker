@@ -28,6 +28,8 @@ import TransactionSegmentedControl from '@trackingPortal/screens/TransactionScre
 import type {RepeatChoice} from '@trackingPortal/screens/TransactionScreen/components/RepeatPicker';
 
 import { designTokens } from '@trackingPortal/themes/designTokens';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
+import { useFrequencyText } from '@trackingPortal/i18n/frequency';
 import { eventEmitter, EVENTS } from '@trackingPortal/utils/events';
 
 /** Values the Recurring screen's examples open the form with. */
@@ -99,6 +101,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   const { transactionData, recurringData } = useDatabase();
   const { user } = useAuth();
   const { syncNow } = useOffline();
+  const { t, formatDate } = useTranslation();
+  const { frequencyLabel } = useFrequencyText();
   const [loading, setLoading] = useState<boolean>(false);
   const [transactionType, setTransactionType] = useState<'Expense' | 'Income'>(
     initialType,
@@ -144,12 +148,13 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         const categoryLabel = activeCategories.find(
           item => item.id === values.categoryId,
         )?.name;
-        const description = trimmedDescription || categoryLabel || 'Quick entry';
+        const description = trimmedDescription || categoryLabel || t('form.quickEntry');
         const date = TransactionDataService.toTimestamp(dayjs(values.date).toDate());
         const type = transactionType.toLowerCase() as 'expense' | 'income';
 
         const repeat = values.repeat ?? 'never';
-        let toastText = `${transactionType} added successfully`;
+        const typeLabel = t(transactionType === 'Expense' ? 'wallet.expense' : 'wallet.income');
+        let toastText = t('form.added', { type: typeLabel });
         if (repeat !== 'never' && recurringData) {
           // A repeating entry is a rule; the run below adds any occurrence
           // already due (today's included) as an ordinary transaction.
@@ -169,8 +174,11 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           });
           const added = await recurringData.runDue(user.sub as string);
           toastText = added
-            ? `${transactionType} added · repeats ${repeat}`
-            : `Repeat set · first on ${dayjs(values.date).format('D MMM')}`;
+            ? t('form.addedRepeats', {
+                type: typeLabel,
+                frequency: frequencyLabel(repeat).toLowerCase(),
+              })
+            : t('form.repeatSet', { date: formatDate(values.date, 'D MMM') });
         } else {
           // Offline-first: write to SQLite immediately (works online or offline).
           const created = await transactionData.createTransaction({
@@ -220,7 +228,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         console.error('Transaction Creation Error:', error);
         Toast.show({
           type: 'error',
-          text1: 'Failed to add transaction. Please try again.',
+          text1: t('form.addFailed'),
         });
       } finally {
         setLoading(false);
@@ -240,6 +248,9 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
       setTransactions,
       syncNow,
       transactionType,
+      t,
+      formatDate,
+      frequencyLabel,
     ],
   );
 
@@ -263,6 +274,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
           <View style={styles.container}>
             <TransactionSegmentedControl
               options={['Expense', 'Income']}
+              labels={{ Expense: t('wallet.expense'), Income: t('wallet.income') }}
               selectedOption={transactionType}
               onOptionPress={option =>
                 setTransactionType(option as 'Expense' | 'Income')

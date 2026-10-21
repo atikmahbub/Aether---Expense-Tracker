@@ -12,6 +12,7 @@ import { useSheetConfirm } from "@trackingPortal/components/scalar/SheetConfirm"
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import type { LoanPaymentView } from "@trackingPortal/db/services/LoanDataService";
 import { designTokens } from "@trackingPortal/themes/designTokens";
@@ -72,6 +73,7 @@ export default function LoanDetailSheet({
   const loan = lastLoan.current;
   const payments = lastPayments.current;
   const { colors, isDark } = useAppTheme();
+  const { t, formatDate } = useTranslation();
   const palette = useMemo(() => makePalette(colors, isDark), [colors, isDark]);
   const styles = useMemo(() => makeStyles(colors, palette), [colors, palette]);
   const { currentUser: user, currency } = useStoreContext();
@@ -165,7 +167,7 @@ export default function LoanDetailSheet({
         syncNow();
       }
     } catch {
-      Toast.show({ type: "error", text1: "Something went wrong!" });
+      Toast.show({ type: "error", text1: t("common.somethingWrongBang") });
     } finally {
       setBusy(false);
     }
@@ -183,24 +185,24 @@ export default function LoanDetailSheet({
       setAmountText("");
       setPaymentNote("");
       setPaymentDate(new Date());
-    }, "Payment recorded");
+    }, t("loan.paymentRecorded"));
 
   const confirmSettle = () =>
     confirm({
-      title: "Mark as settled?",
-      message: `${fmt(remaining)} is still left. Settle it anyway, for example if it was forgiven?`,
-      confirmLabel: "Settle",
-      onConfirm: () => run(() => loanData!.settleLoan(loan.id), "Loan settled"),
+      title: t("loan.settleTitle"),
+      message: t("loan.settleMessage", { amount: fmt(remaining) }),
+      confirmLabel: t("loan.settle"),
+      onConfirm: () => run(() => loanData!.settleLoan(loan.id), t("loan.settled")),
     });
 
   const confirmDeletePayment = (payment: LoanPaymentView) =>
     confirm({
-      title: "Delete payment?",
-      message: `Remove the ${fmt(payment.amount)} payment? A settled loan stays settled until you reopen it.`,
-      confirmLabel: "Delete",
+      title: t("loan.deletePaymentTitle"),
+      message: t("loan.deletePaymentMessage", { amount: fmt(payment.amount) }),
+      confirmLabel: t("common.delete"),
       destructive: true,
       // Stays open so several payments can be removed in a row.
-      onConfirm: () => run(() => loanData!.deletePayment(payment.id), "Payment deleted", false),
+      onConfirm: () => run(() => loanData!.deletePayment(payment.id), t("loan.paymentDeleted"), false),
     });
 
   const principal = parseAmount(principalText);
@@ -216,22 +218,22 @@ export default function LoanDetailSheet({
           note: purpose.trim() || null,
           loanType,
         }),
-      "Loan updated successfully!",
+      t("loan.updated"),
     );
 
   const confirmDeleteLoan = () =>
     confirm({
-      title: "Delete loan?",
-      message: `Are you sure you want to delete the loan with ${loan.name}? Its repayments are deleted too. This action cannot be undone.`,
-      confirmLabel: "Delete",
+      title: t("loan.deleteTitle"),
+      message: t("loan.deleteMessage", { name: loan.name }),
+      confirmLabel: t("common.delete"),
       destructive: true,
-      onConfirm: () => run(() => loanData!.deleteLoan(loan.id), "Deleted successfully!"),
+      onConfirm: () => run(() => loanData!.deleteLoan(loan.id), t("common.deleted")),
     });
 
   const quickPicks = [
     { label: "25%", value: remaining * 0.25 },
     { label: "50%", value: remaining * 0.5 },
-    { label: `Full ${fmt(remaining)}`, value: remaining },
+    { label: t("loan.full", { amount: fmt(remaining) }), value: remaining },
   ].map((pick) => ({ ...pick, value: Math.round(pick.value * 100) / 100 }));
 
   return (
@@ -250,12 +252,15 @@ export default function LoanDetailSheet({
           <View style={styles.headerText}>
             <Text numberOfLines={1} style={styles.title}>{loan.name}</Text>
             <Text numberOfLines={1} style={styles.meta}>
-              {given ? "Given" : "Taken"} · due {due.format("D MMM YYYY")}
+              {t("loan.typeDue", {
+                type: t(given ? "loan.given" : "loan.taken"),
+                date: formatDate(due, "D MMM YYYY"),
+              })}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close"
+            accessibilityLabel={t("common.close")}
             hitSlop={8}
             onPress={onClose}
             style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
@@ -268,24 +273,26 @@ export default function LoanDetailSheet({
         <View style={styles.card}>
           <View style={styles.cardTop}>
             <View style={styles.cardFigure}>
-              <Text style={styles.muted13}>{settled ? "Settled" : "Outstanding"}</Text>
+              <Text style={styles.muted13}>{t(settled ? "loan.statusSettled" : "loan.outstanding")}</Text>
               <ScalarAmountText style={styles.outstanding}>
                 {fmt(settled ? 0 : remaining)}
               </ScalarAmountText>
             </View>
             {settled ? (
               <Text style={[styles.badge, styles.badgeNeutral]}>
-                Settled {toDate(loan.settledAt).format("D MMM")}
+                {t("loan.settledBadge", { date: formatDate(toDate(loan.settledAt), "D MMM") })}
               </Text>
             ) : overdueDays > 0 ? (
               <Text style={[styles.badge, styles.badgeNegative]}>
-                Overdue · {overdueDays} {overdueDays === 1 ? "day" : "days"}
+                {overdueDays === 1
+                  ? t("loan.overdueDay")
+                  : t("loan.overdueDays", { n: overdueDays })}
               </Text>
             ) : null}
           </View>
           <View
             style={styles.track}
-            accessibilityLabel={`${Math.round(progress * 100)}% repaid`}
+            accessibilityLabel={t("loan.repaid", { pct: Math.round(progress * 100) })}
           >
             <View style={[styles.fill, { width: `${progress * 100}%` }]} />
           </View>
@@ -297,8 +304,8 @@ export default function LoanDetailSheet({
 
         <Segmented
           options={[
-            { value: "repay", label: "Repay" },
-            { value: "edit", label: "Edit" },
+            { value: "repay", label: t("loan.repay") },
+            { value: "edit", label: t("loan.edit") },
           ]}
           value={tab}
           onChange={(next) => setTab(next as Tab)}
@@ -310,7 +317,7 @@ export default function LoanDetailSheet({
             {!settled && (
               <>
                 <View style={styles.entry}>
-                  <Text style={styles.muted13}>Record payment</Text>
+                  <Text style={styles.muted13}>{t("loan.recordPayment")}</Text>
                   <View style={styles.entryRow}>
                     <Text style={styles.entrySymbol}>{currency.symbol}</Text>
                     <TextInput
@@ -320,11 +327,13 @@ export default function LoanDetailSheet({
                       placeholderTextColor={colors.textMuted}
                       keyboardType="decimal-pad"
                       style={styles.entryInput}
-                      accessibilityLabel="Payment amount"
+                      accessibilityLabel={t("loan.paymentAmount")}
                     />
                   </View>
                   {amountTooHigh && (
-                    <Text style={styles.error}>At most {fmt(remaining)} is left</Text>
+                    <Text style={styles.error}>
+                      {t("loan.atMost", { amount: fmt(remaining) })}
+                    </Text>
                   )}
                   <View style={styles.picks}>
                     {quickPicks.map((pick) => {
@@ -351,22 +360,22 @@ export default function LoanDetailSheet({
                     onPress={() => setCalendar("payment")}
                     style={[styles.groupRow, styles.groupDivider]}
                   >
-                    <Text style={styles.groupLabel}>Date</Text>
+                    <Text style={styles.groupLabel}>{t("loan.date")}</Text>
                     <View style={styles.groupValueWrap}>
                       <Text style={styles.groupValue}>
                         {dayjs(paymentDate).isSame(dayjs(), "day")
-                          ? `Today, ${dayjs(paymentDate).format("D MMM")}`
-                          : dayjs(paymentDate).format("D MMM YYYY")}
+                          ? t("loan.todayDate", { date: formatDate(paymentDate, "D MMM") })
+                          : formatDate(paymentDate, "D MMM YYYY")}
                       </Text>
                       <Chevron color={colors.textMuted} />
                     </View>
                   </Pressable>
                   <View style={styles.groupRow}>
-                    <Text style={styles.groupLabel}>Note</Text>
+                    <Text style={styles.groupLabel}>{t("loan.note")}</Text>
                     <TextInput
                       value={paymentNote}
                       onChangeText={setPaymentNote}
-                      placeholder="Optional"
+                      placeholder={t("loan.optional")}
                       placeholderTextColor={colors.textMuted}
                       style={styles.groupInput}
                     />
@@ -376,7 +385,7 @@ export default function LoanDetailSheet({
             )}
 
             <View style={styles.history}>
-              <Text style={styles.historyTitle}>History</Text>
+              <Text style={styles.historyTitle}>{t("loan.historyTitle")}</Text>
               {payments.length ? (
                 payments.map((payment) => (
                   <View key={payment.id} style={styles.historyRow}>
@@ -385,13 +394,13 @@ export default function LoanDetailSheet({
                         {fmt(payment.amount)}
                       </ScalarAmountText>
                       <Text numberOfLines={1} style={styles.muted13}>
-                        {toDate(payment.date).format("D MMM YYYY")}
+                        {formatDate(toDate(payment.date), "D MMM YYYY")}
                         {payment.note ? ` · ${payment.note}` : ""}
                       </Text>
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Delete payment"
+                      accessibilityLabel={t("loan.deletePayment")}
                       hitSlop={10}
                       disabled={busy}
                       onPress={() => confirmDeletePayment(payment)}
@@ -401,30 +410,30 @@ export default function LoanDetailSheet({
                   </View>
                 ))
               ) : (
-                <Text style={styles.empty}>No repayments yet</Text>
+                <Text style={styles.empty}>{t("loan.noRepayments")}</Text>
               )}
             </View>
 
             <View style={styles.footer}>
               {settled ? (
                 <FooterButton
-                  label="Reopen loan"
+                  label={t("loan.reopen")}
                   primary
                   wide
                   disabled={busy}
-                  onPress={() => run(() => loanData!.reopenLoan(loan.id), "Loan reopened")}
+                  onPress={() => run(() => loanData!.reopenLoan(loan.id), t("loan.reopened"))}
                   styles={styles}
                 />
               ) : (
                 <>
                   <FooterButton
-                    label="Mark settled"
+                    label={t("loan.markSettled")}
                     disabled={busy}
                     onPress={confirmSettle}
                     styles={styles}
                   />
                   <FooterButton
-                    label={amountValid ? `Add ${fmt(amount)}` : "Add payment"}
+                    label={amountValid ? t("loan.addAmount", { amount: fmt(amount) }) : t("loan.addPayment")}
                     primary
                     disabled={busy || !amountValid}
                     onPress={addPayment}
@@ -449,17 +458,17 @@ export default function LoanDetailSheet({
 
             <View style={styles.group}>
               <View style={[styles.groupRow, styles.groupDivider]}>
-                <Text style={styles.groupLabel}>Name</Text>
+                <Text style={styles.groupLabel}>{t("loan.name")}</Text>
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="Who is this loan with?"
+                  placeholder={t("loan.namePlaceholder")}
                   placeholderTextColor={colors.textMuted}
                   style={styles.groupInput}
                 />
               </View>
               <View style={[styles.groupRow, styles.groupDivider]}>
-                <Text style={styles.groupLabel}>Principal</Text>
+                <Text style={styles.groupLabel}>{t("loan.principal")}</Text>
                 <TextInput
                   value={principalText}
                   onChangeText={setPrincipalText}
@@ -474,18 +483,18 @@ export default function LoanDetailSheet({
                 onPress={() => setCalendar("deadline")}
                 style={[styles.groupRow, styles.groupDivider]}
               >
-                <Text style={styles.groupLabel}>Deadline</Text>
+                <Text style={styles.groupLabel}>{t("loan.deadlineLabel")}</Text>
                 <View style={styles.groupValueWrap}>
-                  <Text style={styles.groupValue}>{dayjs(deadline).format("D MMM YYYY")}</Text>
+                  <Text style={styles.groupValue}>{formatDate(deadline, "D MMM YYYY")}</Text>
                   <Chevron color={colors.textMuted} />
                 </View>
               </Pressable>
               <View style={styles.groupRow}>
-                <Text style={styles.groupLabel}>Purpose</Text>
+                <Text style={styles.groupLabel}>{t("loan.purpose")}</Text>
                 <TextInput
                   value={purpose}
                   onChangeText={setPurpose}
-                  placeholder="Add details"
+                  placeholder={t("loan.addDetails")}
                   placeholderTextColor={colors.textMuted}
                   style={styles.groupInput}
                 />
@@ -494,13 +503,13 @@ export default function LoanDetailSheet({
 
             <View style={styles.footer}>
               <FooterButton
-                label="Cancel"
+                label={t("common.cancel")}
                 disabled={busy}
                 onPress={onClose}
                 styles={styles}
               />
               <FooterButton
-                label="Save changes"
+                label={t("common.saveChanges")}
                 primary
                 disabled={busy || !editValid}
                 onPress={saveEdit}
@@ -514,7 +523,7 @@ export default function LoanDetailSheet({
               onPress={confirmDeleteLoan}
               style={styles.deleteLink}
             >
-              <Text style={styles.deleteText}>Delete loan</Text>
+              <Text style={styles.deleteText}>{t("loan.delete")}</Text>
             </Pressable>
           </>
         )}
@@ -524,7 +533,7 @@ export default function LoanDetailSheet({
       <ScalarCalendar
         visible={calendar !== null}
         date={calendar === "deadline" ? deadline : paymentDate}
-        title={calendar === "deadline" ? "Loan deadline" : "Payment date"}
+        title={t(calendar === "deadline" ? "loan.deadline" : "loan.paymentDate")}
         onConfirm={(selected) => {
           if (calendar === "deadline") setDeadline(selected);
           else setPaymentDate(selected);

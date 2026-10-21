@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import React, { useMemo } from "react";
 import {
   ActivityIndicator,
@@ -40,6 +41,7 @@ const APP_VERSION =
 const ProfileScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const showAlert = useScalarAlert();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const { logout, user, loading } = useAuth();
@@ -55,13 +57,12 @@ const ProfileScreen: React.FC = () => {
 
   const handleInitialDeleteTap = () => {
     showAlert({
-      title: "Delete Account?",
-      message:
-        "Are you sure you want to proceed with account deletion? This will erase all your data.",
+      title: t("profile.deleteAskTitle"),
+      message: t("profile.deleteAskMessage"),
       buttons: [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Proceed",
+          text: t("profile.proceed"),
           style: "destructive",
           onPress: () => {
             setDeleteConfirmationText("");
@@ -76,11 +77,11 @@ const ProfileScreen: React.FC = () => {
     try {
       setIsDeleting(true);
       await apiGateway.userService.deleteUser(currentUser.userId);
-      Toast.show({ type: "success", text1: "Account deleted successfully" });
+      Toast.show({ type: "success", text1: t("profile.deleted") });
       setDeleteModalVisible(false);
       await logout();
     } catch {
-      Toast.show({ type: "error", text1: "Failed to delete account" });
+      Toast.show({ type: "error", text1: t("profile.deleteFailed") });
     } finally {
       setIsDeleting(false);
     }
@@ -105,7 +106,7 @@ const ProfileScreen: React.FC = () => {
         >
           <MaterialCommunityIcons name="chevron-left" size={32} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>{t("profile.title")}</Text>
         <View style={{ width: 40 }} />
       </View>
       <RNScrollView
@@ -116,14 +117,14 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.avatarWrapper}>
             <Image source={{ uri: avatarSource }} style={styles.avatar} />
           </View>
-          <Text style={styles.greeting}>Hey, {firstName}</Text>
+          <Text style={styles.greeting}>{t("profile.hey", { name: firstName })}</Text>
           <Text style={styles.caption}>
-            Manage your sanctuary and security settings.
+            {t("profile.caption")}
           </Text>
         </View>
 
         <View style={styles.cardGroup}>
-          <Text style={styles.sectionHeader}>Account Information</Text>
+          <Text style={styles.sectionHeader}>{t("profile.accountInfo")}</Text>
           <View style={styles.detailCard}>
             <View style={styles.detailRow}>
               <View
@@ -139,7 +140,7 @@ const ProfileScreen: React.FC = () => {
                 />
               </View>
               <View style={styles.detailTextCol}>
-                <Text style={styles.detailLabel}>FULL NAME</Text>
+                <Text style={styles.detailLabel}>{t("profile.fullName")}</Text>
                 <Text style={styles.detailValue}>{displayName}</Text>
               </View>
             </View>
@@ -160,7 +161,7 @@ const ProfileScreen: React.FC = () => {
                 />
               </View>
               <View style={styles.detailTextCol}>
-                <Text style={styles.detailLabel}>EMAIL ADDRESS</Text>
+                <Text style={styles.detailLabel}>{t("profile.email")}</Text>
                 <Text style={styles.detailValue}>{displayEmail}</Text>
               </View>
             </View>
@@ -169,7 +170,7 @@ const ProfileScreen: React.FC = () => {
 
         <View style={styles.cardGroup}>
           <Text style={[styles.sectionHeader, { color: colors.error }]}>
-            Security
+            {t("profile.security")}
           </Text>
           <TouchableOpacity
             style={[styles.actionRow, styles.dangerRow]}
@@ -190,10 +191,10 @@ const ProfileScreen: React.FC = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.actionLabel, { color: colors.error }]}>
-                Delete Account
+                {t("profile.deleteAccount")}
               </Text>
               <Text style={styles.dangerHint}>
-                This action cannot be undone
+                {t("profile.cannotUndo")}
               </Text>
             </View>
             <MaterialCommunityIcons
@@ -235,14 +236,13 @@ const ProfileScreen: React.FC = () => {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.modalTitle}>Delete Account</Text>
+              <Text style={styles.modalTitle}>{t("profile.deleteAccount")}</Text>
               <Text style={styles.modalMessage}>
-                This will permanently delete your account and all associated
-                data. To confirm, please type DELETE below.
+                {t("profile.deleteModalMessage")}
               </Text>
               <TextInput
                 style={styles.deleteInput}
-                placeholder="Type DELETE to confirm"
+                placeholder={t("profile.typeDelete")}
                 placeholderTextColor={colors.muted}
                 value={deleteConfirmationText}
                 onChangeText={setDeleteConfirmationText}
@@ -264,7 +264,7 @@ const ProfileScreen: React.FC = () => {
                   {isDeleting ? (
                     <ActivityIndicator color={colors.text} />
                   ) : (
-                    <Text style={styles.deleteButtonText}>Delete</Text>
+                    <Text style={styles.deleteButtonText}>{t("common.delete")}</Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -275,7 +275,7 @@ const ProfileScreen: React.FC = () => {
                   }}
                   disabled={isDeleting}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>{t("common.cancel")}</Text>
                 </TouchableOpacity>
               </View>
             </RNScrollView>

@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import React, {
   createContext,
   useCallback,
@@ -32,6 +33,7 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [alert, setAlert] = useState<AlertOptions | null>(null);
 
@@ -44,7 +46,7 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
   const close = useCallback(() => setAlert(null), []);
   const buttons = alert?.buttons?.length
     ? alert.buttons
-    : [{ text: "OK", style: "default" as const }];
+    : [{ text: t("common.ok"), style: "default" as const }];
   const destructive = buttons.some(button => button.style === "destructive");
 
   return (
@@ -59,7 +61,7 @@ export const ScalarAlertProvider: React.FC<{ children: React.ReactNode }> = ({
       >
         <View style={styles.backdrop}>
           <Pressable
-            accessibilityLabel="Close alert"
+            accessibilityLabel={t("common.closeAlert")}
             style={StyleSheet.absoluteFill}
             onPress={close}
           />

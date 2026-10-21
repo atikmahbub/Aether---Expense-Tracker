@@ -49,15 +49,15 @@ const formatWithEnglishDigits = (
   return `${prefix}${formattedValue}${suffix}`;
 };
 
-export const getGreeting = (): string => {
+export const getGreeting = (): 'morning' | 'afternoon' | 'evening' => {
   const currentHour = dayjs().hour();
 
   if (currentHour < 12) {
-    return 'Good Morning';
+    return 'morning';
   } else if (currentHour < 18) {
-    return 'Good Afternoon';
+    return 'afternoon';
   } else {
-    return 'Good Evening';
+    return 'evening';
   }
 };
 

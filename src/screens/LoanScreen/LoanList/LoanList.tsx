@@ -9,6 +9,7 @@ import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import type { LoanPaymentView } from "@trackingPortal/db/services/LoanDataService";
 import LoanDetailSheet from "@trackingPortal/screens/LoanScreen/LoanDetailSheet";
 import { designTokens } from "@trackingPortal/themes/designTokens";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { formatCurrency } from "@trackingPortal/utils/utils";
 import dayjs from "dayjs";
 import React, { FC, useMemo, useState } from "react";
@@ -40,6 +41,7 @@ const LoanList: FC<ILoanList> = ({
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { currency } = useStoreContext();
+  const { t, formatDate } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -70,13 +72,23 @@ const LoanList: FC<ILoanList> = ({
       !settled &&
       Boolean(loan.deadLine) &&
       dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).isBefore(dayjs(), "day");
+    const typeLabel = t(given ? "loan.given" : "loan.borrowed");
     const meta = settled
-      ? `${given ? "Given" : "Borrowed"} · settled ${dayjs(
-          makeUnixTimestampToNumber(Number(loan.settledAt)),
-        ).format("D MMM YYYY")}`
-      : `${given ? "Given" : "Borrowed"}${
-          paid > 0 ? ` · ${fmt(paid)} of ${fmt(loan.amount)} paid` : ""
-        } · due ${dayjs(makeUnixTimestampToNumber(Number(loan.deadLine))).format("D MMM YYYY")}`;
+      ? t("loan.settledOn", {
+          type: typeLabel,
+          date: formatDate(
+            makeUnixTimestampToNumber(Number(loan.settledAt)),
+            "D MMM YYYY",
+          ),
+        })
+      : `${typeLabel}${
+          paid > 0 ? t("loan.paidOf", { paid: fmt(paid), total: fmt(loan.amount) }) : ""
+        }${t("loan.dueOn", {
+          date: formatDate(
+            makeUnixTimestampToNumber(Number(loan.deadLine)),
+            "D MMM YYYY",
+          ),
+        })}`;
     const showProgress = !settled && paid > 0;
 
     return (
@@ -96,7 +108,15 @@ const LoanList: FC<ILoanList> = ({
           iconGlyphColor={
             settled ? colors.textMuted : given ? colors.positive : colors.negative
           }
-          status={settled ? "Settled" : overdue ? "Overdue" : paid > 0 ? "Left" : "Open"}
+          status={t(
+            settled
+              ? "loan.statusSettled"
+              : overdue
+                ? "loan.statusOverdue"
+                : paid > 0
+                  ? "loan.statusLeft"
+                  : "loan.statusOpen",
+          )}
           // With a progress bar the divider moves below it (rowDivider).
           showDivider={!last && !showProgress}
           onPress={() => select(loan.id)}
@@ -104,7 +124,7 @@ const LoanList: FC<ILoanList> = ({
         {showProgress && (
           <View
             style={styles.progressTrack}
-            accessibilityLabel={`${Math.round((paid / loan.amount) * 100)}% repaid`}
+            accessibilityLabel={t("loan.repaid", { pct: Math.round((paid / loan.amount) * 100) })}
           >
             <View
               style={[
@@ -123,13 +143,13 @@ const LoanList: FC<ILoanList> = ({
 
   return (
     <ScalarSheet>
-      <SheetHeader title="Loan history" />
+      <SheetHeader title={t("loan.history")} />
       {openLoans.length ? (
         <View style={styles.card}>{openLoans.map(renderLoan)}</View>
       ) : (
         <View style={styles.emptyCard}>
           <Text style={styles.empty}>
-            {loans.length ? "All loans are settled" : "No loan entries yet"}
+            {t(loans.length ? "loan.allSettled" : "loan.noEntries")}
           </Text>
         </View>
       )}
@@ -141,7 +161,9 @@ const LoanList: FC<ILoanList> = ({
             onPress={() => setHistoryOpen((v) => !v)}
             style={styles.historyHeader}
           >
-            <Text style={styles.historyTitle}>Settled ({settledLoans.length})</Text>
+            <Text style={styles.historyTitle}>
+              {t("loan.settledCount", { n: settledLoans.length })}
+            </Text>
             <MaterialCommunityIcons
               name={historyOpen ? "chevron-up" : "chevron-down"}
               size={18}

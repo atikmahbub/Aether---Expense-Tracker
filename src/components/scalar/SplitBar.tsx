@@ -119,11 +119,13 @@ export default function SplitBar({
   limitLabel,
   leftLabel,
   leftAmount,
+  spentLabel = "Spent",
 }: {
   ratio: number;
   limitLabel: string;
   leftLabel: string;
   leftAmount: string;
+  spentLabel?: string;
 }) {
   const { colors } = useAppTheme();
   const over = ratio >= 1;
@@ -168,7 +170,7 @@ export default function SplitBar({
                   {limitLabel}
                 </ScalarAmountText>
               ) : null}
-              <Text style={[styles.caption, { color: colors.heroTextSecondary }]}>Spent</Text>
+              <Text style={[styles.caption, { color: colors.heroTextSecondary }]}>{spentLabel}</Text>
             </>
           )}
         </View>

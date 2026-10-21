@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import React, { ComponentProps, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -49,6 +50,7 @@ export default function ScalarListRow({
   recurring = false,
 }: ScalarListRowProps) {
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const palette = isDark ? categoryTokens.dark : categoryTokens.light;
   const semanticCategory = categoryName as ScalarCategoryName | undefined;
   const category = semanticCategory ? palette[semanticCategory] : undefined;
@@ -78,7 +80,7 @@ export default function ScalarListRow({
         <View style={styles.metaRow}>
           {recurring && (
             <MaterialCommunityIcons
-              accessibilityLabel="Recurring"
+              accessibilityLabel={t("common.recurring")}
               name="repeat"
               size={12}
               color={colors.textMuted}

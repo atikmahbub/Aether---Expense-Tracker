@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import * as Font from "expo-font";
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
@@ -15,6 +15,7 @@ const KNOB = 44;
 /** Wordmark plus the Wallet hero's split bar, filling as data loads. */
 const AnimatedLoader: React.FC = () => {
   const { colors } = useAppTheme();
+  const { t, formatDate } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const progress = useRef(new Animated.Value(0)).current;
@@ -88,7 +89,9 @@ const AnimatedLoader: React.FC = () => {
             </View>
           </View>
         </View>
-        <Text style={styles.caption}>Syncing your {dayjs().format("MMMM")}…</Text>
+        <Text style={styles.caption}>
+          {t("loader.syncing", { month: formatDate(new Date(), "MMMM") })}
+        </Text>
       </View>
       <Text style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 28 }]}>
         Offline-first · your entries are saved on this device

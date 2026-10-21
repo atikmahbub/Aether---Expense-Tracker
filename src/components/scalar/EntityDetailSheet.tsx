@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import BaseBottomSheet from "@trackingPortal/components/BaseBottomSheet";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
@@ -71,6 +72,7 @@ function EntityDetailSheetView({
   takeover,
 }: EntityDetailSheetProps & { hasContent: boolean }) {
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   return (
@@ -92,7 +94,7 @@ function EntityDetailSheetView({
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close"
+              accessibilityLabel={t("common.close")}
               hitSlop={8}
               onPress={onClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}

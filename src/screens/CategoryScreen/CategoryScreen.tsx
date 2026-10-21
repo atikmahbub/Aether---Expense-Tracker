@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, FAB } from 'react-native-paper';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
@@ -16,6 +17,7 @@ import { designTokens } from '@trackingPortal/themes/designTokens';
 
 const CategoryScreen = () => {
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const showAlert = useScalarAlert();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
@@ -34,8 +36,8 @@ const CategoryScreen = () => {
   const handleEdit = (category: ExpenseCategoryModel | IncomeCategoryModel) => {
     if (category.userId === null) {
       showAlert({
-        title: 'System Category',
-        message: 'This is a system default category and cannot be edited. Tap the eye icon to hide it when adding entries.',
+        title: t('cat.systemTitle'),
+        message: t('cat.systemEdit'),
       });
       return;
     }
@@ -46,19 +48,19 @@ const CategoryScreen = () => {
   const handleDelete = (item: ExpenseCategoryModel | IncomeCategoryModel) => {
     if (item.userId === null) {
       showAlert({
-        title: 'System Category',
-        message: 'Default categories cannot be deleted. Tap the eye icon to hide it when adding entries.',
+        title: t('cat.systemTitle'),
+        message: t('cat.systemDelete'),
       });
       return;
     }
 
     showAlert({
-      title: 'Delete Category',
-      message: `Are you sure you want to delete "${item.name}"?`,
+      title: t('cat.deleteTitle'),
+      message: t('cat.deleteMessage', { name: item.name }),
       buttons: [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => deleteCategory(item.id)
         },
@@ -85,12 +87,13 @@ const CategoryScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialCommunityIcons name="chevron-left" size={32} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Categories</Text>
+        <Text style={styles.title}>{t('cat.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
       <TransactionSegmentedControl
         options={['expense', 'income']}
+        labels={{ expense: t('wallet.expense'), income: t('wallet.income') }}
         selectedOption={selectedType}
         onOptionPress={(option) => setSelectedType(option as CategoryType)}
         containerStyle={styles.segmentedControl}
@@ -107,11 +110,11 @@ const CategoryScreen = () => {
             <View style={styles.card}>{categories.map(renderItem)}</View>
           ) : (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No categories yet</Text>
+              <Text style={styles.emptyText}>{t('cat.empty')}</Text>
             </View>
           )}
           <Text style={styles.hint}>
-            Tap the eye to hide a category when adding entries. Swipe a custom category to delete it.
+            {t('cat.hint')}
           </Text>
         </ScrollView>
       )}

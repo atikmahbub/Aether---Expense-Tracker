@@ -1,4 +1,5 @@
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import React, { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -47,6 +48,7 @@ function SheetConfirmPanel({
   onCancel,
 }: SheetConfirmOptions & { onCancel: () => void }) {
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   return (
@@ -59,7 +61,7 @@ function SheetConfirmPanel({
           onPress={onCancel}
           style={({ pressed }) => [styles.button, styles.secondary, pressed && styles.pressed]}
         >
-          <Text style={styles.secondaryText}>Cancel</Text>
+          <Text style={styles.secondaryText}>{t("common.cancel")}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"

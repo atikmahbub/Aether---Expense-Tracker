@@ -1,5 +1,6 @@
 import { CurvyHeroPanel, CustomAppBar, HeroFigure, HeroStatCard } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { formatCurrency } from "@trackingPortal/utils/utils";
 import React from "react";
 import { StyleSheet, View } from "react-native";
@@ -21,6 +22,7 @@ const LoanSummary: React.FC<ISummary> = ({
   totalBorrowed = 0,
 }) => {
   const { currency } = useStoreContext();
+  const { t } = useTranslation();
   const netPosition = totalGiven - totalBorrowed;
 
   return (
@@ -28,25 +30,25 @@ const LoanSummary: React.FC<ISummary> = ({
       <CustomAppBar />
       <View style={styles.container}>
         <HeroFigure
-          label="Net position"
+          label={t("loan.netPosition")}
           amount={formatCurrency(Math.abs(netPosition), currency, moneyOptions)}
           footer={
             netPosition === 0
-              ? "Nothing outstanding either way"
+              ? t("loan.nothingOutstanding")
               : netPosition > 0
-                ? "More is owed to you than you owe"
-                : "You owe more than is owed to you"
+                ? t("loan.owedMore")
+                : t("loan.oweMore")
           }
         />
         <HeroStatCard
           stats={[
             {
-              label: "↗ Owed to you",
+              label: t("loan.owedToYou"),
               value: `+${formatCurrency(totalGiven, currency, moneyOptions)}`,
               tone: "positive",
             },
             {
-              label: "↙ You owe",
+              label: t("loan.youOwe"),
               value: `−${formatCurrency(totalBorrowed, currency, moneyOptions)}`,
               tone: "negative",
             },

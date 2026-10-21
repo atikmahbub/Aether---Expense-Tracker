@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import {
   View,
   Text,
@@ -41,6 +42,7 @@ const FormModal: React.FC<IFormModal> = ({
   children,
 }) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // Android only: edge-to-edge (Expo SDK 54+) stops the window from resizing
@@ -101,10 +103,10 @@ const FormModal: React.FC<IFormModal> = ({
                   <TouchableOpacity
                     style={styles.cancelButton}
                     onPress={handleClose}>
-                    <Text style={styles.buttonText}>Cancel</Text>
+                    <Text style={styles.buttonText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <LoadingButton
-                    label={saveLabel || 'Save'}
+                    label={saveLabel || t('common.save')}
                     loading={!!loading}
                     onPress={() => {
                       dismissKeyboard();

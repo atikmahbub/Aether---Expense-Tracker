@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -26,9 +27,10 @@ const CategoryItem = ({
   showDivider,
 }: CategoryItemProps) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isSystem = item.userId === null;
-  const meta = [isSystem ? 'Default' : 'Custom', hidden && 'Hidden when adding']
+  const meta = [t(isSystem ? 'cat.default' : 'cat.custom'), hidden && t('cat.hiddenWhenAdding')]
     .filter(Boolean)
     .join(' · ');
 
@@ -37,7 +39,7 @@ const CategoryItem = ({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Delete ${item.name}`}
+        accessibilityLabel={t('cat.deleteA11y', { name: item.name })}
         style={styles.deleteAction}
         onPress={onDelete}
       >
@@ -78,8 +80,8 @@ const CategoryItem = ({
           accessibilityRole="button"
           accessibilityLabel={
             hidden
-              ? `Show ${item.name} when adding entries`
-              : `Hide ${item.name} when adding entries`
+              ? t('cat.showA11y', { name: item.name })
+              : t('cat.hideA11y', { name: item.name })
           }
           hitSlop={10}
           onPress={onToggleHidden}

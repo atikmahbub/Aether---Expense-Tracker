@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import { Formik } from 'formik';
@@ -33,6 +34,7 @@ interface CategoryModalProps {
 
 const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }: CategoryModalProps) => {
   const { colors } = useAppTheme();
+  const { t, translateText } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const validationSchema = Yup.object().shape({
@@ -56,7 +58,7 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
     >
       <View style={styles.container}>
         <Text style={styles.modalTitle}>
-          {initialData ? 'Edit Category' : 'New Category'}
+          {t(initialData ? 'cat.edit' : 'cat.new')}
         </Text>
 
         <Formik
@@ -74,7 +76,7 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue, isSubmitting }) => (
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Category Name</Text>
+                <Text style={styles.label}>{t('cat.name')}</Text>
                 <TextInput
                   mode="flat"
                   placeholder="e.g. Netflix, Gym, etc."
@@ -88,12 +90,12 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
                   activeUnderlineColor={colors.primary}
                 />
                 {touched.name && errors.name && (
-                  <Text style={styles.errorText}>{errors.name}</Text>
+                  <Text style={styles.errorText}>{translateText(errors.name)}</Text>
                 )}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Select Icon</Text>
+                <Text style={styles.label}>{t('cat.icon')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickerScroll}>
                   {AVAILABLE_ICONS.map((icon) => (
                     <TouchableOpacity
@@ -116,7 +118,7 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Select Color</Text>
+                <Text style={styles.label}>{t('cat.color')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickerScroll}>
                   {AVAILABLE_COLORS.map((color) => (
                     <TouchableOpacity
@@ -140,7 +142,7 @@ const CategoryModal = ({ visible, onClose, onSave, initialData, existingNames }:
                 <LoadingButton
                   loading={isSubmitting}
                   onPress={() => handleSubmit()}
-                  label="Save Category"
+                  label={t('cat.save')}
                   style={styles.saveButton}
                   textStyle={styles.saveButtonText}
                 />

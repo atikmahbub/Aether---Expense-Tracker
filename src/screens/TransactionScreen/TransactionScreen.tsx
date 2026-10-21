@@ -13,6 +13,7 @@ import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import HomeDashboard from "@trackingPortal/screens/TransactionScreen/components/HomeDashboard";
 import { PillChip, ScalarSheet } from "@trackingPortal/components/scalar";
@@ -52,6 +53,7 @@ const AnimatedKeyboardAwareScrollView = RNAnimated.createAnimatedComponent(
 export default function TransactionScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, formatDate } = useTranslation();
 
   const {
     currentUser: user,
@@ -298,8 +300,8 @@ export default function TransactionScreen() {
     if (!isOnline) {
       Toast.show({
         type: "offline",
-        text1: "No internet connection",
-        text2: "Please connect to refresh data.",
+        text1: t("common.noInternet"),
+        text2: t("common.connectToRefresh"),
       });
       return;
     }
@@ -315,7 +317,7 @@ export default function TransactionScreen() {
     ]);
 
     setRefreshing(false);
-  }, [isOnline, loadData, fetchAnalytics, refreshCategories, fetchSummary]);
+  }, [isOnline, loadData, fetchAnalytics, refreshCategories, fetchSummary, t]);
 
   // Stale-while-revalidate: keep rendering the last summary while a refetch is
   // in flight. Background syncs re-run fetchSummary; gating these on
@@ -337,7 +339,7 @@ export default function TransactionScreen() {
         !monthlyLimitData ||
         !user.userId
       ) {
-        Toast.show({ type: "error", text1: "Enter a valid monthly limit" });
+        Toast.show({ type: "error", text1: t("wallet.invalidLimit") });
         return;
       }
       try {
@@ -354,12 +356,12 @@ export default function TransactionScreen() {
         Toast.show({
           type: "success",
           text1: monthLimit?.id
-            ? "Limit updated successfully"
-            : "Limit added successfully",
+            ? t("wallet.limitUpdated")
+            : t("wallet.limitAdded"),
         });
         syncNow();
       } catch {
-        Toast.show({ type: "error", text1: "Something went wrong" });
+        Toast.show({ type: "error", text1: t("common.somethingWrong") });
       } finally {
         setSavingLimit(false);
       }
@@ -371,6 +373,7 @@ export default function TransactionScreen() {
       monthlyLimitData,
       syncNow,
       user.userId,
+      t,
     ],
   );
 
@@ -390,7 +393,7 @@ export default function TransactionScreen() {
             {(["expense", "income"] as const).map((option) => (
               <PillChip
                 key={option}
-                label={option === "expense" ? "Expense" : "Income"}
+                label={t(option === "expense" ? "wallet.expense" : "wallet.income")}
                 active={typeFilter === option}
                 onPress={() => handleTypeFilterChange(option)}
               />
@@ -408,6 +411,7 @@ export default function TransactionScreen() {
       currency,
       transactions,
       handleTypeFilterChange,
+      t,
     ],
   );
 
@@ -578,9 +582,9 @@ export default function TransactionScreen() {
         {({ handleSubmit, resetForm }) => (
           <FormModal
             isVisible={limitModalVisible}
-            title={monthLimit?.limit ? "Adjust monthly limit" : "Set monthly limit"}
-            subtitle={filterMonth.format("MMMM YYYY")}
-            saveLabel={monthLimit?.limit ? "Update limit" : "Set limit"}
+            title={t(monthLimit?.limit ? "wallet.adjustMonthlyLimit" : "wallet.setMonthlyLimit")}
+            subtitle={formatDate(filterMonth, "MMMM YYYY")}
+            saveLabel={t(monthLimit?.limit ? "wallet.updateLimit" : "wallet.setLimit")}
             onClose={() => {
               setLimitModalVisible(false);
               resetForm();
@@ -591,7 +595,7 @@ export default function TransactionScreen() {
             <FormikTextInput
               autoFocus
               name={EMonthlyLimitFields.LIMIT}
-              label="Monthly limit"
+              label={t("wallet.monthlyLimit")}
               keyboardType="numeric"
             />
           </FormModal>

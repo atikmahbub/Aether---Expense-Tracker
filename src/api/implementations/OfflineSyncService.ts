@@ -1,3 +1,4 @@
+import { translateNow } from "@trackingPortal/contexts/LanguageContext";
 import { IApiGateWay } from "@trackingPortal/api/interfaces";
 import { OfflineQueueItem, offlineService } from "@trackingPortal/api/utils/OfflineService";
 import Toast from "react-native-toast-message";
@@ -27,16 +28,16 @@ export class OfflineSyncService {
     if (successCount > 0) {
       Toast.show({
         type: "success",
-        text1: "Sync Complete",
-        text2: `${successCount} items synced successfully`,
+        text1: translateNow("sync.complete"),
+        text2: translateNow("sync.completeDetail", { n: successCount }),
       });
     }
 
     if (failedCount > 0) {
       Toast.show({
         type: "error",
-        text1: "Sync Incomplete",
-        text2: `${failedCount} items failed to sync`,
+        text1: translateNow("sync.incomplete"),
+        text2: translateNow("sync.incompleteDetail", { n: failedCount }),
       });
     }
 

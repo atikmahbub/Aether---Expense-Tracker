@@ -4,6 +4,7 @@ import { ExpenseCategoryModel, IncomeCategoryModel } from '@trackingPortal/api/m
 import { ICreateCategoryParams, IUpdateCategoryParams } from '@trackingPortal/api/params';
 import { UserId } from '@trackingPortal/api/primitives';
 import Toast from 'react-native-toast-message';
+import { translateNow } from '@trackingPortal/contexts/LanguageContext';
 
 export type CategoryType = 'expense' | 'income';
 
@@ -26,7 +27,7 @@ export const useCategories = (selectedType: CategoryType) => {
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      Toast.show({ type: 'error', text1: 'Failed to fetch categories' });
+      Toast.show({ type: 'error', text1: translateNow('cat.fetchFailed') });
     } finally {
       setLoading(false);
     }
@@ -47,9 +48,9 @@ export const useCategories = (selectedType: CategoryType) => {
       }
       await fetchCategories();
       await refreshCategories({ force: true });
-      Toast.show({ type: 'success', text1: 'Category created' });
+      Toast.show({ type: 'success', text1: translateNow('cat.created') });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Failed to create category' });
+      Toast.show({ type: 'error', text1: translateNow('cat.createFailed') });
       throw error;
     }
   };
@@ -65,9 +66,9 @@ export const useCategories = (selectedType: CategoryType) => {
       }
       await fetchCategories();
       await refreshCategories({ force: true });
-      Toast.show({ type: 'success', text1: 'Category updated' });
+      Toast.show({ type: 'success', text1: translateNow('cat.updated') });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Failed to update category' });
+      Toast.show({ type: 'error', text1: translateNow('cat.updateFailed') });
       throw error;
     }
   };
@@ -82,9 +83,9 @@ export const useCategories = (selectedType: CategoryType) => {
       }
       await fetchCategories();
       await refreshCategories({ force: true });
-      Toast.show({ type: 'success', text1: 'Category deleted' });
+      Toast.show({ type: 'success', text1: translateNow('cat.deleted') });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Failed to delete category' });
+      Toast.show({ type: 'error', text1: translateNow('cat.deleteFailed') });
       throw error;
     }
   };

@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import dayjs, { Dayjs } from "dayjs";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -20,16 +21,18 @@ interface ScalarCalendarProps {
 }
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+const WEEKDAYS_BN = ["র", "সো", "ম", "বু", "বৃ", "শু", "শ"];
 
 export default function ScalarCalendar({
   visible,
   date,
-  title = "Choose date",
+  title,
   onConfirm,
   onCancel,
 }: ScalarCalendarProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, formatDate, language } = useTranslation();
   const [selected, setSelected] = useState<Dayjs>(dayjs(date));
   const [visibleMonth, setVisibleMonth] = useState<Dayjs>(
     dayjs(date).startOf("month"),
@@ -63,13 +66,13 @@ export default function ScalarCalendar({
           <View style={styles.handle} />
           <View style={styles.titleRow}>
             <View>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.title}>{title ?? t("calendar.chooseDate")}</Text>
               <Text style={styles.selectedDate}>
-                {selected.format("dddd, D MMMM YYYY")}
+                {formatDate(selected, "dddd, D MMMM YYYY")}
               </Text>
             </View>
             <Pressable
-              accessibilityLabel="Close calendar"
+              accessibilityLabel={t("calendar.close")}
               onPress={onCancel}
               style={({ pressed }) => [
                 styles.iconButton,
@@ -86,7 +89,7 @@ export default function ScalarCalendar({
 
           <View style={styles.monthRow}>
             <Pressable
-              accessibilityLabel="Previous month"
+              accessibilityLabel={t("calendar.prev")}
               onPress={() =>
                 setVisibleMonth((current) => current.subtract(1, "month"))
               }
@@ -102,10 +105,10 @@ export default function ScalarCalendar({
               />
             </Pressable>
             <Text style={styles.monthLabel}>
-              {visibleMonth.format("MMMM YYYY")}
+              {formatDate(visibleMonth, "MMMM YYYY")}
             </Text>
             <Pressable
-              accessibilityLabel="Next month"
+              accessibilityLabel={t("calendar.next")}
               onPress={() =>
                 setVisibleMonth((current) => current.add(1, "month"))
               }
@@ -123,7 +126,7 @@ export default function ScalarCalendar({
           </View>
 
           <View style={styles.weekRow}>
-            {WEEKDAYS.map((label, index) => (
+            {(language === "bn" ? WEEKDAYS_BN : WEEKDAYS).map((label, index) => (
               <Text key={`${label}-${index}`} style={styles.weekday}>
                 {label}
               </Text>
@@ -175,7 +178,7 @@ export default function ScalarCalendar({
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={styles.todayText}>Today</Text>
+              <Text style={styles.todayText}>{t("calendar.today")}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -196,7 +199,7 @@ export default function ScalarCalendar({
                 pressed && styles.confirmPressed,
               ]}
             >
-              <Text style={styles.confirmText}>Confirm date</Text>
+              <Text style={styles.confirmText}>{t("calendar.confirm")}</Text>
             </Pressable>
           </View>
         </View>

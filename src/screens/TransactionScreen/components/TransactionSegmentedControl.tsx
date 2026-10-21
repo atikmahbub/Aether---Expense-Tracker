@@ -6,6 +6,8 @@ import PillChip from "@trackingPortal/components/scalar/PillChip";
 
 interface SegmentedControlProps {
   options: string[];
+  /** Display text per option; defaults to the capitalised option. */
+  labels?: Record<string, string>;
   selectedOption: string;
   onOptionPress: (option: string) => void;
   containerStyle?: object;
@@ -22,6 +24,7 @@ const capitalize = (value: string) =>
  */
 const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
   options,
+  labels,
   selectedOption,
   onOptionPress,
   containerStyle,
@@ -32,7 +35,7 @@ const TransactionSegmentedControl: React.FC<SegmentedControlProps> = ({
       <PillChip
         key={option}
         variant={panel ? "hero" : "sheet"}
-        label={capitalize(option)}
+        label={labels?.[option] ?? capitalize(option)}
         active={option === selectedOption}
         onPress={() => {
           if (option !== selectedOption) selectionHaptic();

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, {
@@ -22,6 +23,7 @@ import { RollingDigit } from '@trackingPortal/components/ScalarLoadingMarks';
 const SyncStatusIndicator: React.FC = () => {
   const { isOnline, pendingCount, failedCount, syncInProgress, retryFailed } = useOffline();
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const pulse = useSharedValue(1);
@@ -56,23 +58,23 @@ const SyncStatusIndicator: React.FC = () => {
 
   if (!isOnline) {
     icon = 'cloud-off-outline';
-    label = 'Offline';
+    label = t('sync.offline');
     tint = colors.error;
     animatedStyle = pulseStyle;
   } else if (syncInProgress) {
     icon = '';
-    label = 'Syncing';
+    label = t('sync.syncing');
     tint = colors.primary;
   } else if (failedCount > 0) {
     // Gave up retrying — surfaced distinctly instead of silently vanishing,
     // with a tap-to-retry so the write isn't stuck unpushed forever.
     icon = 'cloud-alert-outline';
-    label = `${failedCount} failed`;
+    label = t('sync.failed', { n: failedCount });
     tint = colors.error;
     onPress = retryFailed;
   } else {
     icon = 'cloud-upload-outline';
-    label = `${pendingCount} pending`;
+    label = t('sync.pending', { n: pendingCount });
     tint = colors.warning;
   }
 

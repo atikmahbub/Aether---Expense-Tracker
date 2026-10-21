@@ -11,23 +11,26 @@ import DockIcon, { DockIconName } from "@trackingPortal/components/scalar/DockIc
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import GlassSurface from "@trackingPortal/components/scalar/GlassSurface";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
+import { TranslationKey } from "@trackingPortal/i18n/translations";
 
 const FADE = 32;
 // The selected tab widens into an icon + label pill; neighbours glide aside.
 // Spec: 260ms ease on width, fill and padding; the label fades in 200ms.
 const TAB_LAYOUT = LinearTransition.duration(260).easing(Easing.ease);
 
-const TABS: { name: string; label: string; icon: DockIconName }[] = [
-  { name: "transactions", label: "Wallet", icon: "wallet" },
-  { name: "loan", label: "Loans", icon: "loans" },
-  { name: "investment", label: "Invest", icon: "invest" },
-  { name: "settings", label: "Settings", icon: "settings" },
+const TABS: { name: string; label: TranslationKey; icon: DockIconName }[] = [
+  { name: "transactions", label: "tabs.wallet", icon: "wallet" },
+  { name: "loan", label: "tabs.loans", icon: "loans" },
+  { name: "investment", label: "tabs.invest", icon: "invest" },
+  { name: "settings", label: "tabs.settings", icon: "settings" },
 ];
 
 export default function CustomTabBar({
   state,
   navigation,
 }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
@@ -64,7 +67,7 @@ export default function CustomTabBar({
       <Animated.View key={name} layout={TAB_LAYOUT}>
         <Pressable
           accessibilityRole="tab"
-          accessibilityLabel={tab.label}
+          accessibilityLabel={t(tab.label)}
           accessibilityState={{ selected: focused }}
           onPress={() => handleTabPress(route.name)}
           style={({ pressed }) => [
@@ -83,7 +86,7 @@ export default function CustomTabBar({
               numberOfLines={1}
               style={styles.tabLabel}
             >
-              {tab.label}
+              {t(tab.label)}
             </Animated.Text>
           )}
         </Pressable>
@@ -131,7 +134,7 @@ export default function CustomTabBar({
             style={styles.addWrap}
           >
             <Pressable
-              accessibilityLabel="Add entry"
+              accessibilityLabel={t("common.addEntry")}
               accessibilityRole="button"
               onPress={handlePlusPress}
               style={({ pressed }) => [

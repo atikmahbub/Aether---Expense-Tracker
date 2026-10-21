@@ -1,4 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
+import { useFrequencyText } from "@trackingPortal/i18n/frequency";
 import { useIsFocused } from "@react-navigation/native";
 import ScalarListRow from "@trackingPortal/components/ScalarListRow";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
@@ -8,9 +10,7 @@ import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import type { LocalCategory } from "@trackingPortal/db/repositories/CategoryRepository";
 import {
-  FREQUENCY_LABEL,
   monthlyEquivalent,
-  ordinal,
   RecurringRuleView,
 } from "@trackingPortal/db/services/RecurringDataService";
 import RecurringRuleSheet from "@trackingPortal/screens/RecurringScreen/RecurringRuleSheet";
@@ -26,32 +26,32 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 /** Tappable starting points on the empty screen; each prefills the add form. */
 const EXAMPLES = [
-  { description: "Rent", type: "Expense", day: 1, icon: "home-outline" },
-  { description: "Salary", type: "Income", day: 28, icon: "briefcase-outline" },
-  { description: "Netflix", type: "Expense", day: 12, icon: "television-classic" },
+  { description: "rec.rent", type: "Expense", day: 1, icon: "home-outline" },
+  { description: "rec.salary", type: "Income", day: 28, icon: "briefcase-outline" },
+  { description: "rec.netflix", type: "Expense", day: 12, icon: "television-classic" },
 ] as const;
 
 /** The short "how it works" note under the list. */
 const HELP = [
   {
     icon: "calendar-check-outline",
-    text: "Each repeat is added on its day, the next time you open Scalar — even if you were offline.",
+    text: "rec.help1",
   },
   {
     icon: "repeat",
-    text: "They appear in your timeline like any other entry, with a small repeat icon, and count in your monthly totals.",
+    text: "rec.help2",
   },
   {
     icon: "pencil-outline",
-    text: "Change the amount, category or note anytime; it applies from the next entry.",
+    text: "rec.help3",
   },
   {
     icon: "pause-circle-outline",
-    text: "Pause to skip a stretch, or delete to stop. Past entries always stay in your history.",
+    text: "rec.help4",
   },
   {
     icon: "calendar-refresh-outline",
-    text: "To move the day, delete the repeat and set up a new one.",
+    text: "rec.help5",
   },
 ] as const;
 
@@ -66,6 +66,8 @@ export type CategoryLookup = Record<string, LocalCategory>;
 
 export default function RecurringScreen() {
   const { colors, isDark } = useAppTheme();
+  const { t, formatDate } = useTranslation();
+  const { frequencyLabel, describeFrequency } = useFrequencyText();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const isFocused = useIsFocused();
@@ -145,7 +147,7 @@ export default function RecurringScreen() {
   const addRecurring = (example?: (typeof EXAMPLES)[number]) => {
     requestCreation({
       type: example?.type ?? "Expense",
-      description: example?.description ?? "",
+      description: example ? t(example.description) : "",
       repeat: "monthly",
       date: example ? nextOnDay(example.day) : new Date(),
     });
@@ -156,18 +158,18 @@ export default function RecurringScreen() {
     const category = rule.categoryId ? categories[rule.categoryId] : undefined;
     const isIncome = rule.type === "income";
     const when = rule.ended
-      ? "Ended"
+      ? t("rec.ended")
       : rule.paused
-        ? "Paused"
+        ? t("rec.paused")
         : rule.nextDate
-          ? `next on ${dayjs(rule.nextDate).format("D MMM")}`
+          ? t("rec.nextOn", { date: formatDate(rule.nextDate, "D MMM") })
           : "";
     return (
       <View key={rule.id} style={rule.paused && styles.paused}>
         <ScalarListRow
           grouped
-          title={rule.description || category?.name || "Recurring"}
-          meta={[category?.name, FREQUENCY_LABEL[rule.frequency], when]
+          title={rule.description || category?.name || t("rec.title")}
+          meta={[category?.name, frequencyLabel(rule.frequency), when]
             .filter(Boolean)
             .join(" · ")}
           amount={`${isIncome ? "+" : "−"}${fmt(rule.amount)}`}
@@ -188,17 +190,17 @@ export default function RecurringScreen() {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t("rec.back")}
           onPress={() => router.back()}
           style={styles.iconButton}
         >
           <MaterialCommunityIcons name="chevron-left" size={32} color={colors.text} />
         </Pressable>
-        <Text style={styles.title}>Recurring</Text>
+        <Text style={styles.title}>{t("rec.title")}</Text>
         {rules.length ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Add recurring"
+            accessibilityLabel={t("rec.add")}
             onPress={() => addRecurring()}
             style={styles.iconButton}
           >
@@ -213,10 +215,9 @@ export default function RecurringScreen() {
         <View style={styles.emptyRoot}>
           <ScrollView contentContainerStyle={styles.content}>
             <Text style={styles.emptyLead}>
-              Set a payment up once and Scalar adds it on the day it’s due. It
-              counts in your totals like any other entry.
+              {t("rec.emptyLead")}
             </Text>
-            <Text style={styles.sectionLabel}>FOR EXAMPLE</Text>
+            <Text style={styles.sectionLabel}>{t("rec.forExample")}</Text>
             <View style={styles.card}>
               {EXAMPLES.map((example, index) => (
                 <Pressable
@@ -237,9 +238,9 @@ export default function RecurringScreen() {
                     />
                   </View>
                   <View style={styles.exampleText}>
-                    <Text style={styles.exampleTitle}>{example.description}</Text>
+                    <Text style={styles.exampleTitle}>{t(example.description)}</Text>
                     <Text style={styles.exampleMeta}>
-                      Monthly on the {ordinal(example.day)}
+                      {describeFrequency("monthly", nextOnDay(example.day))}
                     </Text>
                   </View>
                   <MaterialCommunityIcons name="plus" size={18} color={colors.textMuted} />
@@ -252,35 +253,35 @@ export default function RecurringScreen() {
             onPress={() => addRecurring()}
             style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
           >
-            <Text style={styles.primaryText}>Add recurring</Text>
+            <Text style={styles.primaryText}>{t("rec.add")}</Text>
           </Pressable>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.summary}>
-            <Text style={styles.summaryLabel}>Monthly recurring</Text>
+            <Text style={styles.summaryLabel}>{t("rec.monthlyRecurring")}</Text>
             <View style={styles.summaryRow}>
               <ScalarAmountText style={styles.summaryFigure}>
                 {`−${fmt(monthlyTotal(expenses))}`}
               </ScalarAmountText>
-              <Text style={styles.summaryUnit}>out</Text>
+              <Text style={styles.summaryUnit}>{t("rec.out")}</Text>
               <Text style={styles.summaryUnit}>·</Text>
               <ScalarAmountText style={[styles.summaryFigure, styles.positive]}>
                 {`+${fmt(monthlyTotal(income))}`}
               </ScalarAmountText>
-              <Text style={styles.summaryUnit}>in</Text>
+              <Text style={styles.summaryUnit}>{t("rec.in")}</Text>
             </View>
           </View>
 
           {expenses.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>EXPENSES</Text>
+              <Text style={styles.sectionLabel}>{t("rec.expenses")}</Text>
               <View style={styles.card}>{expenses.map(renderRule)}</View>
             </>
           )}
           {income.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>INCOME</Text>
+              <Text style={styles.sectionLabel}>{t("rec.income")}</Text>
               <View style={styles.card}>{income.map(renderRule)}</View>
             </>
           )}
@@ -293,7 +294,7 @@ export default function RecurringScreen() {
                 onPress={() => setEndedOpen((v) => !v)}
                 style={styles.endedHeader}
               >
-                <Text style={styles.endedTitle}>Ended · {ended.length}</Text>
+                <Text style={styles.endedTitle}>{t("rec.endedCount", { n: ended.length })}</Text>
                 <MaterialCommunityIcons
                   name={endedOpen ? "chevron-up" : "chevron-down"}
                   size={18}
@@ -305,7 +306,7 @@ export default function RecurringScreen() {
           )}
 
           <View style={styles.help}>
-            <Text style={styles.helpTitle}>How repeats work</Text>
+            <Text style={styles.helpTitle}>{t("rec.howItWorks")}</Text>
             {HELP.map((line) => (
               <View key={line.icon} style={styles.helpRow}>
                 <MaterialCommunityIcons
@@ -314,7 +315,7 @@ export default function RecurringScreen() {
                   color={colors.textMuted}
                   style={styles.helpIcon}
                 />
-                <Text style={styles.helpText}>{line.text}</Text>
+                <Text style={styles.helpText}>{t(line.text)}</Text>
               </View>
             ))}
           </View>

@@ -5,20 +5,20 @@ import {EAddLoanFields} from '@trackingPortal/screens/LoanScreen';
 import {TextInput} from 'react-native-paper';
 import {FormikTextInput, LoadingButton} from '@trackingPortal/components';
 import ScalarCalendar from '@trackingPortal/components/ScalarCalendar';
-import dayjs from 'dayjs';
 import {LoanType} from '@trackingPortal/api/enums';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 import { designTokens } from '@trackingPortal/themes/designTokens';
 import PillChip from '@trackingPortal/components/scalar/PillChip';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 
 const LOAN_TYPE_OPTIONS = [
   {
-    label: 'Given',
+    label: 'loan.given',
     value: LoanType.GIVEN,
     description: 'Money you lent to someone',
   },
   {
-    label: 'Taken',
+    label: 'loan.taken',
     value: LoanType.TAKEN,
     description: 'Money you borrowed',
   },
@@ -34,6 +34,7 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
   const { colors, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const {values, setFieldValue} = useFormikContext<any>();
+  const {t, formatDate} = useTranslation();
   const [pickerVisible, setPickerVisible] = useState(false);
   const deadlineValue = values[EAddLoanFields.DEADLINE];
   const currentDeadline = useMemo(() => {
@@ -56,7 +57,7 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
             <PillChip
               key={option.value}
               variant="sheet"
-              label={option.label}
+              label={t(option.label)}
               active={values[EAddLoanFields.LOAN_TYPE] === option.value}
               onPress={() => setFieldValue(EAddLoanFields.LOAN_TYPE, option.value)}
             />
@@ -64,14 +65,14 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
         </View>
       </View>
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>COUNTERPARTY NAME</Text>
+        <Text style={styles.sectionLabel}>{t('loan.counterparty')}</Text>
         <FormikTextInput
           name={EAddLoanFields.NAME}
-          placeholder="Who is this loan with?"
+          placeholder={t('loan.namePlaceholder')}
         />
       </View>
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>PRINCIPAL AMOUNT</Text>
+        <Text style={styles.sectionLabel}>{t('loan.principalCaps')}</Text>
         <FormikTextInput
           name={EAddLoanFields.AMOUNT}
           placeholder="0.00"
@@ -79,11 +80,11 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
         />
       </View>
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>DEADLINE</Text>
+        <Text style={styles.sectionLabel}>{t('loan.deadlineCaps')}</Text>
         <View style={styles.inputWrapper}>
           <TextInput
             mode="flat"
-            value={dayjs(currentDeadline).format('MM/DD/YYYY')}
+            value={formatDate(currentDeadline, 'MM/DD/YYYY')}
             editable={false}
             pointerEvents="none"
             underlineColor="transparent"
@@ -97,10 +98,10 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
       </View>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.sectionLabel}>LOAN PURPOSE / NOTE</Text>
+        <Text style={styles.sectionLabel}>{t('loan.noteCaps')}</Text>
         <FormikTextInput
           name={EAddLoanFields.NOTE}
-          placeholder="Add details about the agreement..."
+          placeholder={t('loan.notePlaceholder')}
           multiline
           numberOfLines={4}
         />
@@ -108,7 +109,7 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
       <ScalarCalendar
         visible={pickerVisible}
         date={currentDeadline}
-        title="Loan deadline"
+        title={t('loan.deadline')}
         onConfirm={selectedDate => {
           setFieldValue(EAddLoanFields.DEADLINE, selectedDate);
           setPickerVisible(false);
@@ -125,13 +126,13 @@ export default function LoanForm({onSubmit, onCancel, loading}: LoanFormProps) {
           }}
           activeOpacity={0.7}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
 
         <View style={styles.saveButtonWrapper}>
           <LoadingButton
             style={styles.saveButton}
-            label="Add loan"
+            label={t('loan.add')}
             loading={loading}
             onPress={() => {
               Keyboard.dismiss();

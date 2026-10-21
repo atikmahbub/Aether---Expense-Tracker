@@ -1,17 +1,19 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { StyleSheet, View, Text } from 'react-native';
 import ScalarSpinner from '@trackingPortal/components/ScalarSpinner';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
 
 const AppLoader = () => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
     <View style={styles.container}>
       <View style={styles.loaderCard}>
         <ScalarSpinner size={72} />
-        <Text style={styles.loaderLabel}>Warming up Scalar…</Text>
+        <Text style={styles.loaderLabel}>{t("loader.warmingUp")}</Text>
       </View>
     </View>
   );

@@ -14,6 +14,7 @@ import { StyleSheet, View } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { useIsFocused } from "@react-navigation/native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -24,6 +25,7 @@ export default function LoanScreen() {
   const [payments, setPayments] = useState<LoanPaymentView[]>([]);
   const { currentUser: user } = useStoreContext();
   const { loanData } = useDatabase();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const isFocused = useIsFocused();
@@ -105,7 +107,7 @@ export default function LoanScreen() {
       console.log("error", error);
       Toast.show({
         type: "error",
-        text1: "Something went wrong!",
+        text1: t("common.somethingWrongBang"),
       });
     } finally {
       setLoading(false);
@@ -139,8 +141,8 @@ export default function LoanScreen() {
     if (!isOnline) {
       Toast.show({
         type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Please connect to refresh data.',
+        text1: t('common.noInternet'),
+        text2: t('common.connectToRefresh'),
       });
       return;
     }

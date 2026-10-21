@@ -60,6 +60,10 @@ import {
   ThemeProvider,
   useAppTheme,
 } from "@trackingPortal/contexts/ThemeContext";
+import {
+  LanguageProvider,
+  useTranslation,
+} from "@trackingPortal/contexts/LanguageContext";
 import { DatabaseProvider } from "@trackingPortal/db";
 import AppLayout from "@trackingPortal/layout";
 import OnboardingScreen from "@trackingPortal/screens/OnboardingScreen";
@@ -92,6 +96,7 @@ const applyDefaultFont = () => {
 const NavigationBoundary: React.FC = () => {
   const { isAuthenticated, loading, refreshFailed, retrySession } = useAuth();
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
   const rootSegment = segments[0];
@@ -196,7 +201,7 @@ const NavigationBoundary: React.FC = () => {
             fontSize: 16,
           }}
         >
-          Unable to connect. Check your internet and try again.
+          {t("app.unableToConnect")}
         </Text>
         <TouchableOpacity
           style={{
@@ -208,7 +213,7 @@ const NavigationBoundary: React.FC = () => {
           onPress={retrySession}
         >
           <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
-            Retry
+            {t("app.retry")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -324,6 +329,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
+      <LanguageProvider>
       <ScalarAlertProvider>
         {!splashComplete ? (
           <ScalarSplashGate
@@ -334,6 +340,7 @@ export default function RootLayout() {
           <ThemedApp />
         )}
       </ScalarAlertProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

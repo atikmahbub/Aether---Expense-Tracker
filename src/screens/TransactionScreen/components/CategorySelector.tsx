@@ -3,6 +3,7 @@ import {ActivityIndicator, ScrollView, StyleSheet, Text, View} from 'react-nativ
 import CategoryChip from '@trackingPortal/screens/TransactionScreen/components/CategoryChip';
 import {ExpenseCategoryModel} from '@trackingPortal/api/models';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 
 interface CategorySelectorProps {
   categories: ExpenseCategoryModel[];
@@ -24,6 +25,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   recentCategoryIds,
 }) => {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const prioritizedCategories = useMemo(() => {
@@ -54,9 +56,9 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   if (!loading && !categories.length) {
     return (
       <View style={styles.fallbackContainer}>
-        <Text style={styles.placeholder}>No categories yet</Text>
+        <Text style={styles.placeholder}>{t('form.noCategories')}</Text>
         {error ? (
-          <Text style={styles.helper}>Pull to refresh or tap retry.</Text>
+          <Text style={styles.helper}>{t('form.pullToRefresh')}</Text>
         ) : null}
       </View>
     );
@@ -82,7 +84,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
       </ScrollView>
       {error ? (
         <Text style={styles.errorText} onPress={onRetry}>
-          {onRetry ? 'Could not update categories. Tap to retry.' : error}
+          {onRetry ? t('form.categoriesRetry') : error}
         </Text>
       ) : null}
     </View>

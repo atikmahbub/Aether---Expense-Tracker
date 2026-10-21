@@ -1,4 +1,5 @@
 
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { Formik } from 'formik';
 import React, { SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -36,6 +37,7 @@ const InvestCreation: React.FC<IInvestCreation> = ({
   const {currentUser: user} = useStoreContext();
   const {investData} = useDatabase();
   const {syncNow} = useOffline();
+  const {t} = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
 
 
@@ -69,7 +71,7 @@ const InvestCreation: React.FC<IInvestCreation> = ({
         triggerSuccessHaptic();
         Toast.show({
           type: 'success',
-          text1: 'Investment added successfully',
+          text1: t('invest.added'),
         });
         syncNow();
       });
@@ -77,12 +79,12 @@ const InvestCreation: React.FC<IInvestCreation> = ({
       console.error('Investment Creation Error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Failed to add investment. Please try again.',
+        text1: t('invest.addFailed'),
       });
     } finally {
       setLoading(false);
     }
-  }, [user.userId, investData, handleClose, setInvests, getUserInvestHistory, syncNow]);
+  }, [t, user.userId, investData, handleClose, setInvests, getUserInvestHistory, syncNow]);
 
   return (
     <BaseBottomSheet

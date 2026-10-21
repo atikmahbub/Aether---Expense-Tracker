@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useState, useMemo, useRef } from "react"
 import { StyleSheet, View } from "react-native";
 import { RefreshControl } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { useNetwork } from "@trackingPortal/contexts/NetworkProvider";
 import { useIsFocused } from "@react-navigation/native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -22,6 +23,7 @@ export default function InvestScreen() {
   const [invests, setInvests] = useState<InvestModel[]>([]);
   const { currentUser: user } = useStoreContext();
   const { investData } = useDatabase();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [status, setStatus] = React.useState<EInvestStatus>(
@@ -101,7 +103,7 @@ export default function InvestScreen() {
       console.log("error", error);
       Toast.show({
         type: "error",
-        text1: "Something went wrong!",
+        text1: t("common.somethingWrongBang"),
       });
     } finally {
       setLoading(false);
@@ -112,8 +114,8 @@ export default function InvestScreen() {
     if (!isOnline) {
       Toast.show({
         type: 'offline',
-        text1: 'No internet connection',
-        text2: 'Please connect to refresh data.',
+        text1: t('common.noInternet'),
+        text2: t('common.connectToRefresh'),
       });
       return;
     }

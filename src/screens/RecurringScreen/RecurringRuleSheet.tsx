@@ -2,6 +2,8 @@ import EntityDetailSheet, {
   DetailDeleteLink,
   useDetailCaptionStyle,
 } from "@trackingPortal/components/scalar/EntityDetailSheet";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
+import { useFrequencyText } from "@trackingPortal/i18n/frequency";
 import { useSheetConfirm } from "@trackingPortal/components/scalar/SheetConfirm";
 import { useOffline } from "@trackingPortal/contexts/OfflineProvider";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
@@ -10,7 +12,6 @@ import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
 import type { LocalCategory } from "@trackingPortal/db/repositories/CategoryRepository";
 import type { LocalTransaction } from "@trackingPortal/db/repositories/TransactionRepository";
 import {
-  describeFrequency,
   RecurringRuleView,
 } from "@trackingPortal/db/services/RecurringDataService";
 import type { ExpenseCategoryModel } from "@trackingPortal/api/models";
@@ -20,7 +21,6 @@ import { designTokens } from "@trackingPortal/themes/designTokens";
 import { parseDate } from "@trackingPortal/utils/date";
 import { triggerSuccessHaptic } from "@trackingPortal/utils/haptic";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
-import dayjs from "dayjs";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Toast from "react-native-toast-message";
@@ -46,6 +46,8 @@ export default function RecurringRuleSheet({
   onChanged,
 }: RecurringRuleSheetProps) {
   const { colors, isDark } = useAppTheme();
+  const { t, formatDate } = useTranslation();
+  const { describeFrequency } = useFrequencyText();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const caption = useDetailCaptionStyle();
   const { currency } = useStoreContext();
@@ -84,7 +86,7 @@ export default function RecurringRuleSheet({
       syncNow();
     } catch (error) {
       console.log("recurring rule error", error);
-      Toast.show({ type: "error", text1: "Something went wrong. Please try again." });
+      Toast.show({ type: "error", text1: t("rec.error") });
     } finally {
       setBusy(false);
     }
@@ -102,11 +104,11 @@ export default function RecurringRuleSheet({
   const status = !rule
     ? ""
     : rule.ended
-      ? "Ended"
+      ? t("rec.ended")
       : rule.paused
-        ? "Paused"
+        ? t("rec.paused")
         : rule.nextDate
-          ? `Next on ${dayjs(rule.nextDate).format("D MMM YYYY")}`
+          ? t("rec.nextOnCap", { date: formatDate(rule.nextDate, "D MMM YYYY") })
           : "";
 
   return (
@@ -116,11 +118,17 @@ export default function RecurringRuleSheet({
       icon={normalizeCategoryIcon(category?.icon ?? undefined) as any}
       iconTile={category?.color ?? undefined}
       iconColor={category?.color ? "#FFFFFF" : undefined}
-      title={rule?.description || category?.name || "Recurring"}
+      title={rule?.description || category?.name || t("rec.title")}
       meta={rule ? describeFrequency(rule.frequency, startDate) : ""}
-      figureLabel={income ? "Income" : "Expense"}
+      figureLabel={t(income ? "wallet.income" : "wallet.expense")}
       figure={rule ? `${income ? "+" : "−"}${fmt(rule.amount)}` : ""}
-      badge={rule?.paused ? { label: "Paused" } : rule?.ended ? { label: "Ended" } : undefined}
+      badge={
+        rule?.paused
+          ? { label: t("rec.paused") }
+          : rule?.ended
+            ? { label: t("rec.ended") }
+            : undefined
+      }
       cardFooter={<Text style={caption}>{status}</Text>}
       takeover={panel}
     >
@@ -128,7 +136,7 @@ export default function RecurringRuleSheet({
         <>
           {entries.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.capsLabel}>ADDED SO FAR</Text>
+              <Text style={styles.capsLabel}>{t("rec.addedSoFar")}</Text>
               <View style={styles.group}>
                 {entries.map((entry, index) => (
                   <View
@@ -136,7 +144,7 @@ export default function RecurringRuleSheet({
                     style={[styles.entryRow, index < entries.length - 1 && styles.divider]}
                   >
                     <Text style={styles.entryDate}>
-                      {dayjs(parseDate(entry.date)).format("D MMM YYYY")}
+                      {formatDate(parseDate(entry.date), "D MMM YYYY")}
                     </Text>
                     <Text style={styles.entryAmount}>
                       {`${income ? "+" : "−"}${fmt(entry.amount)}`}
@@ -149,33 +157,33 @@ export default function RecurringRuleSheet({
 
           {!rule.ended && (
             <View style={styles.section}>
-              <Text style={styles.capsLabel}>AMOUNT</Text>
+              <Text style={styles.capsLabel}>{t("rec.amount")}</Text>
               <TextInput
-                accessibilityLabel="Amount"
+                accessibilityLabel={t("form.amountA11y")}
                 value={amount}
                 onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, ""))}
                 keyboardType="decimal-pad"
                 style={styles.input}
                 selectionColor={colors.brand}
               />
-              <Text style={styles.capsLabel}>CATEGORY</Text>
+              <Text style={styles.capsLabel}>{t("rec.category")}</Text>
               <CategorySelector
                 categories={categoryOptions}
                 selectedCategoryId={categoryId ?? undefined}
                 onSelect={setCategoryId}
               />
-              <Text style={styles.capsLabel}>NOTE</Text>
+              <Text style={styles.capsLabel}>{t("rec.note")}</Text>
               <TextInput
-                accessibilityLabel="Note"
+                accessibilityLabel={t("rec.noteA11y")}
                 value={note}
                 onChangeText={setNote}
-                placeholder="What is this for?"
+                placeholder={t("form.purposePlaceholder")}
                 placeholderTextColor={colors.textTertiary}
                 maxLength={120}
                 style={styles.input}
                 selectionColor={colors.brand}
               />
-              <Text style={styles.hint}>Changes apply to future entries only.</Text>
+              <Text style={styles.hint}>{t("rec.futureOnly")}</Text>
             </View>
           )}
 
@@ -190,12 +198,12 @@ export default function RecurringRuleSheet({
                       rule.paused
                         ? recurringData!.resumeRule(rule.id)
                         : recurringData!.pauseRule(rule.id),
-                    rule.paused ? "Repeat resumed" : "Repeat paused",
+                    t(rule.paused ? "rec.resumed" : "rec.pausedToast"),
                   )
                 }
                 style={({ pressed }) => [styles.button, styles.secondary, pressed && styles.pressed]}
               >
-                <Text style={styles.secondaryText}>{rule.paused ? "Resume" : "Pause"}</Text>
+                <Text style={styles.secondaryText}>{t(rule.paused ? "rec.resume" : "rec.pause")}</Text>
               </Pressable>
             )}
             {!rule.ended && (
@@ -210,7 +218,7 @@ export default function RecurringRuleSheet({
                         description: note.trim() || null,
                         categoryId,
                       }),
-                    "Repeat updated",
+                    t("rec.updated"),
                     true,
                   )
                 }
@@ -221,22 +229,22 @@ export default function RecurringRuleSheet({
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.primaryText}>Save changes</Text>
+                <Text style={styles.primaryText}>{t("common.saveChanges")}</Text>
               </Pressable>
             )}
           </View>
 
           <DetailDeleteLink
-            label="Delete repeat"
+            label={t("rec.delete")}
             disabled={busy}
             onPress={() =>
               confirm({
-                title: "Stop this repeat?",
-                message: "Past entries stay in your history.",
-                confirmLabel: "Delete",
+                title: t("rec.stopTitle"),
+                message: t("rec.stopMessage"),
+                confirmLabel: t("common.delete"),
                 destructive: true,
                 onConfirm: () =>
-                  run(() => recurringData!.deleteRule(rule.id), "Repeat deleted", true),
+                  run(() => recurringData!.deleteRule(rule.id), t("rec.deleted"), true),
               })
             }
           />

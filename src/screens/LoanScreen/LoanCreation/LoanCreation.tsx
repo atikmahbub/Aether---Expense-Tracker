@@ -15,6 +15,7 @@ import {
   INewLoan,
 } from '@trackingPortal/screens/LoanScreen';
 import LoanForm from '@trackingPortal/screens/LoanScreen/LoanForm';
+import { useTranslation } from '@trackingPortal/contexts/LanguageContext';
 import { triggerSuccessHaptic } from '@trackingPortal/utils/haptic';
 import Toast from 'react-native-toast-message';
 
@@ -33,6 +34,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
   const {currentUser: user} = useStoreContext();
   const {loanData} = useDatabase();
   const {syncNow} = useOffline();
+  const {t} = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleClose = useCallback(() => {
@@ -66,7 +68,7 @@ const LoanCreation: React.FC<ILoanCreation> = ({
         triggerSuccessHaptic();
         Toast.show({
           type: 'success',
-          text1: 'Loan added successfully',
+          text1: t('loan.added'),
         });
         syncNow();
       });
@@ -74,12 +76,12 @@ const LoanCreation: React.FC<ILoanCreation> = ({
       console.error('Loan Creation Error:', error);
       Toast.show({
         type: 'error',
-        text1: 'Failed to add loan. Please try again.',
+        text1: t('loan.addFailed'),
       });
     } finally {
       setLoading(false);
     }
-  }, [user.userId, loanData, handleClose, setLoans, getUserLoans, syncNow]);
+  }, [user.userId, loanData, handleClose, setLoans, getUserLoans, syncNow, t]);
 
   return (
     <BaseBottomSheet

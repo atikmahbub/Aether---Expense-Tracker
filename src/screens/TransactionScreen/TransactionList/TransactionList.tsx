@@ -25,6 +25,8 @@ import EntityDetailSheet, {
 } from '@trackingPortal/components/scalar/EntityDetailSheet';
 import {useSheetConfirm} from '@trackingPortal/components/scalar/SheetConfirm';
 import { useAppTheme } from '@trackingPortal/contexts/ThemeContext';
+import {useTranslation} from '@trackingPortal/contexts/LanguageContext';
+import {useFrequencyText} from '@trackingPortal/i18n/frequency';
 import {Formik} from 'formik';
 import {
   CreateTransactionSchema,
@@ -43,7 +45,6 @@ import {
   UITransaction,
 } from '@trackingPortal/db/services/TransactionDataService';
 import {
-  FREQUENCY_LABEL,
   RecurringRuleView,
 } from '@trackingPortal/db/services/RecurringDataService';
 import {useRouter} from 'expo-router';
@@ -95,6 +96,8 @@ const TransactionList: FC<ITransactionList> = ({
 }) => {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const {t, formatDate, language} = useTranslation();
+  const {frequencyLabel} = useFrequencyText();
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [openPicker, setOpenPicker] = useState<boolean>(false);
   const [yearAnchor, setYearAnchor] = useState<MenuAnchor | null>(null);
@@ -124,7 +127,8 @@ const TransactionList: FC<ITransactionList> = ({
   const scrollToActiveMonth = useCallback((monthIndex: number, animated = true) => {
     if (!scrollRef.current) return;
 
-    const CHIP_WIDTH = 62;
+    // Bangla chips spell the month out, so they run wider.
+    const CHIP_WIDTH = language === 'bn' ? 86 : 62;
     const GAP = 8;
     const itemCenter = monthIndex * (CHIP_WIDTH + GAP) + CHIP_WIDTH / 2;
     const scrollX = itemCenter - SCREEN_WIDTH / 2 + 20;
@@ -133,7 +137,7 @@ const TransactionList: FC<ITransactionList> = ({
       x: Math.max(0, scrollX),
       animated,
     });
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -199,7 +203,7 @@ const TransactionList: FC<ITransactionList> = ({
         }
         Toast.show({
           type: 'success',
-          text1: 'Updated successfully!',
+          text1: t('wallet.updated'),
         });
         syncNow();
       });
@@ -207,7 +211,7 @@ const TransactionList: FC<ITransactionList> = ({
       console.log('Update error', error);
       Toast.show({
         type: 'error',
-        text1: 'Failed to update. Please try again.',
+        text1: t('wallet.updateFailed'),
       });
     } finally {
       setLoading(false);
@@ -222,6 +226,7 @@ const TransactionList: FC<ITransactionList> = ({
     refreshSummary,
     syncNow,
     user.default,
+    t,
   ]);
 
   const handleDeleteTransaction = useCallback(async (rowId: any) => {
@@ -241,7 +246,7 @@ const TransactionList: FC<ITransactionList> = ({
         await refreshSummary?.();
         Toast.show({
           type: 'success',
-          text1: 'Deleted successfully!',
+          text1: t('wallet.deleted'),
         });
         syncNow();
       });
@@ -249,7 +254,7 @@ const TransactionList: FC<ITransactionList> = ({
       console.log('Delete error', error);
       Toast.show({
         type: 'error',
-        text1: 'Failed to delete. Please try again.',
+        text1: t('wallet.deleteFailed'),
       });
     } finally {
       setDeleteLoading(false);
@@ -261,20 +266,21 @@ const TransactionList: FC<ITransactionList> = ({
     refreshAnalytics,
     refreshSummary,
     syncNow,
+    t,
   ]);
 
   const confirmDeleteTransaction = useCallback((transaction: TransactionModel) => {
     const purpose = transaction.description?.trim();
     confirm({
-      title: 'Delete transaction?',
+      title: t('wallet.deleteTitle'),
       message: purpose
-        ? `Are you sure you want to delete “${purpose}”? This action cannot be undone.`
-        : 'Are you sure you want to delete this transaction? This action cannot be undone.',
-      confirmLabel: 'Delete',
+        ? t('wallet.deleteMessageNamed', {name: purpose})
+        : t('wallet.deleteMessage'),
+      confirmLabel: t('wallet.delete'),
       destructive: true,
       onConfirm: () => handleDeleteTransaction(transaction.id),
     });
-  }, [handleDeleteTransaction, confirm]);
+  }, [handleDeleteTransaction, confirm, t]);
 
   useEffect(() => {
     const ruleId = (
@@ -310,7 +316,7 @@ const TransactionList: FC<ITransactionList> = ({
         ? transactions.find(t => t.id === expandedRowId)
         : undefined;
       const currentRowId = selectedItem?.id as any as TransactionId;
-      const category = selectedItem?.category?.name || 'Uncategorized';
+      const category = selectedItem?.category?.name || t('wallet.uncategorized');
       const income = selectedItem?.type === 'income';
       const selectedCategoryId =
         (selectedItem as any)?.categoryId ||
@@ -330,10 +336,10 @@ const TransactionList: FC<ITransactionList> = ({
           title={selectedItem?.description || category}
           meta={
             selectedItem
-              ? `${category} · ${dayjs(parseDate(selectedItem.date)).format('D MMM YYYY, h:mm a')}`
+              ? `${category} · ${formatDate(parseDate(selectedItem.date), 'D MMM YYYY, h:mm a')}`
               : ''
           }
-          figureLabel={income ? 'Income' : 'Expense'}
+          figureLabel={t(income ? 'wallet.income' : 'wallet.expense')}
           figure={`${income ? '+' : '−'}${formatCurrency(
             Math.abs(selectedItem?.amount ?? 0),
             currency,
@@ -351,16 +357,16 @@ const TransactionList: FC<ITransactionList> = ({
                       router.push(`/recurring?rule=${entryRule.id}`);
                     }}>
                     <Text style={captionStyle}>
-                      From recurring:{' '}
+                      {t('wallet.fromRecurring')}{' '}
                       <Text style={styles.recurringLink}>
-                        {`${entryRule.description || category} · ${FREQUENCY_LABEL[entryRule.frequency]}`}
+                        {`${entryRule.description || category} · ${frequencyLabel(entryRule.frequency)}`}
                       </Text>
                     </Text>
                   </Pressable>
                 ) : (
-                  <Text style={captionStyle}>Added by a repeat</Text>
+                  <Text style={captionStyle}>{t('wallet.addedByRepeat')}</Text>
                 )}
-                <Text style={captionStyle}>Changes here apply to this entry only.</Text>
+                <Text style={captionStyle}>{t('wallet.changesThisEntryOnly')}</Text>
               </View>
             ) : undefined
           }
@@ -395,7 +401,7 @@ const TransactionList: FC<ITransactionList> = ({
                 loading={loading}
                 belowFooter={
                   <DetailDeleteLink
-                    label={deleteLoading ? 'Deleting…' : 'Delete transaction'}
+                    label={t(deleteLoading ? 'wallet.deleting' : 'wallet.deleteTransaction')}
                     disabled={deleteLoading}
                     onPress={() => confirmDeleteTransaction(selectedItem)}
                   />
@@ -428,6 +434,9 @@ const TransactionList: FC<ITransactionList> = ({
       confirmDeleteTransaction,
       onTransactionEdit,
       styles,
+      t,
+      formatDate,
+      frequencyLabel,
     ],
   );
 
@@ -454,11 +463,11 @@ const TransactionList: FC<ITransactionList> = ({
     <View style={styles.mainContainer}>
       <View style={styles.listCard}>
         <View style={styles.timelineRow}>
-          <Text style={styles.title}>Timeline</Text>
+          <Text style={styles.title}>{t('wallet.timeline')}</Text>
           <View style={styles.timelineActions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Recurring"
+              accessibilityLabel={t('wallet.recurring')}
               hitSlop={6}
               onPress={() => router.push('/recurring')}
               style={({pressed}) => [
@@ -478,7 +487,7 @@ const TransactionList: FC<ITransactionList> = ({
                 styles.yearButton,
                 pressed && styles.controlPressed,
               ]}>
-              <Text style={styles.yearButtonText}>{filteredMonth.format('YYYY')}</Text>
+              <Text style={styles.yearButtonText}>{formatDate(filteredMonth, 'YYYY')}</Text>
               <MaterialCommunityIcons
                 name="chevron-down"
                 size={16}
@@ -512,7 +521,7 @@ const TransactionList: FC<ITransactionList> = ({
                       styles.chipLabel,
                       isActive && styles.chipLabelActive,
                     ]}>
-                    {m.format('MMM')}
+                    {formatDate(m, language === 'bn' ? 'MMMM' : 'MMM')}
                   </Text>
                 </Pressable>
               );
@@ -524,7 +533,11 @@ const TransactionList: FC<ITransactionList> = ({
             <View key={group.date} style={styles.dayGroup}>
               <View style={styles.dayHeader}>
                 <Text style={styles.dayLabel}>
-                  {dayjs(group.date).format('ddd D MMM').toUpperCase()}
+                  {formatDate(
+                    group.date,
+                    // Bangla short months are clipped (অক্টো); spell them out.
+                    language === 'bn' ? 'ddd D MMMM' : 'ddd D MMM',
+                  ).toUpperCase()}
                 </Text>
                 <Text
                   style={[
@@ -540,14 +553,14 @@ const TransactionList: FC<ITransactionList> = ({
               </View>
               <View style={styles.rowsCard}>
                 {group.items.map((item, index) => {
-                  const category = item.category?.name || 'Uncategorized';
+                  const category = item.category?.name || t('wallet.uncategorized');
                   const positive = item.type === 'income';
                   return (
                     <View key={item.id}>
                       <ScalarListRow
                         grouped
                         title={item.description || category}
-                        meta={`${category} · ${dayjs(parseDate(item.date)).format('h:mm a')}`}
+                        meta={`${category} · ${formatDate(parseDate(item.date), 'h:mm a')}`}
                         amount={`${positive ? '+' : '−'}${formatCurrency(
                           Math.abs(item.amount),
                           currency,
@@ -572,7 +585,13 @@ const TransactionList: FC<ITransactionList> = ({
           ))}
           {!groupedDays.length && (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No {typeFilter} entries this month</Text>
+              <Text style={styles.emptyText}>
+                {t(
+                  typeFilter === 'expense'
+                    ? 'wallet.noExpenseEntries'
+                    : 'wallet.noIncomeEntries',
+                )}
+              </Text>
             </View>
           )}
         </View>

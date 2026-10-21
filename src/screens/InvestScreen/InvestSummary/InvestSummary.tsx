@@ -2,6 +2,7 @@ import { EInvestStatus } from "@trackingPortal/api/enums";
 import { InvestModel } from "@trackingPortal/api/models";
 import { CurvyHeroPanel, CustomAppBar, HeroFigure, HeroStatCard } from "@trackingPortal/components";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
 import { hasReturnValue } from "@trackingPortal/screens/InvestScreen/InvestScreen.constants";
 import React, { useMemo } from "react";
@@ -14,6 +15,7 @@ interface ISummary {
 
 const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
   const { currency } = useStoreContext();
+  const { t } = useTranslation();
   const isActive = status === EInvestStatus.Active;
   const totalAmount = investList.reduce((sum, item) => sum + item.amount, 0);
   const completedReturns = investList
@@ -26,7 +28,10 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
 
   // "1 asset · Gold" — name the holdings while the list is short enough to read.
   const assetSubtitle = useMemo(() => {
-    const count = `${investList.length} ${investList.length === 1 ? "asset" : "assets"}`;
+    const count =
+      investList.length === 1
+        ? t("invest.oneAsset")
+        : t("invest.assets", { n: investList.length });
     const names = investList
       .slice(0, 2)
       .map((item) => item.name)
@@ -34,7 +39,7 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
     if (!names.length) return count;
     const suffix = investList.length > names.length ? "…" : "";
     return `${count} · ${names.join(", ")}${suffix}`;
-  }, [investList]);
+  }, [investList, t]);
 
   // Same arrow glyphs as the loan summary (↗ / ↙), not emoji-like triangles.
   const returnGlyph = averageReturn < 0 ? "↙ " : averageReturn > 0 ? "↗ " : "";
@@ -44,7 +49,7 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
       <CustomAppBar />
       <View style={styles.container}>
         <HeroFigure
-          label={isActive ? "Active investments" : "Completed investments"}
+          label={t(isActive ? "invest.activeInvestments" : "invest.completedInvestments")}
           amount={formatCurrency(totalAmount, currency, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
@@ -55,7 +60,7 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
         <HeroStatCard
           stats={[
             {
-              label: `${returnGlyph}Average return`,
+              label: `${returnGlyph}${t("invest.averageReturn")}`,
               // No current values entered yet: show a dash, not a fake 0.0%.
               value: completedReturns.length
                 ? formatNumber(averageReturn, {
@@ -72,7 +77,7 @@ const InvestSummary: React.FC<ISummary> = ({ investList, status }) => {
                     : "neutral",
             },
             {
-              label: "Asset count",
+              label: t("invest.assetCount"),
               value: formatNumber(investList.length, {
                 maximumFractionDigits: 0,
                 useGrouping: false,

@@ -2,6 +2,8 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { ExpenseCategoryModel } from "@trackingPortal/api/models";
 import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
+import { useFrequencyText } from "@trackingPortal/i18n/frequency";
 import {
   EAddTransactionFields,
   resolveTransactionAmount,
@@ -31,10 +33,6 @@ import RepeatPicker, {
   RepeatChoice,
 } from "@trackingPortal/screens/TransactionScreen/components/RepeatPicker";
 import type { RecurringFrequency } from "@trackingPortal/api/models/RecurringRuleModel";
-import {
-  describeFrequency,
-  FREQUENCY_LABEL,
-} from "@trackingPortal/db/services/RecurringDataService";
 import { withHaptic } from "@trackingPortal/utils/haptic";
 import { ImpactFeedbackStyle } from "expo-haptics";
 
@@ -90,6 +88,8 @@ export default function TransactionForm({
     [colors, isDark],
   );
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, formatDate, translateText } = useTranslation();
+  const { frequencyLabel, describeFrequency } = useFrequencyText();
   const {
     values,
     errors,
@@ -261,7 +261,7 @@ export default function TransactionForm({
         onPress={() => amountInputRef.current?.focus()}
         style={styles.amountContainer}
       >
-        <Text style={styles.capsLabel}>AMOUNT · {currency.code}</Text>
+        <Text style={styles.capsLabel}>{t("form.amount", { code: currency.code })}</Text>
         <Animated.View
           style={[
             styles.amountRow,
@@ -272,7 +272,7 @@ export default function TransactionForm({
           <Text style={styles.currencySymbol}>{currency.symbol}</Text>
           <TextInput
             ref={amountInputRef}
-            accessibilityLabel="Amount"
+            accessibilityLabel={t("form.amountA11y")}
             value={amountValue}
             onChangeText={(text) =>
               setFieldValue(
@@ -307,15 +307,15 @@ export default function TransactionForm({
           touched[EAddTransactionFields.AMOUNT] &&
           errors[EAddTransactionFields.AMOUNT] && (
             <Text style={styles.errorText}>
-              {String(errors[EAddTransactionFields.AMOUNT])}
+              {translateText(String(errors[EAddTransactionFields.AMOUNT]))}
             </Text>
           )}
       </Pressable>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.capsLabel}>PURPOSE</Text>
+        <Text style={styles.capsLabel}>{t("form.purpose")}</Text>
         <TextInput
-          accessibilityLabel="Purpose"
+          accessibilityLabel={t("form.purposeA11y")}
           allowFontScaling={false}
           value={values[EAddTransactionFields.DESCRIPTION] || ""}
           onChangeText={(text) =>
@@ -328,7 +328,7 @@ export default function TransactionForm({
             }
           }
           onFocus={() => setPurposeFocused(true)}
-          placeholder="What is this for?"
+          placeholder={t("form.purposePlaceholder")}
           placeholderTextColor={colors.textTertiary}
           selectionColor={colors.brand}
           style={styles.purposeInput}
@@ -338,13 +338,13 @@ export default function TransactionForm({
         {touched[EAddTransactionFields.DESCRIPTION] &&
           errors[EAddTransactionFields.DESCRIPTION] && (
             <Text style={styles.errorText}>
-              {String(errors[EAddTransactionFields.DESCRIPTION])}
+              {translateText(String(errors[EAddTransactionFields.DESCRIPTION]))}
             </Text>
           )}
       </View>
 
       <View style={styles.fieldSection}>
-        <Text style={styles.capsLabel}>CATEGORY</Text>
+        <Text style={styles.capsLabel}>{t("form.category")}</Text>
         <CategorySelector
           categories={categories}
           selectedCategoryId={categoryValue}
@@ -361,10 +361,14 @@ export default function TransactionForm({
       <View style={styles.fieldSection}>
         <Text numberOfLines={1} style={styles.capsLabel}>
           {repeating
-            ? `STARTS · ${describeFrequency(repeatValue, currentDate)}${
-                repeatEnd ? ` · UNTIL ${dayjs(repeatEnd).format("D MMM YYYY")}` : ""
+            ? `${t("form.starts", {
+                when: describeFrequency(repeatValue, currentDate),
+              })}${
+                repeatEnd
+                  ? t("form.until", { date: formatDate(repeatEnd, "D MMM YYYY") })
+                  : ""
               }`.toUpperCase()
-            : "DATE"}
+            : t("form.date")}
         </Text>
         <View style={styles.dateRow}>
           <Pressable
@@ -389,14 +393,16 @@ export default function TransactionForm({
                 isToday && styles.dateButtonTextActive,
               ]}
             >
-              Today · {dayjs().format("D MMM")}
+              {t("form.today", { date: formatDate(new Date(), "D MMM") })}
             </Text>
           </Pressable>
           {/* Icon only until a date is picked; then it carries that date. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              isToday ? "Pick a date" : `Date ${dayjs(currentDate).format("D MMMM")}`
+              isToday
+                ? t("form.pickDate")
+                : t("form.dateA11y", { date: formatDate(currentDate, "D MMMM") })
             }
             onPress={openDatePicker}
             style={({ pressed }) => [
@@ -413,14 +419,14 @@ export default function TransactionForm({
             />
             {!isToday && (
               <Text numberOfLines={1} style={[styles.dateButtonText, styles.dateButtonTextActive]}>
-                {dayjs(currentDate).format("D MMM")}
+                {formatDate(currentDate, "D MMM")}
               </Text>
             )}
           </Pressable>
           {allowRepeat && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={repeating ? "Repeat settings" : "Repeat"}
+              accessibilityLabel={t(repeating ? "form.repeatSettings" : "form.repeat")}
               accessibilityState={{ selected: repeating }}
               onPress={() => {
                 Keyboard.dismiss();
@@ -441,7 +447,9 @@ export default function TransactionForm({
                 numberOfLines={1}
                 style={[styles.dateButtonText, repeating && styles.dateButtonTextActive]}
               >
-                {repeating ? FREQUENCY_LABEL[repeatValue as RecurringFrequency] : "Repeat"}
+                {repeating
+                  ? frequencyLabel(repeatValue as RecurringFrequency)
+                  : t("form.repeat")}
               </Text>
             </Pressable>
           )}
@@ -467,7 +475,7 @@ export default function TransactionForm({
       <ScalarCalendar
         visible={pickerVisible}
         date={currentDate}
-        title="Transaction date"
+        title={t("form.transactionDate")}
         onConfirm={(selectedDate) => {
           setFieldValue(EAddTransactionFields.DATE, selectedDate);
           setPickerVisible(false);
@@ -488,7 +496,7 @@ export default function TransactionForm({
             onCancel();
           }}
         >
-          <Text style={[styles.cancelButtonText, sheetCancelTone.text]}>Cancel</Text>
+          <Text style={[styles.cancelButtonText, sheetCancelTone.text]}>{t("form.cancel")}</Text>
         </Pressable>
         <Pressable
           accessibilityState={{ disabled: !canSave }}
@@ -505,7 +513,7 @@ export default function TransactionForm({
           }}
         >
           <Text style={styles.saveButtonText}>
-            {loading ? "Saving…" : sheetMode ? "Save changes" : "Add entry"}
+            {t(loading ? "form.saving" : sheetMode ? "form.saveChanges" : "form.addEntry")}
           </Text>
         </Pressable>
       </View>
@@ -524,7 +532,7 @@ export default function TransactionForm({
                 {row.map((key) => (
                   <Pressable
                     accessibilityLabel={
-                      key === "backspace" ? "Delete digit" : `Digit ${key}`
+                      key === "backspace" ? t("form.deleteDigit") : t("form.digit", { key })
                     }
                     key={key}
                     hitSlop={KEY_HIT_SLOP}
@@ -559,10 +567,10 @@ export default function TransactionForm({
                 <Pressable
                   accessibilityLabel={
                     key === "clear"
-                      ? "Clear amount"
+                      ? t("form.clearAmount")
                       : key === "="
-                      ? "Calculate amount"
-                      : `${key === "+" ? "Add" : "Subtract"} operator`
+                      ? t("form.calculate")
+                      : t(key === "+" ? "form.addOperator" : "form.subtractOperator")
                   }
                   key={key}
                   hitSlop={KEY_HIT_SLOP}

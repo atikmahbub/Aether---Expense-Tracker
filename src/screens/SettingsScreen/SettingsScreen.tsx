@@ -29,6 +29,8 @@ import {
   ThemeMode,
   useAppTheme,
 } from "@trackingPortal/contexts/ThemeContext";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
+import { Language, LANGUAGE_LABELS } from "@trackingPortal/i18n/translations";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 
 const STORE_URL =
@@ -37,10 +39,12 @@ const STORE_URL =
 export default function SettingsScreen() {
   const { colors, themeMode, setThemeMode } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { language, setLanguage, t } = useTranslation();
   const { logout, loading, user } = useAuth();
   const { currency, setCurrencyPreference } = useStoreContext();
   const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
   const openCurrencyModal = useCallback(() => {
     InteractionManager.runAfterInteractions(() =>
@@ -52,17 +56,17 @@ export default function SettingsScreen() {
     try {
       await Linking.openURL(url);
     } catch {
-      Toast.show({ type: "error", text1: "Failed to open link" });
+      Toast.show({ type: "error", text1: t("settings.openLinkFailed") });
     }
   };
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Track your finances effortlessly with Scalar — download it free on Google Play: ${STORE_URL}`,
+        message: t("settings.shareMessage", { url: STORE_URL }),
       });
     } catch {
-      Toast.show({ type: "error", text1: "Failed to share" });
+      Toast.show({ type: "error", text1: t("settings.shareFailed") });
     }
   };
 
@@ -76,16 +80,16 @@ export default function SettingsScreen() {
     >
       <CurvyHeroPanel>
         <CustomAppBar
-          title="Settings"
+          title={t("settings.title")}
           subtitle={(user?.name as string | undefined) || undefined}
         />
         <View style={styles.panelContent}>
-          <Text style={styles.panelLabel}>Appearance</Text>
+          <Text style={styles.panelLabel}>{t("settings.appearance")}</Text>
           <View style={styles.chips}>
             {(["light", "dark", "system"] as ThemeMode[]).map((mode) => (
               <PillChip
                 key={mode}
-                label={mode.charAt(0).toUpperCase() + mode.slice(1)}
+                label={t(`settings.${mode}`)}
                 active={themeMode === mode}
                 onPress={() => setThemeMode(mode)}
               />
@@ -96,11 +100,11 @@ export default function SettingsScreen() {
 
       <ScalarSheet>
 
-      <Text style={styles.sectionLabel}>PREFERENCES</Text>
+      <Text style={styles.sectionLabel}>{t("settings.preferences")}</Text>
       <View style={styles.card}>
         <SettingsRow
           icon="cash-multiple"
-          label="Currency"
+          label={t("settings.currency")}
           value={`${currency.code} ${currency.symbol}`}
           onPress={openCurrencyModal}
           styles={styles}
@@ -108,8 +112,21 @@ export default function SettingsScreen() {
         />
         <View style={styles.divider} />
         <SettingsRow
+          icon="translate"
+          label={t("settings.language")}
+          value={LANGUAGE_LABELS[language]}
+          onPress={() =>
+            InteractionManager.runAfterInteractions(() =>
+              setLanguageModalVisible(true),
+            )
+          }
+          styles={styles}
+          colors={colors}
+        />
+        <View style={styles.divider} />
+        <SettingsRow
           icon="tag-multiple"
-          label="Categories"
+          label={t("settings.categories")}
           onPress={() => router.push("/categories")}
           styles={styles}
           colors={colors}
@@ -117,18 +134,18 @@ export default function SettingsScreen() {
         <View style={styles.divider} />
         <SettingsRow
           icon="repeat"
-          label="Recurring"
+          label={t("settings.recurring")}
           onPress={() => router.push("/recurring")}
           styles={styles}
           colors={colors}
         />
       </View>
 
-      <Text style={styles.sectionLabel}>ABOUT</Text>
+      <Text style={styles.sectionLabel}>{t("settings.about")}</Text>
       <View style={styles.card}>
         <SettingsRow
           icon="shield-account"
-          label="Privacy policy"
+          label={t("settings.privacy")}
           external
           onPress={() =>
             openLink("https://atikmahbub.github.io/aether-privacy-policy/")
@@ -139,7 +156,7 @@ export default function SettingsScreen() {
         <View style={styles.divider} />
         <SettingsRow
           icon="share-variant"
-          label="Share Scalar"
+          label={t("settings.share")}
           onPress={handleShare}
           styles={styles}
           colors={colors}
@@ -147,7 +164,7 @@ export default function SettingsScreen() {
         <View style={styles.divider} />
         <SettingsRow
           icon="star"
-          label="Rate Scalar"
+          label={t("settings.rate")}
           external
           onPress={() => openLink(STORE_URL)}
           styles={styles}
@@ -168,7 +185,7 @@ export default function SettingsScreen() {
             <Path d="M6.6 6.6a8 8 0 1 0 10.8 0" stroke={colors.signOutInk} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
         </View>
-        <Text style={styles.signOutText}>Sign out</Text>
+        <Text style={styles.signOutText}>{t("settings.signOut")}</Text>
       </Pressable>
       </ScalarSheet>
 
@@ -184,7 +201,7 @@ export default function SettingsScreen() {
         />
         <View style={styles.modalSheet}>
           <View style={styles.handle} />
-          <Text style={styles.modalTitle}>Choose currency</Text>
+          <Text style={styles.modalTitle}>{t("settings.chooseCurrency")}</Text>
           {SUPPORTED_CURRENCIES.map((option, index) => {
             const selected = option.code === currency.code;
             return (
@@ -220,6 +237,60 @@ export default function SettingsScreen() {
                 {index < SUPPORTED_CURRENCIES.length - 1 && (
                   <View style={styles.divider} />
                 )}
+              </React.Fragment>
+            );
+          })}
+        </View>
+      </Modal>
+
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setLanguageModalVisible(false)}
+        />
+        <View style={styles.modalSheet}>
+          <View style={styles.handle} />
+          <Text style={styles.modalTitle}>{t("settings.chooseLanguage")}</Text>
+          {(["en", "bn"] as Language[]).map((lang, index, list) => {
+            const selected = lang === language;
+            return (
+              <React.Fragment key={lang}>
+                <Pressable
+                  onPress={() => {
+                    setLanguage(lang);
+                    setLanguageModalVisible(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.currencyRow,
+                    selected && styles.currencyRowSelected,
+                    pressed && styles.rowPressed,
+                  ]}
+                >
+                  <View style={styles.currencySymbol}>
+                    <Text style={styles.currencySymbolText}>
+                      {lang === "en" ? "En" : "অ"}
+                    </Text>
+                  </View>
+                  <View style={styles.currencyCopy}>
+                    <Text style={styles.currencyName}>{LANGUAGE_LABELS[lang]}</Text>
+                    <Text style={styles.currencyCode}>
+                      {lang === "en" ? "English" : "Bangla"}
+                    </Text>
+                  </View>
+                  {selected && (
+                    <MaterialCommunityIcons
+                      name="check"
+                      size={20}
+                      color={colors.brandText}
+                    />
+                  )}
+                </Pressable>
+                {index < list.length - 1 && <View style={styles.divider} />}
               </React.Fragment>
             );
           })}
