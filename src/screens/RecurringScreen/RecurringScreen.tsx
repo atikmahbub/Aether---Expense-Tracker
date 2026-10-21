@@ -46,10 +46,11 @@ export default function RecurringScreen() {
   const router = useRouter();
   const isFocused = useIsFocused();
   const params = useLocalSearchParams<{ rule?: string }>();
-  const { currentUser: user, currency } = useStoreContext();
+  const { currentUser: user, currency, hiddenCategoryIds } = useStoreContext();
   const { recurringData, repositories } = useDatabase();
   const [rules, setRules] = useState<RecurringRuleView[]>([]);
   const [categories, setCategories] = useState<CategoryLookup>({});
+  const [categoryList, setCategoryList] = useState<LocalCategory[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [endedOpen, setEndedOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(params.rule ?? null);
@@ -67,6 +68,7 @@ export default function RecurringScreen() {
     }
     setRules(list);
     setCategories(lookup);
+    setCategoryList(cats);
     setLoaded(true);
   }, [recurringData, repositories, user.userId]);
 
@@ -93,6 +95,28 @@ export default function RecurringScreen() {
   const monthlyTotal = (list: RecurringRuleView[]) =>
     list.filter((r) => !r.paused).reduce((sum, r) => sum + monthlyEquivalent(r), 0);
   const selectedRule = rules.find((r) => r.id === selectedId) ?? null;
+  const selectedCategory = selectedRule?.categoryId
+    ? categories[selectedRule.categoryId]
+    : undefined;
+  // Same picker as the add form: the rule's own kind, hidden ones left out
+  // except the category the rule already uses.
+  const categoryOptions = useMemo(
+    () =>
+      categoryList
+        .filter(
+          (c) =>
+            c.kind === selectedRule?.type &&
+            (!hiddenCategoryIds.includes(c.id) || c.id === selectedCategory?.id),
+        )
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          icon: normalizeCategoryIcon(c.icon ?? undefined),
+          color: c.color ?? "#9AA0A6",
+          userId: c.userId,
+        })),
+    [categoryList, selectedRule?.type, hiddenCategoryIds, selectedCategory?.id],
+  );
 
   const addRecurring = (example?: (typeof EXAMPLES)[number]) => {
     requestCreation({
@@ -258,9 +282,8 @@ export default function RecurringScreen() {
 
       <RecurringRuleSheet
         rule={selectedRule}
-        category={
-          selectedRule?.categoryId ? categories[selectedRule.categoryId] : undefined
-        }
+        category={selectedCategory}
+        categoryOptions={categoryOptions}
         onClose={() => setSelectedId(null)}
         onChanged={load}
       />

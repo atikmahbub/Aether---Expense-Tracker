@@ -13,6 +13,8 @@ import {
   describeFrequency,
   RecurringRuleView,
 } from "@trackingPortal/db/services/RecurringDataService";
+import type { ExpenseCategoryModel } from "@trackingPortal/api/models";
+import CategorySelector from "@trackingPortal/screens/TransactionScreen/components/CategorySelector";
 import { normalizeCategoryIcon } from "@trackingPortal/screens/TransactionScreen/TransactionScreen.constants";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import { parseDate } from "@trackingPortal/utils/date";
@@ -26,6 +28,8 @@ import Toast from "react-native-toast-message";
 interface RecurringRuleSheetProps {
   rule: RecurringRuleView | null;
   category?: LocalCategory;
+  /** Categories of the rule's kind, for the edit picker. */
+  categoryOptions: ExpenseCategoryModel[];
   onClose: () => void;
   onChanged: () => Promise<void> | void;
 }
@@ -37,6 +41,7 @@ interface RecurringRuleSheetProps {
 export default function RecurringRuleSheet({
   rule,
   category,
+  categoryOptions,
   onClose,
   onChanged,
 }: RecurringRuleSheetProps) {
@@ -50,6 +55,7 @@ export default function RecurringRuleSheet({
   const [entries, setEntries] = useState<LocalTransaction[]>([]);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const ruleId = rule?.id;
@@ -57,6 +63,8 @@ export default function RecurringRuleSheet({
     if (!rule || !recurringData) return;
     setAmount(formatNumber(rule.amount, { useGrouping: false, maximumFractionDigits: 2 }));
     setNote(rule.description ?? "");
+    // The rule may hold a server category id; the picker lists local ids.
+    setCategoryId(category?.id ?? rule.categoryId);
     recurringData.getEntries(rule.id).then(setEntries);
     // Only reset the fields when a different rule opens, not on every reload.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,7 +94,9 @@ export default function RecurringRuleSheet({
   const parsedAmount = Number(amount);
   const dirty =
     Boolean(rule) &&
-    (parsedAmount !== rule!.amount || note.trim() !== (rule!.description ?? ""));
+    (parsedAmount !== rule!.amount ||
+      note.trim() !== (rule!.description ?? "") ||
+      categoryId !== (category?.id ?? rule!.categoryId));
   const canSave = dirty && parsedAmount > 0 && !busy;
   const startDate = rule ? parseDate(rule.startDate) : new Date();
   const status = !rule
@@ -148,6 +158,12 @@ export default function RecurringRuleSheet({
                 style={styles.input}
                 selectionColor={colors.brand}
               />
+              <Text style={styles.capsLabel}>CATEGORY</Text>
+              <CategorySelector
+                categories={categoryOptions}
+                selectedCategoryId={categoryId ?? undefined}
+                onSelect={setCategoryId}
+              />
               <Text style={styles.capsLabel}>NOTE</Text>
               <TextInput
                 accessibilityLabel="Note"
@@ -192,6 +208,7 @@ export default function RecurringRuleSheet({
                       recurringData!.updateRule(rule.id, {
                         amount: parsedAmount,
                         description: note.trim() || null,
+                        categoryId,
                       }),
                     "Repeat updated",
                   )

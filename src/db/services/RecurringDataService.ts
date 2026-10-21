@@ -151,12 +151,17 @@ export class RecurringDataService {
     );
   }
 
-  /** Changes apply to future entries only; generated ones are left as they are. */
+  /**
+   * Amount, note and category only; the schedule is fixed (delete and re-add
+   * to move it), which keeps the cursor from ever re-adding an occurrence.
+   * Changes apply to future entries; generated ones are left as they are.
+   */
   async updateRule(
     localId: string,
-    patch: { amount?: number; description?: string | null },
+    patch: { amount?: number; description?: string | null; categoryId?: string | null },
   ): Promise<void> {
     const columns: Record<string, any> = {};
+    if (patch.categoryId !== undefined) columns.categoryId = patch.categoryId;
     if (patch.amount !== undefined) columns.amount = patch.amount;
     if (patch.description !== undefined) columns.description = patch.description;
     await this.repos.recurringRules.updateLocal(localId, columns);

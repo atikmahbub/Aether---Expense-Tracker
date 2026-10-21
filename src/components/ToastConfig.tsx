@@ -76,6 +76,8 @@ const ToastCard = ({
   );
 };
 
+const tappableStyle = {width: '100%'} as const;
+
 // ─── Factory ──────────────────────────────────────────────────────────────────
 const make = (variant: Variant) => {
   const ToastRenderer = ({
@@ -88,7 +90,9 @@ const make = (variant: Variant) => {
     onPress?: () => void;
   }) =>
     onPress ? (
-      <Pressable accessibilityRole="button" onPress={onPress}>
+      // Full width, like the card's own wrapper: an unsized Pressable shrinks
+      // the card to its icon and squeezes the text to nothing.
+      <Pressable accessibilityRole="button" onPress={onPress} style={tappableStyle}>
         <ToastCard variant={variant} text1={text1} text2={text2} />
       </Pressable>
     ) : (
