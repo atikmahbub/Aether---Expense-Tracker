@@ -197,7 +197,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
       justifyContent: "space-between",
       gap: 12,
     },
-    headline: { flexShrink: 1 },
+    headline: { flexShrink: 1, gap: 4 },
     eyebrow: {
       color: secondaryInk,
       fontFamily: designTokens.font.medium,
@@ -208,8 +208,10 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
       color: colors.heroInk,
       fontFamily: designTokens.font.display,
       fontSize: 40,
-      lineHeight: 44,
-      letterSpacing: -1.2,
+      // Unbounded's glyphs stand taller than 1.1em; a tighter line pushes
+      // the digits up into the label.
+      lineHeight: 52,
+      letterSpacing: -0.8,
       fontVariant: ["tabular-nums"],
     },
     negative: { color: colors.negative },
