@@ -44,6 +44,8 @@ interface HomeDashboardProps {
   loading?: boolean;
   ledgerControl: React.ReactNode;
   onAdjustLimit: () => void;
+  /** Opens the add sheet on Income. */
+  onAddIncome?: () => void;
   /** "hero" renders the tinted top; "sheet" renders the cash-flow block. */
   section?: "hero" | "sheet";
 }
@@ -69,6 +71,7 @@ export default function HomeDashboard({
   loading,
   ledgerControl,
   onAdjustLimit,
+  onAddIncome,
   section = "hero",
 }: HomeDashboardProps) {
   const { colors } = useAppTheme();
@@ -259,6 +262,12 @@ export default function HomeDashboard({
             })}
             stats={cardStats}
             showBalance={showBalance}
+            // Carry over is on but has nothing to work with yet.
+            emptyHint={
+              carryOverEnabled && !showBalance
+                ? { label: t("wallet.addIncomeHint"), onPress: onAddIncome }
+                : undefined
+            }
           />
           <CarryOverSheet
             visible={carrySheetOpen}

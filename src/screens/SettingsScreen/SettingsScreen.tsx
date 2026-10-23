@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import Toast from "react-native-toast-message";
+import { useDatabase } from "@trackingPortal/db/DatabaseProvider";
+import { dhakaMonthKey, shiftMonth } from "@trackingPortal/utils/carryOver";
 
 import { useAuth } from "@trackingPortal/auth/Auth0ProviderWithHistory";
 import {
@@ -49,7 +51,31 @@ export default function SettingsScreen() {
     setCurrencyPreference,
     carryOverEnabled,
     setCarryOverEnabled,
+    currentUser,
   } = useStoreContext();
+  const { transactionData } = useDatabase();
+
+  // Turning it on with no recent income would change nothing on Home, so
+  // say why rather than leave it looking broken.
+  const handleCarryOverChange = useCallback(
+    async (enabled: boolean) => {
+      await setCarryOverEnabled(enabled);
+      if (!enabled || !transactionData || !currentUser.userId) return;
+      try {
+        const totals = await transactionData.getMonthlyTotals(currentUser.userId);
+        const month = dhakaMonthKey(Date.now());
+        const hasIncome = [month, shiftMonth(month, -1)].some(
+          (key) => (totals[key]?.income ?? 0) > 0,
+        );
+        if (!hasIncome) {
+          Toast.show({ type: "info", text1: t("settings.carryOverNeedsIncome") });
+        }
+      } catch (error) {
+        console.log("carry over income check skipped", error);
+      }
+    },
+    [setCarryOverEnabled, transactionData, currentUser.userId, t],
+  );
   const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -154,7 +180,7 @@ export default function SettingsScreen() {
           label={t("settings.carryOver")}
           hint={t("settings.carryOverHint")}
           value={carryOverEnabled}
-          onValueChange={setCarryOverEnabled}
+          onValueChange={handleCarryOverChange}
           styles={styles}
           colors={colors}
         />

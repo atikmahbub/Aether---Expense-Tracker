@@ -34,6 +34,7 @@ export default function RemainingCard({
   available,
   stats,
   showBalance = true,
+  emptyHint,
 }: {
   label: string;
   value: string;
@@ -41,6 +42,8 @@ export default function RemainingCard({
   available: string;
   /** False hides Remaining and the available pill, leaving the stats. */
   showBalance?: boolean;
+  /** Muted line shown in place of the hidden balance. */
+  emptyHint?: { label: string; onPress?: () => void };
   stats: RemainingStat[];
 }) {
   const { colors } = useAppTheme();
@@ -76,6 +79,24 @@ export default function RemainingCard({
           <Rect width={w} height={h} fill="url(#remainingWarm)" />
           <Rect width={w} height={h} fill="url(#remainingGlow)" />
         </Svg>
+      )}
+      {!showBalance && emptyHint && (
+        <>
+          <Pressable
+            disabled={!emptyHint.onPress}
+            onPress={emptyHint.onPress}
+            accessibilityRole={emptyHint.onPress ? "button" : undefined}
+            style={({ pressed }) => [styles.hint, pressed && styles.pressed]}
+          >
+            <Text style={[styles.hintText, { color: colors.remainingLabel }]}>
+              {emptyHint.label}
+            </Text>
+            {emptyHint.onPress && (
+              <MaterialCommunityIcons name="plus" size={14} color={colors.remainingLabel} />
+            )}
+          </Pressable>
+          <View style={[styles.rule, { backgroundColor: colors.remainingRule }]} />
+        </>
       )}
       {showBalance && (
         <>
@@ -193,6 +214,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   rule: { height: 1 },
+  hint: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 24 },
+  hintText: { flexShrink: 1, fontFamily: designTokens.font.medium, fontSize: 13 },
   stats: { flexDirection: "row", gap: 12 },
   divider: { width: 1 },
   cell: { flex: 1, minWidth: 0, gap: 6 },

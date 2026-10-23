@@ -76,6 +76,8 @@ interface ITransactionCreation {
   onCategoryUsed?: (categoryId: string) => void;
   refreshSummary?: () => Promise<void> | void;
   prefill?: CreationPrefill | null;
+  /** After an entry is added (not for a repeat that starts later). */
+  onSaved?: (entry: { type: 'expense' | 'income'; date: Date }) => void;
 }
 
 const TransactionCreation: React.FC<ITransactionCreation> = ({
@@ -97,6 +99,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
   onCategoryUsed,
   refreshSummary,
   prefill,
+  onSaved,
 }) => {
   const { transactionData, recurringData } = useDatabase();
   const { user } = useAuth();
@@ -155,6 +158,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
         const repeat = values.repeat ?? 'never';
         const typeLabel = t(transactionType === 'Expense' ? 'wallet.expense' : 'wallet.income');
         let toastText = t('form.added', { type: typeLabel });
+        let entryAdded = true;
         if (repeat !== 'never' && recurringData) {
           // A repeating entry is a rule; the run below adds any occurrence
           // already due (today's included) as an ordinary transaction.
@@ -173,6 +177,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
               : null,
           });
           const added = await recurringData.runDue(user.sub as string);
+          entryAdded = Boolean(added);
           toastText = added
             ? t('form.addedRepeats', {
                 type: typeLabel,
@@ -223,6 +228,8 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
 
           // Push to the cloud now if online; a no-op (queued) when offline.
           syncNow();
+
+          if (entryAdded) onSaved?.({ type, date: dayjs(values.date).toDate() });
         });
       } catch (error: any) {
         console.error('Transaction Creation Error:', error);
@@ -245,6 +252,7 @@ const TransactionCreation: React.FC<ITransactionCreation> = ({
       onCategoryUsed,
       refreshAnalytics,
       refreshSummary,
+      onSaved,
       setTransactions,
       syncNow,
       transactionType,

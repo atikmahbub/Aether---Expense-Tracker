@@ -26,7 +26,9 @@ import {
 } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation";
 import { EMonthlyLimitFields } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
+import { useScalarAlert } from "@trackingPortal/components/ScalarAlert";
 import { MonthlyTotals } from "@trackingPortal/utils/carryOver";
+import { formatCurrency } from "@trackingPortal/utils/utils";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import { Formik, FormikHelpers } from "formik";
@@ -61,7 +63,8 @@ export default function TransactionScreen() {
     currency,
     isCategoryHydrated,
   } = useStoreContext();
-  const { transactionData, monthlyLimitData } = useDatabase();
+  const { transactionData, monthlyLimitData, repositories } = useDatabase();
+  const showAlert = useScalarAlert();
   const { syncNow } = useOffline();
 
   const activeUserId = user.userId;
@@ -69,6 +72,8 @@ export default function TransactionScreen() {
   const [openCreationForm, setOpenCreationModal] = useState(false);
   const [creationPrefill, setCreationPrefill] = useState<CreationPrefill | null>(null);
   const [limitModalVisible, setLimitModalVisible] = useState(false);
+  // Suggested limit (from income) the limit form opens with, if any.
+  const [limitPrefill, setLimitPrefill] = useState<string | null>(null);
   const [savingLimit, setSavingLimit] = useState(false);
   const [isCreationPreloaded, setIsCreationPreloaded] = useState(false);
   const [transactions, setTransactions] = useState<TransactionModel[]>([]);
@@ -333,6 +338,68 @@ export default function TransactionScreen() {
   // placeholder.
   const summaryInitialLoading = loadingSummary && !summary;
 
+  // First income in a month with no limit: offer that month's income as the
+  // limit, once per month. Never set silently.
+  const handleEntrySaved = useCallback(
+    async ({ type, date }: { type: "expense" | "income"; date: Date }) => {
+      if (type !== "income" || !user.userId) return;
+      if (!transactionData || !monthlyLimitData || !repositories) return;
+      const month = dayjs(date);
+      // The limit form edits the month on screen.
+      if (!month.isSame(filterMonth, "month")) return;
+      const key = month.format("YYYY-MM");
+      const seenKey = `limitSuggestionSeen:${user.userId}:${key}`;
+      try {
+        if (await repositories.settings.get(seenKey)) return;
+        const existing = await monthlyLimitData.getLimit(
+          user.userId,
+          month.month() + 1,
+          month.year(),
+        );
+        if (existing?.limit) return;
+        const income = (await transactionData.getMonthlyTotals(user.userId))[key]?.income ?? 0;
+        if (income <= 0) return;
+        await repositories.settings.set(seenKey, "1");
+        const amount = Math.round(income);
+        showAlert({
+          title: t("wallet.limitSuggestTitle", {
+            amount: formatCurrency(amount, currency, { maximumFractionDigits: 0 }),
+            month: formatDate(month, "MMMM"),
+          }),
+          message: t("wallet.limitSuggestBody"),
+          buttons: [
+            { text: t("wallet.notNow"), style: "cancel" },
+            {
+              text: t("wallet.setLimit"),
+              onPress: () => {
+                setLimitPrefill(String(amount));
+                setLimitModalVisible(true);
+              },
+            },
+          ],
+        });
+      } catch (error) {
+        console.log("limit suggestion skipped", error);
+      }
+    },
+    [
+      user.userId,
+      transactionData,
+      monthlyLimitData,
+      repositories,
+      filterMonth,
+      currency,
+      showAlert,
+      formatDate,
+      t,
+    ],
+  );
+
+  const openIncomeCreation = useCallback(() => {
+    setCreationPrefill({ type: "Income", description: "", repeat: "never", date: new Date() });
+    setOpenCreationModal(true);
+  }, []);
+
   const handleSaveLimit = useCallback(
     async (
       values: Record<EMonthlyLimitFields, string>,
@@ -359,6 +426,7 @@ export default function TransactionScreen() {
         );
         await getMonthlyLimit();
         setLimitModalVisible(false);
+        setLimitPrefill(null);
         helpers.resetForm();
         Toast.show({
           type: "success",
@@ -396,6 +464,7 @@ export default function TransactionScreen() {
         currency={currency}
         loading={summaryInitialLoading}
         onAdjustLimit={() => setLimitModalVisible(true)}
+        onAddIncome={openIncomeCreation}
         ledgerControl={
           <View style={styles.ledgerChips}>
             {(["expense", "income"] as const).map((option) => (
@@ -420,6 +489,7 @@ export default function TransactionScreen() {
       currency,
       transactions,
       handleTypeFilterChange,
+      openIncomeCreation,
       t,
     ],
   );
@@ -579,14 +649,14 @@ export default function TransactionScreen() {
           lastUsedCategoryId={recentCategoryIds[0] || null}
           onCategoryUsed={addRecentCategory}
           refreshSummary={fetchSummary}
+          onSaved={handleEntrySaved}
         />
       )}
       <Formik
         enableReinitialize
         initialValues={{
-          [EMonthlyLimitFields.LIMIT]: monthLimit?.limit
-            ? String(monthLimit.limit)
-            : "",
+          [EMonthlyLimitFields.LIMIT]:
+            limitPrefill ?? (monthLimit?.limit ? String(monthLimit.limit) : ""),
         }}
         onSubmit={handleSaveLimit}
       >
@@ -598,6 +668,7 @@ export default function TransactionScreen() {
             saveLabel={t(monthLimit?.limit ? "wallet.updateLimit" : "wallet.setLimit")}
             onClose={() => {
               setLimitModalVisible(false);
+              setLimitPrefill(null);
               resetForm();
             }}
             onSave={handleSubmit}
