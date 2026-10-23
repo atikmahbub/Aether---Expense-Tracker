@@ -253,22 +253,25 @@ export default function HomeDashboard({
                 </Text>
               </Pressable>
             ))}
-          <RemainingCard
-            label={t("wallet.remaining")}
-            value={signedMoney(remaining)}
-            negative={remaining < 0}
-            available={t("wallet.ofAvailable", {
-              amount: signedMoney(available),
-            })}
-            stats={cardStats}
-            showBalance={showBalance}
-            // Carry over is on but has nothing to work with yet.
-            emptyHint={
-              carryOverEnabled && !showBalance
-                ? { label: t("wallet.addIncomeHint"), onPress: onAddIncome }
-                : undefined
-            }
-          />
+          {/* Totals arrive with the summary; don't flash zeros or the hint. */}
+          {!loading && (
+            <RemainingCard
+              label={t("wallet.remaining")}
+              value={signedMoney(remaining)}
+              negative={remaining < 0}
+              available={t("wallet.ofAvailable", {
+                amount: signedMoney(available),
+              })}
+              stats={cardStats}
+              showBalance={showBalance}
+              // Carry over is on but has nothing to work with yet.
+              emptyHint={
+                carryOverEnabled && !showBalance
+                  ? { label: t("wallet.addIncomeHint"), onPress: onAddIncome }
+                  : undefined
+              }
+            />
+          )}
           <CarryOverSheet
             visible={carrySheetOpen}
             onClose={() => setCarrySheetOpen(false)}
