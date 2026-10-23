@@ -142,13 +142,18 @@ export default function HomeDashboard({
     [monthlyTotals, monthKey, carryOverEnabled],
   );
   const { carryOver, available, remaining } = current;
-  const { dailyAvg, safePerDay } = dayStats({
+  // No income and nothing carried in: there's no balance to show, so the
+  // card keeps only its stats and Safe / day goes by the limit alone.
+  const showBalance = current.income > 0 || carryOver > 0;
+  const { dailyAvg, safePerDay: rawSafePerDay } = dayStats({
     month: monthKey,
     now: Date.now(),
     spent: current.spent,
-    remaining,
+    remaining: showBalance ? remaining : Infinity,
     limit,
   });
+  // Without a balance or a limit there's nothing to pace against.
+  const safePerDay = Number.isFinite(rawSafePerDay) ? rawSafePerDay : null;
   const previousMonth = month.subtract(1, "month");
   const signedMoney = (value: number) =>
     `${value < 0 ? "−" : ""}${money(Math.abs(value), currency)}`;
@@ -268,6 +273,7 @@ export default function HomeDashboard({
               amount: signedMoney(available),
             })}
             stats={cardStats}
+            showBalance={showBalance}
           />
           <CarryOverSheet
             visible={carrySheetOpen}

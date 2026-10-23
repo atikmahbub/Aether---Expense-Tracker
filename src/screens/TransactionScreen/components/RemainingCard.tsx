@@ -33,11 +33,14 @@ export default function RemainingCard({
   negative,
   available,
   stats,
+  showBalance = true,
 }: {
   label: string;
   value: string;
   negative?: boolean;
   available: string;
+  /** False hides Remaining and the available pill, leaving the stats. */
+  showBalance?: boolean;
   stats: RemainingStat[];
 }) {
   const { colors } = useAppTheme();
@@ -74,25 +77,29 @@ export default function RemainingCard({
           <Rect width={w} height={h} fill="url(#remainingGlow)" />
         </Svg>
       )}
-      <View style={styles.top}>
-        <View style={styles.headline}>
-          <Text style={[styles.eyebrow, { color: colors.remainingLabel }]}>{label}</Text>
-          <ScalarAmountText
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            style={[
-              styles.amount,
-              { color: negative ? colors.remainingNegative : "#FFFFFF" },
-            ]}
-          >
-            {value}
-          </ScalarAmountText>
+      {showBalance && (
+        <>
+        <View style={styles.top}>
+          <View style={styles.headline}>
+            <Text style={[styles.eyebrow, { color: colors.remainingLabel }]}>{label}</Text>
+            <ScalarAmountText
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={[
+                styles.amount,
+                { color: negative ? colors.remainingNegative : "#FFFFFF" },
+              ]}
+            >
+              {value}
+            </ScalarAmountText>
+          </View>
+          <Text numberOfLines={1} style={[styles.pill, { color: colors.remainingLabel }]}>
+            {available}
+          </Text>
         </View>
-        <Text numberOfLines={1} style={[styles.pill, { color: colors.remainingLabel }]}>
-          {available}
-        </Text>
-      </View>
-      <View style={[styles.rule, { backgroundColor: colors.remainingRule }]} />
+        <View style={[styles.rule, { backgroundColor: colors.remainingRule }]} />
+        </>
+      )}
       <View style={styles.stats}>
         {stats.map((stat, i) => (
           <React.Fragment key={stat.label}>
