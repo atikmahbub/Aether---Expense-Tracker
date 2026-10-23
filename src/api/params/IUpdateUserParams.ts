@@ -4,4 +4,5 @@ export interface IUpdateUserParams {
   userId: UserId;
   name?: string;
   profilePicture?: URLString;
+  carryOverEnabled?: boolean;
 }

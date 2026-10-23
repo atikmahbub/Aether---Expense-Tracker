@@ -21,6 +21,8 @@ export class UserModel extends NewUser {
     profilePicture: URLString,
     public created: UnixTimeStampString,
     public updated: UnixTimeStampString,
+    /** Missing from servers that predate the setting. */
+    public carryOverEnabled?: boolean,
   ) {
     super(name, email, userId, profilePicture);
   }

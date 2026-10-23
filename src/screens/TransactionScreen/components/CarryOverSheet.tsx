@@ -1,77 +1,128 @@
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import BaseBottomSheet from "@trackingPortal/components/BaseBottomSheet";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import React, { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type CarryOverBreakdown = {
-  /** Month the carry over came from, already formatted ("July"). */
+  /** The carry over itself, signed ("−৳3,000"). */
+  amount: string;
+  /** Unsigned amount for the overspent message. */
+  overspent: string;
+  negative: boolean;
+  /** Month the carry over comes from ("July"). */
   fromMonth: string;
   /** Month it lands in ("August"). */
   toMonth: string;
-  carryIn: string;
-  carryInNegative: boolean;
+  /** The month before fromMonth, whose own carry over fed into it ("June"). */
+  carriedFromMonth: string;
+  carriedIn: string;
+  carriedInNegative: boolean;
   income: string;
   spent: string;
-  result: string;
-  negative: boolean;
 };
 
-/** Explains where "Last month" comes from: the previous month's sum. */
+/** "From last month": where the carry over came from, line by line. */
 export default function CarryOverSheet({
   visible,
   onClose,
+  onOpenSettings,
   breakdown,
 }: {
   visible: boolean;
   onClose: () => void;
+  onOpenSettings: () => void;
   breakdown: CarryOverBreakdown;
 }) {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const { t } = useTranslation();
-  const { fromMonth, toMonth } = breakdown;
+  const { fromMonth, toMonth, negative } = breakdown;
 
   return (
     <BaseBottomSheet index={visible ? 0 : -1} onClose={onClose}>
       <View style={styles.content}>
-        <Text style={styles.title}>{t("carryOver.title")}</Text>
+        <View style={styles.header}>
+          <View style={styles.headline}>
+            <Text style={styles.eyebrow}>{t("carryOver.fromLastMonth")}</Text>
+            <ScalarAmountText
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={[styles.amount, negative && styles.negative]}
+            >
+              {breakdown.amount}
+            </ScalarAmountText>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("carryOver.gotIt")}
+            onPress={onClose}
+            hitSlop={8}
+            style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+          >
+            <MaterialCommunityIcons name="close" size={18} color={colors.negative} />
+          </Pressable>
+        </View>
+
         <Text style={styles.body}>
-          {t(breakdown.negative ? "carryOver.bodyNegative" : "carryOver.body", {
-            amount: breakdown.result.replace("−", ""),
-            from: fromMonth,
-            to: toMonth,
-          })}
+          {negative
+            ? t("carryOver.bodyNegative", {
+                amount: breakdown.overspent,
+                from: fromMonth,
+                to: toMonth,
+              })
+            : t("carryOver.body", { from: fromMonth, to: toMonth })}
         </Text>
+
         <View style={styles.card}>
           <Row
-            label={t("carryOver.carriedInto", { month: fromMonth })}
-            value={breakdown.carryIn}
-            negative={breakdown.carryInNegative}
+            label={t("carryOver.carriedFrom", { month: breakdown.carriedFromMonth })}
+            value={breakdown.carriedIn}
+            negative={breakdown.carriedInNegative}
             styles={styles}
           />
           <Row
-            label={t("carryOver.incomeIn", { month: fromMonth })}
-            value={`+${breakdown.income}`}
+            label={t("carryOver.monthIncome", { month: fromMonth })}
+            value={breakdown.income}
             styles={styles}
           />
           <Row
-            label={t("carryOver.spentIn", { month: fromMonth })}
-            value={`−${breakdown.spent}`}
+            label={t("carryOver.monthSpent", { month: fromMonth })}
+            value={breakdown.spent}
+            negative
             styles={styles}
           />
-          <View style={styles.divider} />
           <Row
-            label={t("carryOver.carriedTo", { month: toMonth })}
-            value={breakdown.result}
-            negative={breakdown.negative}
+            label={t("carryOver.leftAtEnd", { month: fromMonth })}
+            value={breakdown.amount}
+            negative={negative}
             strong
+            last
             styles={styles}
           />
         </View>
+
         <Text style={styles.note}>{t("carryOver.note")}</Text>
+
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onOpenSettings}
+            style={({ pressed }) => [styles.button, styles.secondary, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryText}>{t("settings.title")}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onClose}
+            style={({ pressed }) => [styles.button, styles.primary, pressed && styles.pressed]}
+          >
+            <Text style={styles.primaryText}>{t("carryOver.gotIt")}</Text>
+          </Pressable>
+        </View>
       </View>
     </BaseBottomSheet>
   );
@@ -82,24 +133,22 @@ function Row({
   value,
   negative,
   strong,
+  last,
   styles,
 }: {
   label: string;
   value: string;
   negative?: boolean;
   strong?: boolean;
+  last?: boolean;
   styles: ReturnType<typeof makeStyles>;
 }) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !last && styles.rowDivider]}>
       <Text style={[styles.rowLabel, strong && styles.rowLabelStrong]}>{label}</Text>
       <ScalarAmountText
         numberOfLines={1}
-        style={[
-          styles.rowValue,
-          strong && styles.rowValueStrong,
-          negative && styles.negative,
-        ]}
+        style={[styles.rowValue, negative && styles.negative]}
       >
         {value}
       </ScalarAmountText>
@@ -107,41 +156,70 @@ function Row({
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
+function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: boolean) {
   return StyleSheet.create({
-    content: { paddingHorizontal: 22, paddingTop: 4, gap: 14 },
-    title: {
-      color: colors.sheetText,
-      fontFamily: designTokens.font.semibold,
-      fontSize: 18,
-      lineHeight: 24,
+    content: { paddingHorizontal: 24, paddingTop: 8, gap: 18 },
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
     },
-    body: {
-      color: colors.textSecondary,
-      fontFamily: designTokens.font.regular,
-      fontSize: 14,
+    headline: { flexShrink: 1, gap: 4 },
+    eyebrow: {
+      color: colors.sheetText,
+      fontFamily: designTokens.font.medium,
+      fontSize: 15,
       lineHeight: 20,
     },
+    amount: {
+      color: colors.sheetText,
+      fontFamily: designTokens.font.display,
+      fontSize: 34,
+      lineHeight: 42,
+      letterSpacing: -0.9,
+      fontVariant: ["tabular-nums"],
+    },
+    negative: { color: colors.negative },
+    close: {
+      width: 46,
+      height: 46,
+      marginTop: 2,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: isDark ? colors.negativeFill : colors.listCardBg,
+      backgroundColor: colors.negativeTile,
+    },
+    body: {
+      color: colors.sheetText,
+      fontFamily: designTokens.font.regular,
+      fontSize: 16,
+      lineHeight: 26,
+    },
     card: {
-      paddingHorizontal: 14,
-      paddingVertical: 4,
-      borderRadius: designTokens.radius.group,
+      overflow: "hidden",
+      borderRadius: 20,
+      borderCurve: "continuous",
       borderWidth: 1,
       borderColor: colors.listCardBorder,
-      backgroundColor: colors.listCardBg,
+      backgroundColor: isDark ? colors.listCardBg : colors.heroGradBottom,
     },
     row: {
-      minHeight: 44,
+      minHeight: 58,
+      paddingHorizontal: 18,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 12,
     },
+    rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.listCardBorder },
     rowLabel: {
       flex: 1,
-      color: colors.textMuted,
+      color: colors.textSecondary,
       fontFamily: designTokens.font.regular,
-      fontSize: 14,
+      fontSize: 16,
     },
     rowLabelStrong: {
       color: colors.sheetText,
@@ -149,21 +227,38 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
     },
     rowValue: {
       color: colors.sheetText,
-      fontFamily: designTokens.font.semibold,
-      fontSize: 14,
+      fontFamily: designTokens.font.bold,
+      fontSize: 16,
       fontVariant: ["tabular-nums"],
     },
-    rowValueStrong: {
-      fontFamily: designTokens.font.display,
+    note: {
+      paddingHorizontal: 4,
+      color: colors.textSecondary,
+      fontFamily: designTokens.font.regular,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    // Same pair as SheetConfirm.
+    actions: { flexDirection: "row", gap: 12, paddingTop: 2 },
+    button: {
+      flex: 1,
+      height: 60,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    secondary: { backgroundColor: isDark ? colors.softChipBg : colors.dockActiveBg },
+    secondaryText: {
+      color: colors.sheetText,
+      fontFamily: designTokens.font.semibold,
       fontSize: 16,
     },
-    negative: { color: colors.negative },
-    divider: { height: 1, backgroundColor: colors.rowDivider },
-    note: {
-      color: colors.textMuted,
-      fontFamily: designTokens.font.regular,
-      fontSize: 13,
-      lineHeight: 19,
+    primary: { backgroundColor: colors.primaryButtonBg },
+    primaryText: {
+      color: colors.primaryButtonInk,
+      fontFamily: designTokens.font.semibold,
+      fontSize: 16,
     },
+    pressed: { opacity: 0.75 },
   });
 }

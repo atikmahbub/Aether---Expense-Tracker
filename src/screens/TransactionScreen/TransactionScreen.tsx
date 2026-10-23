@@ -26,6 +26,7 @@ import {
 } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation";
 import { EMonthlyLimitFields } from "@trackingPortal/screens/TransactionScreen/TransactionCreation/TransactionCreation.constants";
 import TransactionList from "@trackingPortal/screens/TransactionScreen/TransactionList";
+import { MonthlyTotals } from "@trackingPortal/utils/carryOver";
 import { eventEmitter, EVENTS } from "@trackingPortal/utils/events";
 import dayjs from "dayjs";
 import { Formik, FormikHelpers } from "formik";
@@ -101,6 +102,8 @@ export default function TransactionScreen() {
   const [limitLoading, setLimitLoading] = useState(false);
   const [summary, setSummary] = useState<TransactionSummaryModel | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
+  // Every month's totals, for the chained carry over on the Remaining card.
+  const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotals>({});
 
   const isFocused = useIsFocused();
   const { isOnline } = useNetwork();
@@ -136,8 +139,12 @@ export default function TransactionScreen() {
     if (!activeUserId || !transactionData) return;
     setLoadingSummary(true);
     try {
-      const data = await transactionData.getSummary(activeUserId, filterMonth);
+      const [data, totals] = await Promise.all([
+        transactionData.getSummary(activeUserId, filterMonth),
+        transactionData.getMonthlyTotals(activeUserId),
+      ]);
       setSummary(data);
+      setMonthlyTotals(totals);
     } catch (error) {
       console.log("Summary fetch failed", error);
     } finally {
@@ -383,6 +390,7 @@ export default function TransactionScreen() {
         month={filterMonth}
         type={typeFilter}
         summary={summary}
+        monthlyTotals={monthlyTotals}
         monthlyLimit={monthLimit}
         transactions={transactions}
         currency={currency}
@@ -405,6 +413,7 @@ export default function TransactionScreen() {
     [
       typeFilter,
       summary,
+      monthlyTotals,
       summaryInitialLoading,
       filterMonth,
       monthLimit,
@@ -422,6 +431,7 @@ export default function TransactionScreen() {
         month={filterMonth}
         type={typeFilter}
         summary={summary}
+        monthlyTotals={monthlyTotals}
         monthlyLimit={monthLimit}
         transactions={transactions}
         currency={currency}
@@ -433,6 +443,7 @@ export default function TransactionScreen() {
     [
       typeFilter,
       summary,
+      monthlyTotals,
       summaryInitialLoading,
       filterMonth,
       monthLimit,

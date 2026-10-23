@@ -40,6 +40,9 @@ type StoreContextType = {
   /** Categories the user hid from the add-entry picker (this device only). */
   hiddenCategoryIds: string[];
   toggleCategoryHidden: (categoryId: string) => Promise<void>;
+  /** Adds last month's remaining to this month. Synced with the user. */
+  carryOverEnabled: boolean;
+  setCarryOverEnabled: (enabled: boolean) => Promise<void>;
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -75,6 +78,42 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [isCategoryHydrated, setIsCategoryHydrated] = useState(false);
   const [hiddenCategoryIds, setHiddenCategoryIds] = useState<string[]>([]);
   const hiddenKey = `hiddenCategoryIds:${currentUser.userId}`;
+  const [carryOverEnabled, setCarryOverState] = useState(true);
+  // The local copy keeps the toggle working offline; the pending flag marks a
+  // change the server hasn't accepted yet, pushed on the next reconcile.
+  const carryOverKey = (userId: string) => `carryOverEnabled:${userId}`;
+  const carryOverPendingKey = (userId: string) => `carryOverPending:${userId}`;
+
+  useEffect(() => {
+    if (!dbReady || !repositories || !currentUser.userId) {
+      setCarryOverState(true);
+      return;
+    }
+    repositories.settings
+      .get(carryOverKey(currentUser.userId))
+      .then((raw) => setCarryOverState(raw !== "false"))
+      .catch(() => setCarryOverState(true));
+  }, [dbReady, repositories, currentUser.userId]);
+
+  const setCarryOverEnabled = useCallback(
+    async (enabled: boolean) => {
+      const userId = currentUser.userId;
+      setCarryOverState(enabled);
+      if (!userId) return;
+      await repositories?.settings.set(carryOverKey(userId), String(enabled));
+      await repositories?.settings.set(carryOverPendingKey(userId), "true");
+      try {
+        await apiGateway.userService.updateUser({
+          userId,
+          carryOverEnabled: enabled,
+        });
+        await repositories?.settings.remove(carryOverPendingKey(userId));
+      } catch (error) {
+        console.log("carry over sync deferred", error);
+      }
+    },
+    [currentUser.userId, repositories],
+  );
 
   // Hidden categories are a local display preference, kept per user in the
   // settings table; nothing about the category itself changes.
@@ -249,6 +288,25 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
+  /** Pushes an offline toggle change, otherwise adopts the server's value. */
+  const reconcileCarryOver = async (user: UserModel) => {
+    const userId = user.userId;
+    if (!repositories) return;
+    try {
+      const pending = await repositories.settings.get(carryOverPendingKey(userId));
+      if (pending) {
+        const local = (await repositories.settings.get(carryOverKey(userId))) !== "false";
+        await apiGateway.userService.updateUser({ userId, carryOverEnabled: local });
+        await repositories.settings.remove(carryOverPendingKey(userId));
+      } else if (typeof user.carryOverEnabled === "boolean") {
+        setCarryOverState(user.carryOverEnabled);
+        await repositories.settings.set(carryOverKey(userId), String(user.carryOverEnabled));
+      }
+    } catch (error) {
+      console.log("carry over reconcile skipped", error);
+    }
+  };
+
   const addUserToDb = async () => {
     if (!auth0User?.sub) return;
 
@@ -289,6 +347,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       const user = await apiGateway.userService.addUser(params);
       setCurrentUser({ ...user, default: false });
       await repositories?.users.upsertFromServer(user);
+      await reconcileCarryOver(user);
     } catch (error) {
       console.log("user sync (cloud) skipped", error);
     }
@@ -308,6 +367,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         incomeCategories,
         incomeCategoryLoading,
         hiddenCategoryIds,
+        carryOverEnabled,
+        setCarryOverEnabled,
         toggleCategoryHidden,
       }}
     >

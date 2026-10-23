@@ -91,4 +91,29 @@ export class TransactionRepository extends BaseRepository<LocalTransaction> {
   getByUserAndType(userId: string, type: "expense" | "income") {
     return this.getAll("userId = ? AND type = ?", [userId, type]);
   }
+
+  /**
+   * Income and expense sums per local month, in one grouped query. `date` is
+   * a unix timestamp string in seconds or milliseconds (see parseDate);
+   * `offsetSeconds` shifts it to the local zone before taking the month.
+   */
+  async monthlySums(
+    userId: string,
+    offsetSeconds: number,
+  ): Promise<{ month: string; type: "expense" | "income"; total: number }[]> {
+    return this.db.getAllAsync(
+      `SELECT strftime('%Y-%m',
+                (CASE WHEN CAST(date AS REAL) < 1e12
+                      THEN CAST(date AS REAL)
+                      ELSE CAST(date AS REAL) / 1000 END) + ?,
+                'unixepoch') AS month,
+              type,
+              SUM(amount) AS total
+         FROM transactions
+        WHERE syncStatus != 'deleted' AND userId = ?
+          AND date IS NOT NULL AND date != ''
+        GROUP BY month, type`,
+      [offsetSeconds, userId],
+    );
+  }
 }

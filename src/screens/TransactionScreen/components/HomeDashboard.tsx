@@ -1,23 +1,34 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { MonthlyLimitModel, TransactionModel } from "@trackingPortal/api/models";
+import {
+  MonthlyLimitModel,
+  TransactionModel,
+} from "@trackingPortal/api/models";
 import { TransactionSummaryModel } from "@trackingPortal/api/models/TransactionSummaryModel";
-import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
 import {
   CurvyHeroPanel,
   CustomAppBar,
   HeroFigure,
   SplitBar,
 } from "@trackingPortal/components";
+import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
+import { CurrencyPreference } from "@trackingPortal/constants/currency";
+import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
+import { useStoreContext } from "@trackingPortal/contexts/StoreProvider";
+import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import CarryOverSheet from "@trackingPortal/screens/TransactionScreen/components/CarryOverSheet";
 import RemainingCard, {
   RemainingStat,
 } from "@trackingPortal/screens/TransactionScreen/components/RemainingCard";
-import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
-import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
-import { CurrencyPreference } from "@trackingPortal/constants/currency";
 import { designTokens } from "@trackingPortal/themes/designTokens";
-import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
+import {
+  dayStats,
+  keptPercent,
+  monthBalances,
+  MonthlyTotals,
+} from "@trackingPortal/utils/carryOver";
 import { parseDate } from "@trackingPortal/utils/date";
+import { useRouter } from "expo-router";
+import { formatCurrency, formatNumber } from "@trackingPortal/utils/utils";
 import dayjs, { Dayjs } from "dayjs";
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -26,6 +37,7 @@ interface HomeDashboardProps {
   month: Dayjs;
   type: "expense" | "income";
   summary: TransactionSummaryModel | null;
+  monthlyTotals: MonthlyTotals;
   monthlyLimit: MonthlyLimitModel;
   transactions: TransactionModel[];
   currency: CurrencyPreference;
@@ -46,23 +58,11 @@ const money = (value: number, currency: CurrencyPreference) =>
 // positive colour; still listed there as an open question.
 const LIMIT_WARNING_RATIO = 0.85;
 
-// STEP 1 (UI only): design values for the Remaining card. Flip MOCK_STATE to
-// preview each board on device; replaced by real figures in step 2.
-type MockState = "normal" | "carryZero" | "carryNegative" | "nothingLeft";
-const MOCK_STATE: MockState = "normal";
-const MOCK = {
-  normal: { carry: 5000, income: 60000, spent: 19856, prevIncome: 55000 },
-  carryZero: { carry: 0, income: 60000, spent: 19856, prevIncome: 55000 },
-  carryNegative: { carry: -3000, income: 60000, spent: 19856, prevIncome: 55000 },
-  nothingLeft: { carry: 5000, income: 20000, spent: 27500, prevIncome: 55000 },
-}[MOCK_STATE];
-const MOCK_DAYS_PASSED = 5;
-const MOCK_DAYS_LEFT = 27;
-
 export default function HomeDashboard({
   month,
   type,
   summary,
+  monthlyTotals,
   monthlyLimit,
   transactions,
   currency,
@@ -76,6 +76,8 @@ export default function HomeDashboard({
   const { t, formatDate } = useTranslation();
   const [chartExpanded, setChartExpanded] = useState(false);
   const [carrySheetOpen, setCarrySheetOpen] = useState(false);
+  const { carryOverEnabled } = useStoreContext();
+  const router = useRouter();
   const expenseTotal = summary?.totalExpense ?? 0;
   const incomeTotal = summary?.totalIncome ?? 0;
   const activeTotal = type === "expense" ? expenseTotal : incomeTotal;
@@ -87,7 +89,11 @@ export default function HomeDashboard({
   // neutral ink rather than a new hue, so the only colour shift on the bar is
   // green -> red at the actual breach.
   const limitState: "under" | "approaching" | "over" =
-    ratio >= 1 ? "over" : ratio >= LIMIT_WARNING_RATIO ? "approaching" : "under";
+    ratio >= 1
+      ? "over"
+      : ratio >= LIMIT_WARNING_RATIO
+        ? "approaching"
+        : "under";
   const isOver = type === "expense" && limitState === "over";
   const today = dayjs();
   // Weeks that have not started yet render as empty tracks, not zero bars.
@@ -129,18 +135,26 @@ export default function HomeDashboard({
     1,
   );
 
-  // Remaining card (mock values until step 2).
-  const carryOver = MOCK.carry;
-  const available = carryOver + MOCK.income;
-  const remaining = available - MOCK.spent;
-  const isCurrentMonth = month.isSame(today, "month");
+  // Remaining card: carry over chains from the user's first month.
+  const monthKey = month.format("YYYY-MM");
+  const { current, previous } = useMemo(
+    () => monthBalances(monthlyTotals, monthKey, carryOverEnabled),
+    [monthlyTotals, monthKey, carryOverEnabled],
+  );
+  const { carryOver, available, remaining } = current;
+  const { dailyAvg, safePerDay } = dayStats({
+    month: monthKey,
+    now: Date.now(),
+    spent: current.spent,
+    remaining,
+    limit,
+  });
   const previousMonth = month.subtract(1, "month");
   const signedMoney = (value: number) =>
     `${value < 0 ? "−" : ""}${money(Math.abs(value), currency)}`;
-  const limitLeft = limit > 0 ? limit - MOCK.spent : Infinity;
-  const safePerDay = Math.min(limitLeft, remaining) / MOCK_DAYS_LEFT;
+  // Off, or exactly zero: no "Last month" item.
   const lastMonthStat: RemainingStat | null =
-    carryOver !== 0
+    carryOverEnabled && carryOver !== 0
       ? {
           label: t("wallet.lastMonth"),
           value: signedMoney(carryOver),
@@ -148,31 +162,34 @@ export default function HomeDashboard({
           onInfo: () => setCarrySheetOpen(true),
         }
       : null;
-  const incomeChange = MOCK.income - MOCK.prevIncome;
+  const incomeChange = current.income - previous.income;
   const cardStats: RemainingStat[] = [
     ...(lastMonthStat ? [lastMonthStat] : []),
     ...(type === "expense"
       ? [
-          {
-            label: t("wallet.dailyAvg"),
-            value: money(MOCK.spent / MOCK_DAYS_PASSED, currency),
-          },
-          ...(isCurrentMonth
-            ? [
+          { label: t("wallet.dailyAvg"), value: money(dailyAvg, currency) },
+          // Past months: no Safe / day.
+          ...(safePerDay === null
+            ? []
+            : [
                 safePerDay > 0
                   ? { label: t("wallet.safePerDay"), value: money(safePerDay, currency) }
-                  : { label: t("wallet.safePerDay"), value: t("wallet.nothingLeft"), negative: true },
-              ]
-            : []),
+                  : {
+                      label: t("wallet.safePerDay"),
+                      value: t("wallet.nothingLeft"),
+                      negative: true,
+                    },
+              ]),
         ]
       : [
           {
             label: t("wallet.kept"),
-            value: `${MOCK.income > 0 ? Math.max(Math.round((remaining / MOCK.income) * 100), 0) : 0}%`,
+            value: `${keptPercent(current.income, current.spent)}%`,
           },
           {
             label: t("wallet.vsMonth", { month: formatDate(previousMonth, "MMMM") }),
-            value: `${incomeChange >= 0 ? "+" : ""}${signedMoney(incomeChange)}`,
+            value: `${incomeChange > 0 ? "+" : ""}${signedMoney(incomeChange)}`,
+            negative: incomeChange < 0,
           },
         ]),
   ];
@@ -185,22 +202,29 @@ export default function HomeDashboard({
           {ledgerControl}
           <HeroFigure
             size={40}
-            label={t(type === "expense" ? "wallet.spentIn" : "wallet.incomeIn", {
-              month: formatDate(month, "MMMM"),
-            })}
+            label={t(
+              type === "expense" ? "wallet.spentIn" : "wallet.incomeIn",
+              {
+                month: formatDate(month, "MMMM"),
+              },
+            )}
             amount={loading ? "…" : money(activeTotal, currency)}
           />
           {type === "expense" &&
             (limit > 0 ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t(isOver ? "wallet.raiseLimit" : "wallet.adjustLimit")}
+                accessibilityLabel={t(
+                  isOver ? "wallet.raiseLimit" : "wallet.adjustLimit",
+                )}
                 onPress={onAdjustLimit}
                 style={({ pressed }) => pressed && styles.pressed}
               >
                 <SplitBar
                   ratio={ratio}
-                  limitLabel={t("wallet.limit", { amount: money(limit, currency) })}
+                  limitLabel={t("wallet.limit", {
+                    amount: money(limit, currency),
+                  })}
                   leftLabel={t(isOver ? "wallet.over" : "wallet.limitLeft")}
                   spentLabel={t("wallet.spent")}
                   leftAmount={money(difference, currency)}
@@ -210,10 +234,15 @@ export default function HomeDashboard({
               <Pressable
                 accessibilityRole="button"
                 onPress={onAdjustLimit}
-                style={({ pressed }) => [styles.setLimit, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.setLimit,
+                  pressed && styles.pressed,
+                ]}
               >
                 <Text style={styles.setLimitText}>{t("wallet.noLimit")}</Text>
-                <Text style={styles.setLimitAction}>{t("wallet.setLimitAction")}</Text>
+                <Text style={styles.setLimitAction}>
+                  {t("wallet.setLimitAction")}
+                </Text>
               </Pressable>
             ))}
           {type === "expense" && limit > available && (
@@ -225,7 +254,9 @@ export default function HomeDashboard({
                 style={styles.limitNoteIcon}
               />
               <Text style={styles.limitNoteText}>
-                {t("wallet.limitAboveAvailable", { amount: money(available, currency) })}
+                {t("wallet.limitAboveAvailable", {
+                  amount: money(available, currency),
+                })}
               </Text>
             </View>
           )}
@@ -233,22 +264,29 @@ export default function HomeDashboard({
             label={t("wallet.remaining")}
             value={signedMoney(remaining)}
             negative={remaining < 0}
-            available={t("wallet.ofAvailable", { amount: signedMoney(available) })}
+            available={t("wallet.ofAvailable", {
+              amount: signedMoney(available),
+            })}
             stats={cardStats}
           />
           <CarryOverSheet
             visible={carrySheetOpen}
             onClose={() => setCarrySheetOpen(false)}
+            onOpenSettings={() => {
+              setCarrySheetOpen(false);
+              router.push("/settings");
+            }}
             breakdown={{
+              amount: signedMoney(carryOver),
+              overspent: money(Math.abs(carryOver), currency),
+              negative: carryOver < 0,
               fromMonth: formatDate(previousMonth, "MMMM"),
               toMonth: formatDate(month, "MMMM"),
-              // Mock: the previous month's own carry over and totals.
-              carryIn: signedMoney(2000),
-              carryInNegative: false,
-              income: money(MOCK.prevIncome, currency),
-              spent: money(MOCK.prevIncome + 2000 - carryOver, currency),
-              result: signedMoney(carryOver),
-              negative: carryOver < 0,
+              carriedFromMonth: formatDate(month.subtract(2, "month"), "MMMM"),
+              carriedIn: `${previous.carryOver >= 0 ? "+" : ""}${signedMoney(previous.carryOver)}`,
+              carriedInNegative: previous.carryOver < 0,
+              income: `+${money(previous.income, currency)}`,
+              spent: `−${money(previous.spent, currency)}`,
             }}
           />
         </View>
@@ -281,8 +319,16 @@ export default function HomeDashboard({
       >
         <Text style={styles.sheetTitle}>{t("wallet.cashFlow")}</Text>
         <View style={styles.legend}>
-          <Legend color={colors.chartIn} label={t("wallet.in")} styles={styles} />
-          <Legend color={colors.chartOut} label={t("wallet.out")} styles={styles} />
+          <Legend
+            color={colors.chartIn}
+            label={t("wallet.in")}
+            styles={styles}
+          />
+          <Legend
+            color={colors.chartOut}
+            label={t("wallet.out")}
+            styles={styles}
+          />
           <Text style={styles.byWeek}>{t("wallet.byWeek")}</Text>
           <MaterialCommunityIcons
             name={chartExpanded ? "chevron-up" : "chevron-down"}
@@ -312,12 +358,18 @@ export default function HomeDashboard({
                     ]}
                   >
                     {week.income > 0 && (
-                      <ScalarAmountText numberOfLines={1} style={[styles.barLabel, { color: colors.chartIn }]}>
+                      <ScalarAmountText
+                        numberOfLines={1}
+                        style={[styles.barLabel, { color: colors.chartIn }]}
+                      >
                         {compact(week.income)}
                       </ScalarAmountText>
                     )}
                     {week.expense > 0 && (
-                      <ScalarAmountText numberOfLines={1} style={[styles.barLabel, { color: colors.chartOut }]}>
+                      <ScalarAmountText
+                        numberOfLines={1}
+                        style={[styles.barLabel, { color: colors.chartOut }]}
+                      >
                         {compact(week.expense)}
                       </ScalarAmountText>
                     )}
@@ -327,7 +379,10 @@ export default function HomeDashboard({
                   style={[
                     styles.bar,
                     started
-                      ? { height: barHeight(week.income), backgroundColor: colors.chartIn }
+                      ? {
+                          height: barHeight(week.income),
+                          backgroundColor: colors.chartIn,
+                        }
                       : styles.emptyBar,
                   ]}
                 />
@@ -335,12 +390,17 @@ export default function HomeDashboard({
                   style={[
                     styles.bar,
                     started
-                      ? { height: barHeight(week.expense), backgroundColor: colors.chartOut }
+                      ? {
+                          height: barHeight(week.expense),
+                          backgroundColor: colors.chartOut,
+                        }
                       : styles.emptyBar,
                   ]}
                 />
               </View>
-              <Text style={styles.xLabel}>{t("wallet.weekShort", { n: index + 1 })}</Text>
+              <Text style={styles.xLabel}>
+                {t("wallet.weekShort", { n: index + 1 })}
+              </Text>
             </View>
           );
         })}
@@ -348,7 +408,11 @@ export default function HomeDashboard({
       {chartExpanded && (
         <View style={styles.breakdown}>
           <Text style={styles.breakdownTitle}>
-            {t(type === "expense" ? "wallet.expenseByCategory" : "wallet.incomeByCategory")}
+            {t(
+              type === "expense"
+                ? "wallet.expenseByCategory"
+                : "wallet.incomeByCategory",
+            )}
           </Text>
           {categoryBreakdown.map((category) => (
             <View key={category.name} style={styles.breakdownRow}>
@@ -409,7 +473,12 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     panelContent: { paddingHorizontal: 22, gap: 16 },
     pressed: { opacity: 0.75 },
-    limitNote: { flexDirection: "row", gap: 6, marginTop: -6, paddingHorizontal: 2 },
+    limitNote: {
+      flexDirection: "row",
+      gap: 6,
+      marginTop: -6,
+      paddingHorizontal: 2,
+    },
     limitNoteIcon: { marginTop: 2 },
     limitNoteText: {
       flex: 1,

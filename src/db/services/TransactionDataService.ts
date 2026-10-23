@@ -6,6 +6,11 @@ import type {
   TransactionAnalyticsModel,
 } from "@trackingPortal/api/models";
 import { makeUnixTimestampString } from "@trackingPortal/api/primitives";
+import {
+  DHAKA_OFFSET_SECONDS,
+  MonthlyTotals,
+  shiftMonth,
+} from "@trackingPortal/utils/carryOver";
 import { parseDate } from "@trackingPortal/utils/date";
 import type { Repositories } from "@trackingPortal/db/repositories";
 import type { LocalCategory } from "@trackingPortal/db/repositories/CategoryRepository";
@@ -115,30 +120,33 @@ export class TransactionDataService {
       .map((r) => this.toUITransaction(r, lookup));
   }
 
-  private async monthTotals(userId: string, month: Dayjs) {
-    const rows = (await this.repos.transactions.getAll("userId = ?", [
+  /** Income and spent per Asia/Dhaka month, from one aggregate query. */
+  async getMonthlyTotals(userId: string): Promise<MonthlyTotals> {
+    const rows = await this.repos.transactions.monthlySums(
       userId,
-    ])) as LocalTransaction[];
-    const target = dayjs(month).format("YYYY-MM");
-    let totalExpense = 0;
-    let totalIncome = 0;
-    for (const r of rows) {
-      if (!r.date || dayjs(parseDate(r.date)).format("YYYY-MM") !== target) continue;
-      if (r.type === "income") totalIncome += r.amount;
-      else totalExpense += r.amount;
+      DHAKA_OFFSET_SECONDS,
+    );
+    const totals: MonthlyTotals = {};
+    for (const row of rows) {
+      if (!row.month) continue;
+      const month = (totals[row.month] ??= { income: 0, spent: 0 });
+      if (row.type === "income") month.income += row.total;
+      else month.spent += row.total;
     }
-    return { totalExpense, totalIncome };
+    return totals;
   }
 
   /** Totals for the month plus month-over-month change percentages. */
   async getSummary(userId: string, month: Dayjs): Promise<TransactionSummaryModel> {
-    const current = await this.monthTotals(userId, month);
-    const previous = await this.monthTotals(userId, dayjs(month).subtract(1, "month"));
+    const totals = await this.getMonthlyTotals(userId);
+    const key = dayjs(month).format("YYYY-MM");
+    const current = totals[key] ?? { income: 0, spent: 0 };
+    const previous = totals[shiftMonth(key, -1)] ?? { income: 0, spent: 0 };
     return {
-      totalExpense: current.totalExpense,
-      totalIncome: current.totalIncome,
-      expenseChangePercentage: pctChange(current.totalExpense, previous.totalExpense),
-      incomeChangePercentage: pctChange(current.totalIncome, previous.totalIncome),
+      totalExpense: current.spent,
+      totalIncome: current.income,
+      expenseChangePercentage: pctChange(current.spent, previous.spent),
+      incomeChangePercentage: pctChange(current.income, previous.income),
     };
   }
 

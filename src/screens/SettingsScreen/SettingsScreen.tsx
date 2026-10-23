@@ -42,12 +42,15 @@ export default function SettingsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { language, setLanguage, t } = useTranslation();
   const { logout, loading, user } = useAuth();
-  const { currency, setCurrencyPreference } = useStoreContext();
+  const {
+    currency,
+    setCurrencyPreference,
+    carryOverEnabled,
+    setCarryOverEnabled,
+  } = useStoreContext();
   const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-  // STEP 1 (UI only): local until step 2 stores it in user settings.
-  const [carryOverEnabled, setCarryOverEnabled] = useState(true);
 
   const openCurrencyModal = useCallback(() => {
     InteractionManager.runAfterInteractions(() =>
