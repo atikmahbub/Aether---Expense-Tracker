@@ -7,3 +7,4 @@ export { default as HeroFigure } from "./HeroFigure";
 export { default as SheetHeader } from "./SheetHeader";
 export { default as SplitBar, DotField, SpentRamp } from "./SplitBar";
 export { default as EntityDetailSheet } from "./EntityDetailSheet";
+export { default as SheetCloseButton } from "./SheetCloseButton";

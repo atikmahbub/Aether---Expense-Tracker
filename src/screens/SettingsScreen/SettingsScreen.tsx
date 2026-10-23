@@ -34,6 +34,8 @@ import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { Language, LANGUAGE_LABELS } from "@trackingPortal/i18n/translations";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 
+import FeedbackSheet from "./components/FeedbackSheet";
+
 const STORE_URL =
   "https://play.google.com/store/apps/details?id=com.atik.aether";
 
@@ -51,6 +53,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
 
   const openCurrencyModal = useCallback(() => {
     InteractionManager.runAfterInteractions(() =>
@@ -159,6 +162,15 @@ export default function SettingsScreen() {
 
       <Text style={styles.sectionLabel}>{t("settings.about")}</Text>
       <View style={styles.card}>
+        <SettingsRow
+          icon="email-outline"
+          label={t("settings.feedback")}
+          hint={t("settings.feedbackHint")}
+          onPress={() => setFeedbackVisible(true)}
+          styles={styles}
+          colors={colors}
+        />
+        <View style={styles.divider} />
         <SettingsRow
           icon="shield-account"
           label={t("settings.privacy")}
@@ -312,6 +324,11 @@ export default function SettingsScreen() {
           })}
         </View>
       </Modal>
+
+      <FeedbackSheet
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -319,6 +336,7 @@ export default function SettingsScreen() {
 function SettingsRow({
   icon,
   label,
+  hint,
   value,
   external,
   onPress,
@@ -327,6 +345,7 @@ function SettingsRow({
 }: {
   icon: any;
   label: string;
+  hint?: string;
   value?: string;
   external?: boolean;
   onPress: () => void;
@@ -345,7 +364,14 @@ function SettingsRow({
           color={colors.groupIconInk}
         />
       </View>
-      <Text style={styles.rowLabel}>{label}</Text>
+      {hint ? (
+        <View style={styles.rowText}>
+          <Text style={styles.rowLabel}>{label}</Text>
+          <Text style={styles.rowHint}>{hint}</Text>
+        </View>
+      ) : (
+        <Text style={styles.rowLabel}>{label}</Text>
+      )}
       {value && <Text style={styles.rowValue}>{value}</Text>}
       <MaterialCommunityIcons
         name={external ? "open-in-new" : "chevron-right"}

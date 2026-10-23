@@ -1,12 +1,11 @@
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import BaseBottomSheet from "@trackingPortal/components/BaseBottomSheet";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
+import SheetCloseButton from "@trackingPortal/components/scalar/SheetCloseButton";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import React, { useMemo } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type CarryOverBreakdown = {
   /** The carry over itself, signed ("−৳3,000"). */
@@ -57,35 +56,11 @@ export default function CarryOverSheet({
               {breakdown.amount}
             </ScalarAmountText>
           </View>
-          <Pressable
-            accessibilityRole="button"
+          <SheetCloseButton
             accessibilityLabel={t("carryOver.gotIt")}
             onPress={onClose}
-            hitSlop={8}
-            style={({ pressed }) => [styles.close, pressed && styles.pressed]}
-          >
-            <Svg width={CLOSE_SIZE} height={CLOSE_SIZE} style={StyleSheet.absoluteFill}>
-              <Defs>
-                {/* Lit from above: lighter top, deeper bottom. */}
-                <LinearGradient id="carryClose" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={isDark ? colors.negative : "#FFFFFF"} stopOpacity={isDark ? 0.1 : 0.4} />
-                  <Stop offset="0.5" stopColor="#000000" stopOpacity={0} />
-                  <Stop offset="1" stopColor="#000000" stopOpacity={isDark ? 0.24 : 0.025} />
-                </LinearGradient>
-              </Defs>
-              <Circle cx={CLOSE_SIZE / 2} cy={CLOSE_SIZE / 2} r={CLOSE_SIZE / 2 - 0.5} fill={colors.negativeTile} />
-              <Circle
-                cx={CLOSE_SIZE / 2}
-                cy={CLOSE_SIZE / 2}
-                r={CLOSE_SIZE / 2 - 0.5}
-                fill="url(#carryClose)"
-                stroke={colors.negative}
-                strokeOpacity={isDark ? 0.42 : 0.25}
-                strokeWidth={1}
-              />
-            </Svg>
-            <MaterialCommunityIcons name="close" size={18} color={colors.negative} />
-          </Pressable>
+            style={styles.close}
+          />
         </View>
 
         <Text style={styles.body}>
@@ -171,9 +146,6 @@ function Row({
   );
 }
 
-// Measured from the design at 2px per point.
-const CLOSE_SIZE = 40;
-
 // Steps the amount down for long figures. Not adjustsFontSizeToFit: on iOS
 // it miscalculates with a lineHeight set and shrinks the text to a speck.
 const amountSize = (text: string) => {
@@ -209,23 +181,7 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
       fontVariant: ["tabular-nums"],
     },
     negative: { color: colors.negative },
-    close: {
-      width: CLOSE_SIZE,
-      height: CLOSE_SIZE,
-      marginTop: 3,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: CLOSE_SIZE / 2,
-      // Soft tinted halo; Android elevation would draw a grey one instead.
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.negative,
-          shadowOpacity: isDark ? 0.18 : 0.14,
-          shadowRadius: 4,
-          shadowOffset: { width: 0, height: 2 },
-        },
-      }),
-    },
+    close: { marginTop: 3 },
     body: {
       marginTop: 10,
       color: colors.sheetText,

@@ -30,6 +30,7 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
+import SheetCloseButton from "@trackingPortal/components/scalar/SheetCloseButton";
 
 type Tab = "repay" | "edit";
 
@@ -258,15 +259,7 @@ export default function LoanDetailSheet({
               })}
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("common.close")}
-            hitSlop={8}
-            onPress={onClose}
-            style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-          >
-            <MaterialCommunityIcons name="close" size={18} color={colors.sheetText} />
-          </Pressable>
+          <SheetCloseButton onPress={onClose} />
         </View>
 
         {/* Outstanding */}
@@ -672,14 +665,6 @@ function makeStyles(colors: Colors, p: ReturnType<typeof makePalette>) {
       color: colors.textMuted,
       fontFamily: designTokens.font.regular,
       fontSize: 13,
-    },
-    closeButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 999,
-      backgroundColor: p.soft,
-      alignItems: "center",
-      justifyContent: "center",
     },
     card: {
       borderRadius: 24,

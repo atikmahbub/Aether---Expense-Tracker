@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import SheetCloseButton from "@trackingPortal/components/scalar/SheetCloseButton";
 
 interface ScalarCalendarProps {
   visible: boolean;
@@ -71,20 +72,10 @@ export default function ScalarCalendar({
                 {formatDate(selected, "dddd, D MMMM YYYY")}
               </Text>
             </View>
-            <Pressable
+            <SheetCloseButton
               accessibilityLabel={t("calendar.close")}
               onPress={onCancel}
-              style={({ pressed }) => [
-                styles.iconButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="close"
-                size={20}
-                color={colors.textSecondary}
-              />
-            </Pressable>
+            />
           </View>
 
           <View style={styles.monthRow}>

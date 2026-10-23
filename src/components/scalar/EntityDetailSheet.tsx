@@ -1,11 +1,11 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import BaseBottomSheet from "@trackingPortal/components/BaseBottomSheet";
 import ScalarAmountText from "@trackingPortal/components/ScalarAmountText";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import React, { ComponentProps, useMemo, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import SheetCloseButton from "./SheetCloseButton";
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -72,7 +72,6 @@ function EntityDetailSheetView({
   takeover,
 }: EntityDetailSheetProps & { hasContent: boolean }) {
   const { colors, isDark } = useAppTheme();
-  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   return (
@@ -92,15 +91,7 @@ function EntityDetailSheetView({
               <Text numberOfLines={1} style={styles.title}>{title}</Text>
               <Text numberOfLines={1} style={styles.meta}>{meta}</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("common.close")}
-              hitSlop={8}
-              onPress={onClose}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-            >
-              <MaterialCommunityIcons name="close" size={18} color={colors.sheetText} />
-            </Pressable>
+            <SheetCloseButton onPress={onClose} />
           </View>
 
           <View style={styles.card}>
@@ -202,14 +193,6 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
       color: colors.textMuted,
       fontFamily: designTokens.font.regular,
       fontSize: 13,
-    },
-    closeButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 999,
-      backgroundColor: soft,
-      alignItems: "center",
-      justifyContent: "center",
     },
     card: {
       borderRadius: 24,

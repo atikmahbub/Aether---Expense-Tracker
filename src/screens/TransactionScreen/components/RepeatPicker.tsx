@@ -11,6 +11,7 @@ import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import dayjs from "dayjs";
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import SheetCloseButton from "@trackingPortal/components/scalar/SheetCloseButton";
 
 export type RepeatChoice = RecurringFrequency | "never";
 
@@ -81,13 +82,10 @@ export default function RepeatPicker({
           <View style={styles.handle} />
           <View style={styles.titleRow}>
             <Text style={styles.title}>{t("form.repeat")}</Text>
-            <Pressable
+            <SheetCloseButton
               accessibilityLabel={t("repeat.close")}
               onPress={onCancel}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-            >
-              <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
-            </Pressable>
+            />
           </View>
 
           <View style={styles.card}>
@@ -256,13 +254,6 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       fontFamily: designTokens.font.bold,
       fontSize: 20,
       lineHeight: 26,
-    },
-    iconButton: {
-      width: 44,
-      height: 44,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: designTokens.radius.full,
     },
     card: {
       overflow: "hidden",
