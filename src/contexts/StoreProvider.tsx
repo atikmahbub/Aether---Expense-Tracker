@@ -40,7 +40,7 @@ type StoreContextType = {
   /** Categories the user hid from the add-entry picker (this device only). */
   hiddenCategoryIds: string[];
   toggleCategoryHidden: (categoryId: string) => Promise<void>;
-  /** Adds last month's remaining to this month. Synced with the user. */
+  /** Adds last month's remaining to this month. Off by default; synced with the user. */
   carryOverEnabled: boolean;
   setCarryOverEnabled: (enabled: boolean) => Promise<void>;
 };
@@ -78,7 +78,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [isCategoryHydrated, setIsCategoryHydrated] = useState(false);
   const [hiddenCategoryIds, setHiddenCategoryIds] = useState<string[]>([]);
   const hiddenKey = `hiddenCategoryIds:${currentUser.userId}`;
-  const [carryOverEnabled, setCarryOverState] = useState(true);
+  const [carryOverEnabled, setCarryOverState] = useState(false);
   // The local copy keeps the toggle working offline; the pending flag marks a
   // change the server hasn't accepted yet, pushed on the next reconcile.
   const carryOverKey = (userId: string) => `carryOverEnabled:${userId}`;
@@ -86,13 +86,13 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!dbReady || !repositories || !currentUser.userId) {
-      setCarryOverState(true);
+      setCarryOverState(false);
       return;
     }
     repositories.settings
       .get(carryOverKey(currentUser.userId))
-      .then((raw) => setCarryOverState(raw !== "false"))
-      .catch(() => setCarryOverState(true));
+      .then((raw) => setCarryOverState(raw === "true"))
+      .catch(() => setCarryOverState(false));
   }, [dbReady, repositories, currentUser.userId]);
 
   const setCarryOverEnabled = useCallback(
@@ -295,7 +295,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const pending = await repositories.settings.get(carryOverPendingKey(userId));
       if (pending) {
-        const local = (await repositories.settings.get(carryOverKey(userId))) !== "false";
+        const local = (await repositories.settings.get(carryOverKey(userId))) === "true";
         await apiGateway.userService.updateUser({ userId, carryOverEnabled: local });
         await repositories.settings.remove(carryOverPendingKey(userId));
       } else if (typeof user.carryOverEnabled === "boolean") {
