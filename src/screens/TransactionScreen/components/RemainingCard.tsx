@@ -139,6 +139,8 @@ export default function RemainingCard({
   );
 }
 
+// Shrinking figures (adjustsFontSizeToFit) carry no lineHeight: on iOS the
+// two together shrink the text to a speck.
 const styles = StyleSheet.create({
   card: {
     marginTop: 12,
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
   amount: {
     fontFamily: designTokens.font.display,
     fontSize: 20,
-    lineHeight: 26,
     letterSpacing: -0.6,
     fontVariant: ["tabular-nums"],
   },
@@ -201,7 +202,6 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: designTokens.font.display,
     fontSize: 16,
-    lineHeight: 21,
     letterSpacing: -0.32,
     fontVariant: ["tabular-nums"],
   },
