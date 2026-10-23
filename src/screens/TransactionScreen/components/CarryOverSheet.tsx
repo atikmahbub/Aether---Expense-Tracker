@@ -18,10 +18,6 @@ export type CarryOverBreakdown = {
   fromMonth: string;
   /** Month it lands in ("August"). */
   toMonth: string;
-  /** The month before fromMonth, whose own carry over fed into it ("June"). */
-  carriedFromMonth: string;
-  carriedIn: string;
-  carriedInNegative: boolean;
   income: string;
   spent: string;
 };
@@ -103,12 +99,6 @@ export default function CarryOverSheet({
         </Text>
 
         <View style={styles.card}>
-          <Row
-            label={t("carryOver.carriedFrom", { month: breakdown.carriedFromMonth })}
-            value={breakdown.carriedIn}
-            negative={breakdown.carriedInNegative}
-            styles={styles}
-          />
           <Row
             label={t("carryOver.monthIncome", { month: fromMonth })}
             value={breakdown.income}

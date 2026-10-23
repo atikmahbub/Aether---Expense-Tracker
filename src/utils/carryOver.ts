@@ -1,9 +1,11 @@
 /**
  * Remaining balance and carry over, worked out from per-month totals.
  *
- * Carry over is never stored: each month's is the previous month's remaining,
- * chained back to the user's first month with data, so editing or deleting an
- * old entry fixes every month after it. Months follow Asia/Dhaka local time.
+ * Carry over is last month's income minus last month's spending, and only
+ * when last month had income: users who don't log income would otherwise
+ * carry an ever-growing debt. It doesn't chain further back. It's never
+ * stored, so editing last month's entries updates it. Months follow
+ * Asia/Dhaka local time.
  *
  * Kept free of React, dayjs and the database so it can be unit tested.
  */
@@ -54,8 +56,8 @@ export const daysInMonth = (month: MonthKey): number => {
 const EMPTY: MonthTotals = { income: 0, spent: 0 };
 
 /**
- * Balance for `month` and the month before it. With carry over off, every
- * month's carry over is 0.
+ * Balance for `month` and the month before it. With carry over off, or no
+ * income last month, carry over is 0.
  */
 export function monthBalances(
   totals: MonthlyTotals,
@@ -67,19 +69,10 @@ export function monthBalances(
     const available = carryOver + income;
     return { month: key, carryOver, income, spent, available, remaining: available - spent };
   };
-  const previousKey = shiftMonth(month, -1);
-
-  // Keys are zero-padded, so string order is month order.
-  const first = Object.keys(totals).sort()[0];
-  if (!carryOverEnabled || !first || first >= month) {
-    return { current: balance(month, 0), previous: balance(previousKey, 0) };
-  }
-
-  let previous = balance(first, 0);
-  while (previous.month < previousKey) {
-    previous = balance(shiftMonth(previous.month, 1), previous.remaining);
-  }
-  return { current: balance(month, previous.remaining), previous };
+  const previous = balance(shiftMonth(month, -1), 0);
+  const carryOver =
+    carryOverEnabled && previous.income > 0 ? previous.remaining : 0;
+  return { current: balance(month, carryOver), previous };
 }
 
 export type DayStats = {

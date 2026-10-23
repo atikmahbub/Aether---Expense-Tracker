@@ -135,7 +135,7 @@ export default function HomeDashboard({
     1,
   );
 
-  // Remaining card: carry over chains from the user's first month.
+  // Remaining card: carry over is last month's balance, if it had income.
   const monthKey = month.format("YYYY-MM");
   const { current, previous } = useMemo(
     () => monthBalances(monthlyTotals, monthKey, carryOverEnabled),
@@ -245,7 +245,7 @@ export default function HomeDashboard({
                 </Text>
               </Pressable>
             ))}
-          {type === "expense" && limit > available && (
+          {type === "expense" && available > 0 && limit > available && (
             <View style={styles.limitNote}>
               <MaterialCommunityIcons
                 name="information-outline"
@@ -282,9 +282,6 @@ export default function HomeDashboard({
               negative: carryOver < 0,
               fromMonth: formatDate(previousMonth, "MMMM"),
               toMonth: formatDate(month, "MMMM"),
-              carriedFromMonth: formatDate(month.subtract(2, "month"), "MMMM"),
-              carriedIn: `${previous.carryOver >= 0 ? "+" : ""}${signedMoney(previous.carryOver)}`,
-              carriedInNegative: previous.carryOver < 0,
               income: `+${money(previous.income, currency)}`,
               spent: `−${money(previous.spent, currency)}`,
             }}

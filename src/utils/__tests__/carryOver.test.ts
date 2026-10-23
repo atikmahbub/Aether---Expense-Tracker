@@ -12,13 +12,12 @@ const dhaka = (iso: string) => Date.parse(`${iso}+06:00`);
 
 // The design's numbers: ৳5,000 carried into August.
 const DESIGN: MonthlyTotals = {
-  "2026-06": { income: 50000, spent: 48800 }, // leaves 1,200
-  "2026-07": { income: 55000, spent: 51200 }, // 1,200 + 55,000 − 51,200 = 5,000
+  "2026-07": { income: 55000, spent: 50000 },
   "2026-08": { income: 60000, spent: 19856 },
 };
 
 describe("monthBalances", () => {
-  it("chains carry over: available = carry + income, remaining = available − spent", () => {
+  it("available = carry + income, remaining = available − spent", () => {
     const { current, previous } = monthBalances(DESIGN, "2026-08", true);
     expect(current).toEqual({
       month: "2026-08",
@@ -28,7 +27,7 @@ describe("monthBalances", () => {
       available: 65000,
       remaining: 45144,
     });
-    expect(previous).toMatchObject({ carryOver: 1200, income: 55000, spent: 51200, remaining: 5000 });
+    expect(previous).toMatchObject({ income: 55000, spent: 50000, remaining: 5000 });
   });
 
   it("gives zero carry over when last month broke even", () => {
@@ -52,38 +51,52 @@ describe("monthBalances", () => {
     expect(monthBalances(totals, "2026-08", true).current.remaining).toBe(-7500);
   });
 
-  it("treats every month as zero carry over when the toggle is off", () => {
-    const { current, previous } = monthBalances(DESIGN, "2026-08", false);
+  it("treats carry over as zero when the toggle is off", () => {
+    const { current } = monthBalances(DESIGN, "2026-08", false);
     expect(current.carryOver).toBe(0);
     expect(current.available).toBe(60000);
     expect(current.remaining).toBe(40144);
-    expect(previous.carryOver).toBe(0);
   });
 
   it("starts the user's first month at zero", () => {
-    expect(monthBalances(DESIGN, "2026-06", true).current.carryOver).toBe(0);
+    expect(monthBalances(DESIGN, "2026-07", true).current.carryOver).toBe(0);
     expect(monthBalances({}, "2026-08", true).current).toMatchObject({ carryOver: 0, remaining: 0 });
   });
 
-  it("carries through months with no entries", () => {
-    const totals = { "2026-05": { income: 1000, spent: 0 }, "2026-08": { income: 0, spent: 0 } };
-    expect(monthBalances(totals, "2026-08", true).current.carryOver).toBe(1000);
+  it("carries nothing when last month had no income", () => {
+    const totals = { "2026-07": { income: 0, spent: 66854 }, "2026-08": { income: 0, spent: 5000 } };
+    const { current } = monthBalances(totals, "2026-08", true);
+    expect(current.carryOver).toBe(0);
+    expect(current.remaining).toBe(-5000);
+  });
+
+  it("only looks at last month, not further back", () => {
+    const totals = {
+      "2026-06": { income: 0, spent: 1000000 },
+      "2026-07": { income: 10000, spent: 8000 },
+    };
+    expect(monthBalances(totals, "2026-08", true).current.carryOver).toBe(2000);
+  });
+
+  it("carries nothing across an empty month", () => {
+    const totals = { "2026-06": { income: 1000, spent: 0 } };
+    expect(monthBalances(totals, "2026-08", true).current.carryOver).toBe(0);
   });
 
   it("ignores later months when viewing a past one", () => {
     const { current } = monthBalances(DESIGN, "2026-07", true);
-    expect(current).toMatchObject({ carryOver: 1200, available: 56200, remaining: 5000 });
+    expect(current).toMatchObject({ carryOver: 0, available: 55000, remaining: 5000 });
   });
 
-  it("chains across a year boundary", () => {
-    const totals = { "2025-12": { income: 300, spent: 100 }, "2026-01": { income: 0, spent: 50 } };
-    expect(monthBalances(totals, "2026-02", true).current.carryOver).toBe(150);
+  it("looks back across a year boundary", () => {
+    const totals = { "2025-12": { income: 300, spent: 100 } };
+    expect(monthBalances(totals, "2026-01", true).current.carryOver).toBe(200);
   });
 
-  it("updates every later month when a past entry is edited", () => {
+  it("updates when a last-month entry is edited", () => {
     const before = monthBalances(DESIGN, "2026-08", true).current;
-    // A June expense goes from 48,800 to 49,800.
-    const edited = { ...DESIGN, "2026-06": { income: 50000, spent: 49800 } };
+    // A July expense goes from 50,000 to 51,000.
+    const edited = { ...DESIGN, "2026-07": { income: 55000, spent: 51000 } };
     const after = monthBalances(edited, "2026-08", true).current;
     expect(after.carryOver).toBe(before.carryOver - 1000);
     expect(after.remaining).toBe(before.remaining - 1000);
