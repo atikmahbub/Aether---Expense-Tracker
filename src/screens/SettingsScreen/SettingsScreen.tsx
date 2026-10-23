@@ -9,6 +9,7 @@ import {
   ScrollView,
   Share,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -45,6 +46,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  // STEP 1 (UI only): local until step 2 stores it in user settings.
+  const [carryOverEnabled, setCarryOverEnabled] = useState(true);
 
   const openCurrencyModal = useCallback(() => {
     InteractionManager.runAfterInteractions(() =>
@@ -136,6 +139,16 @@ export default function SettingsScreen() {
           icon="repeat"
           label={t("settings.recurring")}
           onPress={() => router.push("/recurring")}
+          styles={styles}
+          colors={colors}
+        />
+        <View style={styles.divider} />
+        <SettingsToggleRow
+          icon="calendar-arrow-right"
+          label={t("settings.carryOver")}
+          hint={t("settings.carryOverHint")}
+          value={carryOverEnabled}
+          onValueChange={setCarryOverEnabled}
           styles={styles}
           colors={colors}
         />
@@ -340,6 +353,52 @@ function SettingsRow({
   );
 }
 
+function SettingsToggleRow({
+  icon,
+  label,
+  hint,
+  value,
+  onValueChange,
+  styles,
+  colors,
+}: {
+  icon: any;
+  label: string;
+  hint?: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  styles: ReturnType<typeof makeStyles>;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+}) {
+  return (
+    <Pressable
+      onPress={() => onValueChange(!value)}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <View style={styles.iconTile}>
+        <MaterialCommunityIcons
+          name={icon}
+          size={17}
+          color={colors.groupIconInk}
+        />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {hint && <Text style={styles.rowHint}>{hint}</Text>}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.rowDivider, true: colors.chartIn }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor={colors.rowDivider}
+      />
+    </Pressable>
+  );
+}
+
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: "transparent" },
@@ -397,6 +456,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
       color: colors.sheetText,
       fontFamily: designTokens.font.medium,
       fontSize: 15,
+    },
+    rowText: { flex: 1, gap: 2 },
+    rowHint: {
+      color: colors.textMuted,
+      fontFamily: designTokens.font.regular,
+      fontSize: 12,
+      lineHeight: 16,
     },
     rowValue: {
       color: colors.textMuted,

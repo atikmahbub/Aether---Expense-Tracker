@@ -102,6 +102,18 @@ export const lightColors = {
   statPositive: "#E4E9F2",
   statNegative: "#E36A4E",
   statBadgeInk: "#1E2E47",
+  // Remaining card on Home: deeper than the stat card, with a cool glow
+  // top-right and a faint warm wash bottom-left.
+  remainingGradFrom: "#18243A",
+  remainingGradMid: "#2A3E5E",
+  remainingGradTo: "#3B5480",
+  remainingGlow: "rgba(140,166,214,0.55)",
+  remainingWarm: "rgba(200,75,49,0.16)",
+  remainingRim: "rgba(255,255,255,0.16)",
+  remainingLabel: "#DCE3EF",
+  remainingRule: "rgba(255,255,255,0.26)",
+  // Red on the navy card; same ink in both modes per the design.
+  remainingNegative: "#F0623F",
   sheet: "#F5F7FA",
   // The list sheet on tab screens: glass over the fixed glow behind it.
   // Solid white so list content reads on a clean surface in light mode.

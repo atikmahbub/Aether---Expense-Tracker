@@ -110,6 +110,18 @@ export const colors = {
   statPositive: "#ECDFC4",
   statNegative: "#F0623F",
   statBadgeInk: "#10131B",
+  // Remaining card on Home: deeper than the stat card, with a cool glow
+  // top-right and a faint warm wash bottom-left.
+  remainingGradFrom: "#171C28",
+  remainingGradMid: "#121620",
+  remainingGradTo: "#0D1017",
+  remainingGlow: "rgba(74,99,144,0.42)",
+  remainingWarm: "rgba(240,98,63,0.10)",
+  remainingRim: "rgba(236,223,196,0.14)",
+  remainingLabel: "#C9CED8",
+  remainingRule: "rgba(255,255,255,0.16)",
+  // Red on the navy card; same ink in both modes per the design.
+  remainingNegative: "#F0623F",
   sheet: "#0E1118",
   sheetGlass: "#0E1118",
   sheetBorder: "#2A3040",

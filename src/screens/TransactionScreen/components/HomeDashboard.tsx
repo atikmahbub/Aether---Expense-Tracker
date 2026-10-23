@@ -6,9 +6,12 @@ import {
   CurvyHeroPanel,
   CustomAppBar,
   HeroFigure,
-  HeroStatCard,
   SplitBar,
 } from "@trackingPortal/components";
+import CarryOverSheet from "@trackingPortal/screens/TransactionScreen/components/CarryOverSheet";
+import RemainingCard, {
+  RemainingStat,
+} from "@trackingPortal/screens/TransactionScreen/components/RemainingCard";
 import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { CurrencyPreference } from "@trackingPortal/constants/currency";
@@ -43,6 +46,19 @@ const money = (value: number, currency: CurrencyPreference) =>
 // positive colour; still listed there as an open question.
 const LIMIT_WARNING_RATIO = 0.85;
 
+// STEP 1 (UI only): design values for the Remaining card. Flip MOCK_STATE to
+// preview each board on device; replaced by real figures in step 2.
+type MockState = "normal" | "carryZero" | "carryNegative" | "nothingLeft";
+const MOCK_STATE: MockState = "normal";
+const MOCK = {
+  normal: { carry: 5000, income: 60000, spent: 19856, prevIncome: 55000 },
+  carryZero: { carry: 0, income: 60000, spent: 19856, prevIncome: 55000 },
+  carryNegative: { carry: -3000, income: 60000, spent: 19856, prevIncome: 55000 },
+  nothingLeft: { carry: 5000, income: 20000, spent: 27500, prevIncome: 55000 },
+}[MOCK_STATE];
+const MOCK_DAYS_PASSED = 5;
+const MOCK_DAYS_LEFT = 27;
+
 export default function HomeDashboard({
   month,
   type,
@@ -59,6 +75,7 @@ export default function HomeDashboard({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, formatDate } = useTranslation();
   const [chartExpanded, setChartExpanded] = useState(false);
+  const [carrySheetOpen, setCarrySheetOpen] = useState(false);
   const expenseTotal = summary?.totalExpense ?? 0;
   const incomeTotal = summary?.totalIncome ?? 0;
   const activeTotal = type === "expense" ? expenseTotal : incomeTotal;
@@ -73,10 +90,6 @@ export default function HomeDashboard({
     ratio >= 1 ? "over" : ratio >= LIMIT_WARNING_RATIO ? "approaching" : "under";
   const isOver = type === "expense" && limitState === "over";
   const today = dayjs();
-  // Current month averages over days elapsed so far, not the full month.
-  const days = month.isSame(today, "month")
-    ? today.date()
-    : Math.max(month.daysInMonth(), 1);
   // Weeks that have not started yet render as empty tracks, not zero bars.
   const weekStarted = (index: number) =>
     !month.isSame(today, "month") || index * 7 + 1 <= today.date();
@@ -116,6 +129,54 @@ export default function HomeDashboard({
     1,
   );
 
+  // Remaining card (mock values until step 2).
+  const carryOver = MOCK.carry;
+  const available = carryOver + MOCK.income;
+  const remaining = available - MOCK.spent;
+  const isCurrentMonth = month.isSame(today, "month");
+  const previousMonth = month.subtract(1, "month");
+  const signedMoney = (value: number) =>
+    `${value < 0 ? "−" : ""}${money(Math.abs(value), currency)}`;
+  const limitLeft = limit > 0 ? limit - MOCK.spent : Infinity;
+  const safePerDay = Math.min(limitLeft, remaining) / MOCK_DAYS_LEFT;
+  const lastMonthStat: RemainingStat | null =
+    carryOver !== 0
+      ? {
+          label: t("wallet.lastMonth"),
+          value: signedMoney(carryOver),
+          negative: carryOver < 0,
+          onInfo: () => setCarrySheetOpen(true),
+        }
+      : null;
+  const incomeChange = MOCK.income - MOCK.prevIncome;
+  const cardStats: RemainingStat[] = [
+    ...(lastMonthStat ? [lastMonthStat] : []),
+    ...(type === "expense"
+      ? [
+          {
+            label: t("wallet.dailyAvg"),
+            value: money(MOCK.spent / MOCK_DAYS_PASSED, currency),
+          },
+          ...(isCurrentMonth
+            ? [
+                safePerDay > 0
+                  ? { label: t("wallet.safePerDay"), value: money(safePerDay, currency) }
+                  : { label: t("wallet.safePerDay"), value: t("wallet.nothingLeft"), negative: true },
+              ]
+            : []),
+        ]
+      : [
+          {
+            label: t("wallet.kept"),
+            value: `${MOCK.income > 0 ? Math.max(Math.round((remaining / MOCK.income) * 100), 0) : 0}%`,
+          },
+          {
+            label: t("wallet.vsMonth", { month: formatDate(previousMonth, "MMMM") }),
+            value: `${incomeChange >= 0 ? "+" : ""}${signedMoney(incomeChange)}`,
+          },
+        ]),
+  ];
+
   if (section === "hero") {
     return (
       <CurvyHeroPanel>
@@ -124,7 +185,7 @@ export default function HomeDashboard({
           {ledgerControl}
           <HeroFigure
             size={40}
-            label={t(type === "expense" ? "wallet.spentIn" : "wallet.earnedIn", {
+            label={t(type === "expense" ? "wallet.spentIn" : "wallet.incomeIn", {
               month: formatDate(month, "MMMM"),
             })}
             amount={loading ? "…" : money(activeTotal, currency)}
@@ -140,7 +201,7 @@ export default function HomeDashboard({
                 <SplitBar
                   ratio={ratio}
                   limitLabel={t("wallet.limit", { amount: money(limit, currency) })}
-                  leftLabel={t(isOver ? "wallet.over" : "wallet.left")}
+                  leftLabel={t(isOver ? "wallet.over" : "wallet.limitLeft")}
                   spentLabel={t("wallet.spent")}
                   leftAmount={money(difference, currency)}
                 />
@@ -155,14 +216,40 @@ export default function HomeDashboard({
                 <Text style={styles.setLimitAction}>{t("wallet.setLimitAction")}</Text>
               </Pressable>
             ))}
-          <HeroStatCard
-            size={26}
-            stats={[
-              { label: t("wallet.dailyAverage"), value: money(activeTotal / days, currency) },
-              type === "expense"
-                ? { label: t("wallet.earned"), value: money(incomeTotal, currency), badge: t("wallet.earnedBadge") }
-                : { label: t("wallet.spent"), value: money(expenseTotal, currency) },
-            ]}
+          {type === "expense" && limit > available && (
+            <View style={styles.limitNote}>
+              <MaterialCommunityIcons
+                name="information-outline"
+                size={14}
+                color={colors.heroTextSecondary}
+                style={styles.limitNoteIcon}
+              />
+              <Text style={styles.limitNoteText}>
+                {t("wallet.limitAboveAvailable", { amount: money(available, currency) })}
+              </Text>
+            </View>
+          )}
+          <RemainingCard
+            label={t("wallet.remaining")}
+            value={signedMoney(remaining)}
+            negative={remaining < 0}
+            available={t("wallet.ofAvailable", { amount: signedMoney(available) })}
+            stats={cardStats}
+          />
+          <CarryOverSheet
+            visible={carrySheetOpen}
+            onClose={() => setCarrySheetOpen(false)}
+            breakdown={{
+              fromMonth: formatDate(previousMonth, "MMMM"),
+              toMonth: formatDate(month, "MMMM"),
+              // Mock: the previous month's own carry over and totals.
+              carryIn: signedMoney(2000),
+              carryInNegative: false,
+              income: money(MOCK.prevIncome, currency),
+              spent: money(MOCK.prevIncome + 2000 - carryOver, currency),
+              result: signedMoney(carryOver),
+              negative: carryOver < 0,
+            }}
           />
         </View>
       </CurvyHeroPanel>
@@ -322,6 +409,15 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     panelContent: { paddingHorizontal: 22, gap: 16 },
     pressed: { opacity: 0.75 },
+    limitNote: { flexDirection: "row", gap: 6, marginTop: -6, paddingHorizontal: 2 },
+    limitNoteIcon: { marginTop: 2 },
+    limitNoteText: {
+      flex: 1,
+      color: colors.heroTextSecondary,
+      fontFamily: designTokens.font.regular,
+      fontSize: 12,
+      lineHeight: 17,
+    },
     setLimit: {
       height: 52,
       flexDirection: "row",
