@@ -20,6 +20,12 @@ export type RemainingStat = {
   onInfo?: () => void;
 };
 
+/** Splits "rgba(r,g,b,a)" for an SVG stop, which ignores alpha in the colour. */
+const stop = (rgba: string) => {
+  const [r, g, b, a = "1"] = rgba.replace(/rgba?\(|\)/g, "").split(",").map((v) => v.trim());
+  return { stopColor: `rgb(${r},${g},${b})`, stopOpacity: Number(a) };
+};
+
 /** Dark balance card: Remaining, the available pill, and up to three stats. */
 export default function RemainingCard({
   label,
@@ -55,12 +61,12 @@ export default function RemainingCard({
               <Stop offset="1" stopColor={colors.remainingGradTo} />
             </LinearGradient>
             <RadialGradient id="remainingGlow" cx="1" cy="0" rx="1.3" ry="1.5" fx="1" fy="0">
-              <Stop offset="0" stopColor={colors.remainingGlow} />
-              <Stop offset="0.52" stopColor={colors.remainingGlow} stopOpacity="0" />
+              <Stop offset="0" {...stop(colors.remainingGlow)} />
+              <Stop offset="0.52" {...stop(colors.remainingGlow)} stopOpacity={0} />
             </RadialGradient>
             <RadialGradient id="remainingWarm" cx="0" cy="1" rx="0.9" ry="1.2" fx="0" fy="1">
-              <Stop offset="0" stopColor={colors.remainingWarm} />
-              <Stop offset="0.6" stopColor={colors.remainingWarm} stopOpacity="0" />
+              <Stop offset="0" {...stop(colors.remainingWarm)} />
+              <Stop offset="0.6" {...stop(colors.remainingWarm)} stopOpacity={0} />
             </RadialGradient>
           </Defs>
           <Rect width={w} height={h} fill="url(#remainingBase)" />

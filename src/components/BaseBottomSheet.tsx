@@ -25,6 +25,8 @@ interface BaseBottomSheetProps {
   index?: number;
   onClose?: () => void;
   enablePanDownToClose?: boolean;
+  /** Overrides the sheet surface colour. */
+  backgroundColor?: string;
 }
 
 const BaseBottomSheet = React.memo(
@@ -36,6 +38,7 @@ const BaseBottomSheet = React.memo(
         index = -1,
         onClose,
         enablePanDownToClose = true,
+        backgroundColor,
       },
       _ref,
     ) => {
@@ -99,7 +102,7 @@ const BaseBottomSheet = React.memo(
               style={{ flex: 1, justifyContent: 'flex-end' }}
               pointerEvents="box-none"
             >
-              <View style={styles.contentWrapper}>
+              <View style={[styles.contentWrapper, backgroundColor ? { backgroundColor } : null]}>
                 <View style={styles.indicatorWrapper}>
                   <View style={styles.indicator} />
                 </View>
@@ -133,6 +136,7 @@ const BaseBottomSheet = React.memo(
               <View
                 style={[
                   styles.contentWrapper,
+                  backgroundColor ? { backgroundColor } : null,
                   {
                     maxHeight: Math.min(
                       SCREEN_HEIGHT * 0.94,

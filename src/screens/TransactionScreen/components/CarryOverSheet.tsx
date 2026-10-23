@@ -5,7 +5,8 @@ import { useAppTheme } from "@trackingPortal/contexts/ThemeContext";
 import { useTranslation } from "@trackingPortal/contexts/LanguageContext";
 import { designTokens } from "@trackingPortal/themes/designTokens";
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 
 export type CarryOverBreakdown = {
   /** The carry over itself, signed ("−৳3,000"). */
@@ -43,7 +44,12 @@ export default function CarryOverSheet({
   const { fromMonth, toMonth, negative } = breakdown;
 
   return (
-    <BaseBottomSheet index={visible ? 0 : -1} onClose={onClose}>
+    <BaseBottomSheet
+      index={visible ? 0 : -1}
+      onClose={onClose}
+      // White paper in light mode, per the design; the usual sheet in dark.
+      backgroundColor={isDark ? colors.sheet : colors.listCardBg}
+    >
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.headline}>
@@ -63,6 +69,26 @@ export default function CarryOverSheet({
             hitSlop={8}
             style={({ pressed }) => [styles.close, pressed && styles.pressed]}
           >
+            <Svg width={CLOSE_SIZE} height={CLOSE_SIZE} style={StyleSheet.absoluteFill}>
+              <Defs>
+                {/* Lit from above: lighter top, deeper bottom. */}
+                <LinearGradient id="carryClose" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={isDark ? colors.negative : "#FFFFFF"} stopOpacity={isDark ? 0.1 : 0.4} />
+                  <Stop offset="0.5" stopColor="#000000" stopOpacity={0} />
+                  <Stop offset="1" stopColor="#000000" stopOpacity={isDark ? 0.24 : 0.025} />
+                </LinearGradient>
+              </Defs>
+              <Circle cx={CLOSE_SIZE / 2} cy={CLOSE_SIZE / 2} r={CLOSE_SIZE / 2 - 0.5} fill={colors.negativeTile} />
+              <Circle
+                cx={CLOSE_SIZE / 2}
+                cy={CLOSE_SIZE / 2}
+                r={CLOSE_SIZE / 2 - 0.5}
+                fill="url(#carryClose)"
+                stroke={colors.negative}
+                strokeOpacity={isDark ? 0.42 : 0.25}
+                strokeWidth={1}
+              />
+            </Svg>
             <MaterialCommunityIcons name="close" size={18} color={colors.negative} />
           </Pressable>
         </View>
@@ -156,59 +182,73 @@ function Row({
   );
 }
 
+// Measured from the design at 2px per point.
+const CLOSE_SIZE = 40;
+
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: boolean) {
+  // Slate in light, muted grey in dark, as in the design.
+  const secondaryInk = isDark ? colors.textMuted : colors.textSecondary;
   return StyleSheet.create({
-    content: { paddingHorizontal: 24, paddingTop: 8, gap: 18 },
+    // BaseBottomSheet pads 22; the design sits 20 from the edge.
+    content: { marginHorizontal: -2, paddingTop: 4 },
     header: {
       flexDirection: "row",
       alignItems: "flex-start",
       justifyContent: "space-between",
       gap: 12,
     },
-    headline: { flexShrink: 1, gap: 4 },
+    headline: { flexShrink: 1 },
     eyebrow: {
-      color: colors.sheetText,
+      color: secondaryInk,
       fontFamily: designTokens.font.medium,
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 14,
+      lineHeight: 18,
     },
     amount: {
-      color: colors.sheetText,
+      color: colors.heroInk,
       fontFamily: designTokens.font.display,
-      fontSize: 34,
-      lineHeight: 42,
-      letterSpacing: -0.9,
+      fontSize: 40,
+      lineHeight: 44,
+      letterSpacing: -1.2,
       fontVariant: ["tabular-nums"],
     },
     negative: { color: colors.negative },
     close: {
-      width: 46,
-      height: 46,
-      marginTop: 2,
+      width: CLOSE_SIZE,
+      height: CLOSE_SIZE,
+      marginTop: 3,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: isDark ? colors.negativeFill : colors.listCardBg,
-      backgroundColor: colors.negativeTile,
+      borderRadius: CLOSE_SIZE / 2,
+      // Soft tinted halo; Android elevation would draw a grey one instead.
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.negative,
+          shadowOpacity: isDark ? 0.18 : 0.14,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+        },
+      }),
     },
     body: {
+      marginTop: 10,
       color: colors.sheetText,
       fontFamily: designTokens.font.regular,
-      fontSize: 16,
-      lineHeight: 26,
+      fontSize: 15,
+      lineHeight: 22,
     },
     card: {
+      marginTop: 15,
       overflow: "hidden",
-      borderRadius: 20,
+      borderRadius: 18,
       borderCurve: "continuous",
       borderWidth: 1,
       borderColor: colors.listCardBorder,
-      backgroundColor: isDark ? colors.listCardBg : colors.heroGradBottom,
+      backgroundColor: isDark ? colors.listCardBg : colors.sheet,
     },
     row: {
-      minHeight: 58,
-      paddingHorizontal: 18,
+      minHeight: 50,
+      paddingHorizontal: 16,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -217,9 +257,9 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
     rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.listCardBorder },
     rowLabel: {
       flex: 1,
-      color: colors.textSecondary,
+      color: secondaryInk,
       fontFamily: designTokens.font.regular,
-      fontSize: 16,
+      fontSize: 15,
     },
     rowLabelStrong: {
       color: colors.sheetText,
@@ -227,22 +267,24 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
     },
     rowValue: {
       color: colors.sheetText,
-      fontFamily: designTokens.font.bold,
-      fontSize: 16,
+      fontFamily: designTokens.font.display,
+      fontSize: 15,
+      letterSpacing: -0.3,
       fontVariant: ["tabular-nums"],
     },
     note: {
+      marginTop: 16,
       paddingHorizontal: 4,
-      color: colors.textSecondary,
+      color: secondaryInk,
       fontFamily: designTokens.font.regular,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: 13,
+      lineHeight: 20,
     },
     // Same pair as SheetConfirm.
-    actions: { flexDirection: "row", gap: 12, paddingTop: 2 },
+    actions: { marginTop: 20, flexDirection: "row", gap: 10 },
     button: {
       flex: 1,
-      height: 60,
+      height: 54,
       borderRadius: 999,
       alignItems: "center",
       justifyContent: "center",
@@ -251,13 +293,13 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
     secondaryText: {
       color: colors.sheetText,
       fontFamily: designTokens.font.semibold,
-      fontSize: 16,
+      fontSize: 15,
     },
     primary: { backgroundColor: colors.primaryButtonBg },
     primaryText: {
       color: colors.primaryButtonInk,
       fontFamily: designTokens.font.semibold,
-      fontSize: 16,
+      fontSize: 15,
     },
     pressed: { opacity: 0.75 },
   });
