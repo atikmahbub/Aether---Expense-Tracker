@@ -56,8 +56,7 @@ export default function CarryOverSheet({
             <Text style={styles.eyebrow}>{t("carryOver.fromLastMonth")}</Text>
             <ScalarAmountText
               numberOfLines={1}
-              adjustsFontSizeToFit
-              style={[styles.amount, negative && styles.negative]}
+              style={[styles.amount, amountSize(breakdown.amount), negative && styles.negative]}
             >
               {breakdown.amount}
             </ScalarAmountText>
@@ -185,6 +184,13 @@ function Row({
 // Measured from the design at 2px per point.
 const CLOSE_SIZE = 40;
 
+// Steps the amount down for long figures. Not adjustsFontSizeToFit: on iOS
+// it miscalculates with a lineHeight set and shrinks the text to a speck.
+const amountSize = (text: string) => {
+  const fontSize = text.length <= 11 ? 40 : text.length <= 13 ? 34 : 28;
+  return { fontSize, lineHeight: Math.round(fontSize * 1.3) };
+};
+
 function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: boolean) {
   // Slate in light, muted grey in dark, as in the design.
   const secondaryInk = isDark ? colors.textMuted : colors.textSecondary;
@@ -207,10 +213,8 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: bo
     amount: {
       color: colors.heroInk,
       fontFamily: designTokens.font.display,
-      fontSize: 40,
-      // Unbounded's glyphs stand taller than 1.1em; a tighter line pushes
-      // the digits up into the label.
-      lineHeight: 52,
+      // Size and line height come from amountSize. Unbounded's glyphs stand
+      // taller than 1.1em, so the line is 1.3em to keep clear of the label.
       letterSpacing: -0.8,
       fontVariant: ["tabular-nums"],
     },
