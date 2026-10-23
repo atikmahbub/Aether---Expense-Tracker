@@ -250,21 +250,6 @@ export default function HomeDashboard({
                 </Text>
               </Pressable>
             ))}
-          {type === "expense" && available > 0 && limit > available && (
-            <View style={styles.limitNote}>
-              <MaterialCommunityIcons
-                name="information-outline"
-                size={14}
-                color={colors.heroTextSecondary}
-                style={styles.limitNoteIcon}
-              />
-              <Text style={styles.limitNoteText}>
-                {t("wallet.limitAboveAvailable", {
-                  amount: money(available, currency),
-                })}
-              </Text>
-            </View>
-          )}
           <RemainingCard
             label={t("wallet.remaining")}
             value={signedMoney(remaining)}
@@ -476,20 +461,6 @@ function makeStyles(colors: ReturnType<typeof useAppTheme>["colors"]) {
   return StyleSheet.create({
     panelContent: { paddingHorizontal: 22, gap: 16 },
     pressed: { opacity: 0.75 },
-    limitNote: {
-      flexDirection: "row",
-      gap: 6,
-      marginTop: -6,
-      paddingHorizontal: 2,
-    },
-    limitNoteIcon: { marginTop: 2 },
-    limitNoteText: {
-      flex: 1,
-      color: colors.heroTextSecondary,
-      fontFamily: designTokens.font.regular,
-      fontSize: 12,
-      lineHeight: 17,
-    },
     setLimit: {
       height: 52,
       flexDirection: "row",
